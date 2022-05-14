@@ -3,6 +3,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <parser/parser.hpp>
+#include <printer/printer.hpp>
+
 
 int main(const int argc, const char **argv)
 {
@@ -12,9 +15,13 @@ int main(const int argc, const char **argv)
         return 1;
     }
 
-    std::ifstream ifs(argv[1]);
-    nlohmann::json j = nlohmann::json::parse(ifs);
-    std::cout << j;
+    std::ifstream jsonGameFile(argv[1]);
+    Parser parser(jsonGameFile);
+
+    std::ofstream headerFile("reasoner.hpp");
+    Printer printer(parser, headerFile);
+
+    printer.printHeaderFile();
 
     return 0;
 }

@@ -5,4 +5,25 @@ Regular Games to C++ compiler
 
 ### Requirements
 
+* clone [RG interpreter](https://github.com/radekmie/rbg-2.0)
 * install [nlohman JSON C++ parser](https://github.com/nlohmann/json)
+
+
+### Compilation
+```
+mkdir build
+cd build
+cmake ..
+make rg2cpp
+```
+
+### Usage
+
+* Use interpreter to create AST in json format
+```
+node lib [game].rg print-ast > [game]-ast.json
+```
+* Use generated file as input to rg2cpp compiler
+```
+./build/rg2cpp [game]-ast.json
+```

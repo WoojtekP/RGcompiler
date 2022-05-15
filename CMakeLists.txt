@@ -4,6 +4,8 @@ project(RegularGamesCompiler CXX)
 
 find_package(nlohmann_json 3.10.5 REQUIRED)
 
+set(CMAKE_CXX_STANDARD 17)
+
 include_directories(src)
 
 add_library(parser src/parser/parser.cpp)

@@ -41,12 +41,62 @@ nlohmann::json Parser::getConstants() const
     return parsedJson_["constants"];
 }
 
-int Parser::getValue(const std::string& symbol) const
+std::string Parser::getValue(const std::string& symbol) const
 {
     const auto symbolIt = symbolToValue_.find(symbol);
-    if (symbolIt == symbolToValue_.end())
+    if (symbolIt != symbolToValue_.end())
     {
-        throw std::invalid_argument("unknown value for symbol: " + symbol);
+        return std::to_string(symbolIt->second);
     }
-    return symbolIt->second;
+    const auto symbolMatcher = [symbol](const auto& var)
+    {
+        return var["identifier"] == symbol;
+    };
+    if (std::any_of(parsedJson_["variables"].begin(), parsedJson_["variables"].end(), symbolMatcher))
+    {
+        return symbol;
+    }
+    if (std::any_of(parsedJson_["constants"].begin(), parsedJson_["constants"].end(), symbolMatcher))
+    {
+        return symbol;
+    }
+    return "?";
+}
+
+std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) const
+{
+    const auto& t = findTypeByIdentifier(typeIdentifier);
+    if (t["type"]["kind"] == "Set")
+    {
+        return t["type"]["identifiers"];
+    }
+    else if (t["type"]["kind"] == "Arrow")
+    {
+        return getDomain(t["type"]["lhs"]);
+    }
+    return {};
+}
+
+std::string Parser::getSourceType(const std::string& typeIdentifier) const
+{
+    const auto& t = findTypeByIdentifier(typeIdentifier);
+    return t["type"]["lhs"];
+}
+
+std::string Parser::getDestinationType(const std::string& typeIdentifier) const
+{
+    const auto& t = findTypeByIdentifier(typeIdentifier);
+    return t["type"]["rhs"]["identifier"];
+}
+
+nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) const
+{
+    for (const auto& el : parsedJson_["types"])
+    {
+        if (el["identifier"] == typeIdentifier)
+        {
+            return el;
+        }
+    }
+    throw std::invalid_argument("Cannot found type identifier: " + typeIdentifier);
 }

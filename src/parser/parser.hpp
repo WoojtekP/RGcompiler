@@ -16,7 +16,11 @@ public:
     nlohmann::json getTypeDeclarations() const;
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
-    int getValue(const std::string& symbol) const;
+    std::string getValue(const std::string& symbol) const;
+    std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
+    std::string getSourceType(const std::string& typeIdentifier) const;
+    std::string getDestinationType(const std::string& typeIdentifier) const;
+    nlohmann::json findTypeByIdentifier(const std::string& typeIdentifier) const;
 
 private:
     nlohmann::json parsedJson_;

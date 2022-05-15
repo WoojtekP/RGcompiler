@@ -68,12 +68,114 @@ std::string Printer::functionTypeToString(const nlohmann::json& functionType)
 
 void Printer::printConstants()
 {
-    // TODO
+    for (const auto& constant : parser_.getConstants())
+    {
+        const std::string constType = typeToString(constant["type"]);
+        const std::string constName = constant["identifier"];
+        const std::string constValue =  valueToString(constant["type"], constant["value"]);
+        headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
+    }
+    headerFile_ << std::endl;
 }
 
 void Printer::printVariables()
 {
-    // TODO
+    for (const auto& variable : parser_.getVariables())
+    {
+        const std::string varType = typeToString(variable["type"]);
+        const std::string varName = variable["identifier"];
+        const std::string varValue =  valueToString(variable["type"], variable["defaultValue"]);
+        headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
+    }
+    headerFile_ << std::endl;
+}
+
+std::string Printer::valueToString(const nlohmann::json& t, const nlohmann::json& value)
+{
+    if (value["kind"] == "Element")
+    {
+        return parser_.getValue(value["identifier"]);
+    }
+    else if (value["kind"] == "Map")
+    {
+        std::map<std::string, std::string> identifierToValue;
+        const auto destinationType = getDestinationType(t);
+        for (const auto& entry : value["entries"])
+        {
+            if (entry["kind"] == "NamedEntry")
+            {
+                identifierToValue.emplace(entry["identifier"], valueToString(destinationType, entry["value"]));
+            }
+        }
+        const auto defaultValue = defaultValueToString(t, value["entries"]);
+        const auto sourceType = getSourceType(t);
+        for (const auto& identifier : parser_.getDomain(sourceType))
+        {
+            if (identifierToValue.find(identifier) == identifierToValue.end())
+            {
+                identifierToValue.emplace(identifier, defaultValue);
+            }
+        }
+        std::string result = "{";
+        int i = 1;
+        for (const auto& [id, val] : identifierToValue)
+        {
+            result += "{" + parser_.getValue(id) + ", " + val + "}";
+            if (i < identifierToValue.size())
+            {
+                result += ", ";
+            }
+            ++i;
+        }
+        return result + "}";
+    }
+    return "?";
+}
+
+std::string Printer::defaultValueToString(const nlohmann::json& t, const nlohmann::json& entries)
+{
+    for (const auto& entry : entries)
+    {
+        if (entry["kind"] == "DefaultEntry")
+        {
+            return valueToString(t, entry["value"]);
+        }
+    }
+    return "?";
+}
+
+std::string Printer::getSourceType(const nlohmann::json& t)
+{
+    if (t.is_string())
+    {
+        return parser_.getSourceType(t);
+    }
+    if (t["kind"] == "TypeReference")
+    {
+        return parser_.getSourceType(t["identifier"]);
+    }
+    else if (t["kind"] == "Arrow")
+    {
+        return t["lhs"];
+    }
+    return "?";
+}
+
+nlohmann::json Printer::getDestinationType(const nlohmann::json& t)
+{
+    if (t.is_string())
+    {
+        return parser_.getDestinationType(t);
+    }
+    if (t["kind"] == "TypeReference")
+    {
+        return parser_.getDestinationType(t["identifier"]);
+    }
+    else if (t["kind"] == "Arrow")
+    {
+        return t["rhs"];
+    }
+    return "?";
 }
 
 void Printer::printGameState()

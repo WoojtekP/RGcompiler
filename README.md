@@ -7,7 +7,7 @@ Regular Games to C++ compiler
 
 * clone [RG interpreter](https://github.com/radekmie/rbg-2.0)
 * install [nlohman JSON C++ parser](https://github.com/nlohmann/json)
-
+* optional: install [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
 
 ### Compilation
 ```
@@ -26,4 +26,8 @@ node lib [game].rg print-ast > [game]-ast.json
 * Use generated file as input to rg2cpp compiler
 ```
 ./build/rg2cpp [game]-ast.json
+```
+* Run `clang-format` on generated file
+```
+clang-format -style="{BasedOnStyle: google, IndentWidth: 4}" -i reasoner.hpp
 ```

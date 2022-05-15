@@ -1,9 +1,27 @@
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #include <nlohmann/json.hpp>
 
 #include <parser/parser.hpp>
+
+
+namespace
+{
+void printValuesAssignmentDebugInfo(const std::map<std::string, int>& symbolToValue)
+{
+    std::map<int, std::string> valueToSymbol;
+    for (const auto& [symbol, value] : symbolToValue)
+    {
+        valueToSymbol.emplace(value, symbol);
+    }
+    for (const auto& [value, symbol] : valueToSymbol)
+    {
+        std::cout << std::setw(3) <<  value << " : " << symbol << std::endl;
+    }
+}
+}  // namespace
 
 
 Parser::Parser(std::ifstream& jsonGameFile)
@@ -24,6 +42,7 @@ Parser::Parser(std::ifstream& jsonGameFile)
             }
         }
     }
+    printValuesAssignmentDebugInfo(symbolToValue_);
 }
 
 nlohmann::json Parser::getTypeDeclarations() const

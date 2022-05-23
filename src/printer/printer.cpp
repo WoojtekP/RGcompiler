@@ -1,12 +1,13 @@
 #include <iostream>
 #include <fstream>
 
+#include <printer/action.hpp>
 #include <printer/printer.hpp>
 
-
-Printer::Printer(const Parser& parser, std::ofstream& headerFile)
+Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream& sourceFile)
 : parser_(parser)
 , headerFile_(headerFile)
+, sourceFile_(sourceFile)
 {
 }
 
@@ -16,6 +17,11 @@ void Printer::printHeaderFile()
     printTypes();
     printConstants();
     printGameState();
+}
+
+void Printer::printSourceFile()
+{
+    printStateChanges(); // Added temporary just to see output
 }
 
 void Printer::printIncludes()
@@ -150,4 +156,118 @@ void Printer::printGameState()
     headerFile_ << "{" << std::endl;
     printVariables();
     headerFile_ << "};" << std::endl;
+}
+
+// FIXME: this classes definitions should not be in printer.cpp
+
+class Binding
+{
+    std::string variableName_;
+    std::string iteratedType_;
+public:
+    Binding(std::string variableName, std::string iteratedType) :
+        variableName_(variableName), iteratedType_(iteratedType)
+    {}
+
+    std::string toString()
+    {
+        return "(" + iteratedType_ + ":" + variableName_ + ")";
+    }
+};
+
+class Node
+{
+    std::string name_;
+    std::vector<Binding> bindings_;
+public:
+    Node(const nlohmann::json& t)
+    {
+        name_ = Parser::getValueFromEntries(t, "Literal", "identifier");
+
+        // FIXME: we should parse more than one binding
+        const auto& binding = Parser::getPartFromParts(t, "Binding");
+
+        if (binding)
+        {
+            bindings_.emplace_back((*binding).get()["identifier"], (*binding).get()["type"]["identifier"]);
+        }
+    }
+
+    std::string toString()
+    {
+        std::string bindings;
+
+        for (Binding& binding : bindings_)
+        {
+            bindings += binding.toString();
+        }
+
+        return name_  + bindings + " ";
+    }
+};
+
+class Edge
+{
+    Node *from_     = nullptr;
+    Node *to_       = nullptr;
+    Action *action_ = nullptr;
+
+public:
+    Edge(Node *from, Node *to, Action *action) :
+        from_(from), to_(to), action_(action)
+    {
+    };
+
+    ~Edge()
+    {
+        delete from_;
+        delete to_;
+        delete action_;
+    }
+
+    std::string toString()
+    {
+        return "<" + from_ -> toString() + ", " + to_ -> toString() + ", " + action_ -> toString() + ">";
+    }
+};
+class Graph
+{
+    std::vector<Edge*> edges_;
+public:
+    ~Graph()
+    {
+        for (Edge *e : edges_)
+        {
+            delete e;
+        }
+    }
+
+    void addEdge(Edge *edge)
+    {
+        edges_.emplace_back(edge);
+    }
+
+    void print()
+    {
+        for (Edge *edge : edges_)
+        {
+            std::cout << edge -> toString() << "\n";
+        }
+    }
+};
+
+void Printer::printStateChanges()
+{
+    Graph graph;
+
+    for (const auto& edge : parser_.getEdges())
+    {
+        Node *nodeFrom = new Node(edge["lhs"]["parts"]);
+        Node *nodeTo   = new Node(edge["rhs"]["parts"]);
+        Action *action = new Action(edge["label"]);
+
+        graph.addEdge(new Edge(nodeFrom, nodeTo, action));
+    }
+
+    graph.print();
 }

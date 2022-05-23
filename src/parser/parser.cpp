@@ -59,6 +59,11 @@ nlohmann::json Parser::getConstants() const
     return parsedJson_["constants"];
 }
 
+nlohmann::json Parser::getEdges() const
+{
+    return parsedJson_["edges"];
+}
+
 std::string Parser::getValue(const std::string& symbol) const
 {
     const auto symbolIt = symbolToValue_.find(symbol);
@@ -143,4 +148,31 @@ nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) c
         }
     }
     throw std::invalid_argument("Cannot found type identifier: " + typeIdentifier);
+}
+
+std::string Parser::getValueFromEntries(const nlohmann::json& entries, const std::string& entryKind,
+    const std::string& entryName)
+{
+    for (const auto& entry : entries)
+    {
+        if (entry["kind"] == entryKind)
+        {
+            return entry[entryName];
+        }
+    }
+
+    return "?";
+}
+
+std::optional<std::reference_wrapper<const nlohmann::json>> Parser::getPartFromParts(const nlohmann::json& parts, const std::string& entryKind)
+{
+    for (const auto& entry : parts)
+    {
+        if (entry["kind"] == entryKind)
+        {
+            return entry;
+        }
+    }
+
+    return std::nullopt;
 }

@@ -19,9 +19,12 @@ int main(const int argc, const char **argv)
     Parser parser(jsonGameFile);
 
     std::ofstream headerFile("reasoner.hpp");
-    Printer printer(parser, headerFile);
+    std::ofstream sourceFile("reasoner.cpp");
+
+    Printer printer(parser, headerFile, sourceFile);
 
     printer.printHeaderFile();
+    printer.printSourceFile();
 
     return 0;
 }

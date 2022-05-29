@@ -30,15 +30,14 @@ Parser::Parser(std::ifstream& jsonGameFile)
     int value = 0;
     for (const auto& el : parsedJson_["types"])
     {
-        if (el["identifier"] == "Player")
-        {
-            continue;
-        }
         if (el["type"]["kind"] == "Set")
         {
             for (const auto& id : el["type"]["identifiers"])
             {
-                symbolToValue_.emplace(id, value++);
+                if (symbolToValue_.find(id) == symbolToValue_.end())
+                {
+                    symbolToValue_.emplace(id, value++);
+                }
             }
         }
     }

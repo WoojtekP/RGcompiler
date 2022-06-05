@@ -31,3 +31,5 @@ node lib [game].rg print-ast > [game]-ast.json
 ```
 clang-format -style="{BasedOnStyle: Google, IndentWidth: 4}" -i reasoner.hpp
 ```
+
+You may also use `scripts/compile.sh [game]` instead of above steps.

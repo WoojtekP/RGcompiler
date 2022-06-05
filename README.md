@@ -5,7 +5,7 @@ Regular Games to C++ compiler
 
 ### Requirements
 
-* clone [RG interpreter](https://github.com/radekmie/rbg-2.0)
+* clone [RG interpreter](https://github.com/radekmie/rg)
 * install [nlohman JSON C++ parser](https://github.com/nlohmann/json)
 * optional: install [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
 

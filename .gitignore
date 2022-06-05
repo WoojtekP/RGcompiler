@@ -2,6 +2,15 @@
 /build
 /.vscode
 
+# RG files
+*.hrg
+*.rg
+*-ast.json
+
+# Generated files
+reasoner.cpp
+reasoner.hpp
+
 # Prerequisites
 *.d
 

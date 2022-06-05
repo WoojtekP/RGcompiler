@@ -95,16 +95,42 @@ std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) co
     return {};
 }
 
-std::string Parser::getSourceType(const std::string& typeIdentifier) const
+std::string Parser::getSourceType(const nlohmann::json& t) const
 {
-    const auto& t = findTypeByIdentifier(typeIdentifier);
-    return t["type"]["lhs"];
+    if (t.is_string())
+    {
+        const auto& typeObject = findTypeByIdentifier(t);
+        return typeObject["type"]["lhs"];
+    }
+    if (t["kind"] == "TypeReference")
+    {
+        const auto& typeObject = findTypeByIdentifier(t["identifier"]);
+        return typeObject["type"]["lhs"];
+    }
+    else if (t["kind"] == "Arrow")
+    {
+        return t["lhs"];
+    }
+    return "?";
 }
 
-std::string Parser::getDestinationType(const std::string& typeIdentifier) const
+nlohmann::json Parser::getDestinationType(const nlohmann::json& t) const
 {
-    const auto& t = findTypeByIdentifier(typeIdentifier);
-    return t["type"]["rhs"]["identifier"];
+    if (t.is_string())
+    {
+        const auto& typeObject = findTypeByIdentifier(t);
+        return typeObject["type"]["rhs"]["identifier"];
+    }
+    if (t["kind"] == "TypeReference")
+    {
+        const auto& typeObject = findTypeByIdentifier(t["identifier"]);
+        return typeObject["type"]["rhs"]["identifier"];
+    }
+    else if (t["kind"] == "Arrow")
+    {
+        return t["rhs"];
+    }
+    return "?";
 }
 
 nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) const

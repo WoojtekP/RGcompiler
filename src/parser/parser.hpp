@@ -18,8 +18,8 @@ public:
     nlohmann::json getConstants() const;
     std::string getValue(const std::string& symbol) const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
-    std::string getSourceType(const std::string& typeIdentifier) const;
-    std::string getDestinationType(const std::string& typeIdentifier) const;
+    std::string getSourceType(const nlohmann::json& t) const;
+    nlohmann::json getDestinationType(const nlohmann::json& t) const;
     nlohmann::json findTypeByIdentifier(const std::string& typeIdentifier) const;
 
 private:

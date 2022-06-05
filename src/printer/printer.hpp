@@ -21,8 +21,6 @@ private:
     void printVariables();
     std::string valueToString(const nlohmann::json& t, const nlohmann::json& value);
     std::string defaultValueToString(const nlohmann::json& t, const nlohmann::json& entries);
-    std::string getSourceType(const nlohmann::json& t);
-    nlohmann::json getDestinationType(const nlohmann::json& t);
 
     const Parser& parser_;
     std::ofstream& headerFile_;

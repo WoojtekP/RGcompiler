@@ -99,7 +99,7 @@ std::string Printer::valueToString(const nlohmann::json& t, const nlohmann::json
     else if (value["kind"] == "Map")
     {
         std::map<std::string, std::string> identifierToValue;
-        const auto destinationType = getDestinationType(t);
+        const auto destinationType = parser_.getDestinationType(t);
         for (const auto& entry : value["entries"])
         {
             if (entry["kind"] == "NamedEntry")
@@ -108,7 +108,7 @@ std::string Printer::valueToString(const nlohmann::json& t, const nlohmann::json
             }
         }
         const auto defaultValue = defaultValueToString(t, value["entries"]);
-        const auto sourceType = getSourceType(t);
+        const auto sourceType = parser_.getSourceType(t);
         for (const auto& identifier : parser_.getDomain(sourceType))
         {
             if (identifierToValue.find(identifier) == identifierToValue.end())
@@ -140,40 +140,6 @@ std::string Printer::defaultValueToString(const nlohmann::json& t, const nlohman
         {
             return valueToString(t, entry["value"]);
         }
-    }
-    return "?";
-}
-
-std::string Printer::getSourceType(const nlohmann::json& t)
-{
-    if (t.is_string())
-    {
-        return parser_.getSourceType(t);
-    }
-    if (t["kind"] == "TypeReference")
-    {
-        return parser_.getSourceType(t["identifier"]);
-    }
-    else if (t["kind"] == "Arrow")
-    {
-        return t["lhs"];
-    }
-    return "?";
-}
-
-nlohmann::json Printer::getDestinationType(const nlohmann::json& t)
-{
-    if (t.is_string())
-    {
-        return parser_.getDestinationType(t);
-    }
-    if (t["kind"] == "TypeReference")
-    {
-        return parser_.getDestinationType(t["identifier"]);
-    }
-    else if (t["kind"] == "Arrow")
-    {
-        return t["rhs"];
     }
     return "?";
 }

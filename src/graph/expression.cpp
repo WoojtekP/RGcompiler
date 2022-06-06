@@ -1,4 +1,9 @@
-#include <printer/expression.hpp>
+#include <string>
+
+#include <nlohmann/json.hpp>
+
+#include <graph/expression.hpp>
+
 
 ExpressionBinaryBase::ExpressionBinaryBase() : left_(new Expression), right_(new Expression)
 {

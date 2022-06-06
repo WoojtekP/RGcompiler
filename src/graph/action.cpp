@@ -1,4 +1,9 @@
-#include <printer/action.hpp>
+#include <string>
+
+#include <nlohmann/json.hpp>
+
+#include <graph/action.hpp>
+
 
 ActionBase::ActionBase() : left_(new Expression), right_(new Expression)
 {

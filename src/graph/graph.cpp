@@ -21,7 +21,7 @@ Node::Node(const nlohmann::json& t)
 {
     name_ = Parser::getValueFromEntries(t, "Literal", "identifier");
 
-    // FIXME: we should parse more than one binding
+    // TODO: we should parse more than one binding
     const auto& binding = Parser::getPartFromParts(t, "Binding");
 
     if (binding)

@@ -33,13 +33,13 @@ class ActionAssignment : public ActionBase
 public:
     std::string toString();
 };
-// FIXME: comparasion can be negated
+// TODO: comparasion can be negated
 class ActionComparison : public ActionBase
 {
 public:
     std::string toString();
 };
-// FIXME: pattern need to be implemented
+// TODO: pattern need to be implemented
 class ActionPattern : public ActionBase
 {
 public:

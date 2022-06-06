@@ -15,6 +15,7 @@ Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream&
 {
 }
 
+// TODO: 'Printer' should generate source code from parts of 'Program'
 void Printer::printHeaderFile()
 {
     printIncludes();

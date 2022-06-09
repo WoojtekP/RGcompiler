@@ -29,7 +29,7 @@ std::string ExpressionAccess::toString()
 
 std::string ExpressionCast::toString()
 {
-    return left_ -> toString() + "(" + right_ -> toString() + ")";
+    return "static_cast<" + left_ -> toString() + ">(" + right_ -> toString() + ");";
 }
 
 

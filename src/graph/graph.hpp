@@ -33,14 +33,19 @@ public:
     Edge(Node *from, Node *to, Action *action);
     ~Edge();
     std::string toString();
+    std::string fromName();
+    std::string toName();
+    std::string fullName();
+    std::string actionToString();
 };
 
 class Graph
 {
     std::vector<Edge*> edges_;
+    std::vector<std::string> getTransitions(std::string from);
 
 public:
     ~Graph();
     void addEdge(Edge *edge);
-    void print();
+    std::string toString();
 };

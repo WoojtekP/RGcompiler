@@ -36,8 +36,8 @@ public:
     std::vector<Function> getFunctions() const;
 
 private:
-    std::vector<TypeDeclaration> types;
-    std::vector<ConstantDeclaration> constants;
-    std::vector<VariableDeclaration> variables;
-    std::vector<Function> functions;
+    std::vector<TypeDeclaration> types_;
+    std::vector<ConstantDeclaration> constants_;
+    std::vector<VariableDeclaration> variables_;
+    std::vector<Function> functions_;
 };

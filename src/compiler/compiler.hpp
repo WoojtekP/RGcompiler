@@ -10,7 +10,7 @@ public:
     void generateSourceCode();
 
 private:
-    Graph graph;
-    Program program;
-    Printer printer;
+    Graph graph_;
+    Program program_;
+    Printer printer_;
 };

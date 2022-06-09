@@ -5,40 +5,40 @@
 
 void Program::addTypeDeclaration(TypeDeclaration typeDecl)
 {
-    types.push_back(typeDecl);
+    types_.push_back(typeDecl);
 }
 
 void Program::addConstantDeclaration(ConstantDeclaration constantDecl)
 {
-    constants.push_back(constantDecl);
+    constants_.push_back(constantDecl);
 }
 
 void Program::addVariableDeclaration(VariableDeclaration variableDecl)
 {
-    variables.push_back(variableDecl);
+    variables_.push_back(variableDecl);
 }
 
 void Program::addFunction(Function function)
 {
-    functions.push_back(function);
+    functions_.push_back(function);
 }
 
 std::vector<TypeDeclaration> Program::getTypes() const
 {
-    return types;
+    return types_;
 }
 
 std::vector<ConstantDeclaration> Program::getConstants() const
 {
-    return constants;
+    return constants_;
 }
 
 std::vector<VariableDeclaration> Program::getVariables() const
 {
-    return variables;
+    return variables_;
 }
 
 std::vector<Function> Program::getFunctions() const
 {
-    return functions;
+    return functions_;
 }

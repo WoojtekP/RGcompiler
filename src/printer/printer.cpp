@@ -177,5 +177,5 @@ void Printer::printStateChanges()
         graph.addEdge(new Edge(nodeFrom, nodeTo, action));
     }
 
-    graph.print();
+    sourceFile_ << graph.toString();
 }

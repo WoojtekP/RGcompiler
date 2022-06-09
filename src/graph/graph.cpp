@@ -39,7 +39,7 @@ std::string Node::toString()
         bindings += binding.toString();
     }
 
-    return name_  + bindings + " ";
+    return name_ + bindings;
 }
 
 Edge::Edge(Node *from, Node *to, Action *action) :
@@ -59,11 +59,31 @@ std::string Edge::toString()
     return "<" + from_ -> toString() + ", " + to_ -> toString() + ", " + action_ -> toString() + ">";
 }
 
+std::string Edge::fromName()
+{
+    if (from_)
+    {
+        return from_ -> toString();
+    }
+
+    return "";
+}
+
+std::string Edge::toName()
+{
+    if (to_)
+    {
+        return to_ -> toString();
+    }
+
+    return "";
+}
+
 Graph::~Graph()
 {
-    for (Edge *e : edges_)
+    for (Edge *edge : edges_)
     {
-        delete e;
+        delete edge;
     }
 }
 
@@ -72,10 +92,65 @@ void Graph::addEdge(Edge *edge)
     edges_.emplace_back(edge);
 }
 
-void Graph::print()
+std::vector<std::string> Graph::getTransitions(std::string from)
 {
+    std::vector<std::string> v;
+
     for (Edge *edge : edges_)
     {
-        std::cout << edge -> toString() << "\n";
+       if (edge -> fromName() == from)
+       {
+           v.push_back(edge -> fullName());
+       }
     }
+
+    return v;
+}
+
+std::string Edge::fullName()
+{
+    if (from_ && to_)
+    {
+        return "edge_" + fromName() + "_" + toName();
+    }
+
+    return "";
+}
+
+std::string Edge::actionToString()
+{
+    if (action_)
+    {
+        return action_ -> toString();
+    }
+
+    return "";
+}
+
+std::string Graph::toString()
+{
+    std::string graph;
+
+    for (Edge *edge : edges_)
+    {
+        std::vector<std::string> transitions = getTransitions(edge -> toName());
+
+        std::string functionName = edge -> fullName();
+        std::string functionAction = edge -> actionToString();
+        std::string functionBody;
+
+        functionBody += "    " + functionAction + "\n";
+
+        for (std::string &name : transitions)
+        {
+            functionBody += "    " + name + "();\n";
+        }
+
+        graph += "void " + functionName + "()\n";
+        graph += "{\n";
+        graph += functionBody;
+        graph += "}\n\n";
+    }
+
+    return graph;
 }

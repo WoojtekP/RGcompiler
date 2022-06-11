@@ -1,11 +1,23 @@
+#include <memory>
 #include <vector>
 
 #include <program/program.hpp>
 
 
-void Program::addTypeDeclaration(TypeDeclaration typeDecl)
+
+std::string ElementaryType::toString() const
 {
-    types_.push_back(typeDecl);
+    return "int";
+}
+
+std::string FunctionType::toString() const
+{
+    return "std::map<" + source->toString() + ", " + destination->toString() + ">";
+}
+
+void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)
+{
+    types_.push_back(std::move(typeDecl));
 }
 
 void Program::addConstantDeclaration(ConstantDeclaration constantDecl)
@@ -23,7 +35,7 @@ void Program::addFunction(Function function)
     functions_.push_back(function);
 }
 
-std::vector<TypeDeclaration> Program::getTypes() const
+const std::vector<std::unique_ptr<IType>>& Program::getTypes() const
 {
     return types_;
 }

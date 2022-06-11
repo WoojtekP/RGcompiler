@@ -5,7 +5,9 @@
 
 #include <graph/action.hpp>
 #include <graph/graph.hpp>
+#include <parser/parser.hpp>
 #include <printer/printer.hpp>
+#include <program/program.hpp>
 
 
 Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream& sourceFile)
@@ -15,44 +17,35 @@ Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream&
 {
 }
 
-// TODO: 'Printer' should generate source code from parts of 'Program'
-void Printer::printHeaderFile()
-{
-    printIncludes();
-    printTypes();
-    printConstants();
-    printGameState();
-}
-
-void Printer::printSourceFile()
-{
-    printStateChanges(); // Added temporary just to see output
-}
-
-void Printer::printIncludes()
+void Printer::initializeHeaderFile()
 {
     headerFile_ << "#include <map>" << std::endl;
     headerFile_ << std::endl;
 }
 
-void Printer::printTypes()
+void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations)
 {
-    for (const auto& t : parser_.getTypeDeclarations())
+    for (const auto& typeDecl : typeDeclarations)
     {
-        if (t["type"]["kind"] != "Arrow")
-        {
-            headerFile_ << "using " << t["identifier"].get<std::string>() << " = int;" << std::endl;
-        }
+        headerFile_ << "using " << typeDecl->identifier << " = " << typeDecl->toString() << ";" << std::endl;
     }
     headerFile_ << std::endl;
-    for (const auto& t : parser_.getTypeDeclarations())
+}
+
+void Printer::printStateChanges()
+{
+    Graph graph;
+
+    for (const auto& edge : parser_.getEdges())
     {
-        if (t["type"]["kind"] == "Arrow")
-        {
-            headerFile_ << "using " << t["identifier"].get<std::string>() << " = " << typeToString(t["type"]) << ";" << std::endl;
-        }
+        Node *nodeFrom = new Node(edge["lhs"]["parts"]);
+        Node *nodeTo   = new Node(edge["rhs"]["parts"]);
+        Action *action = new Action(edge["label"]);
+
+        graph.addEdge(new Edge(nodeFrom, nodeTo, action));
     }
-    headerFile_ << std::endl;
+
+    sourceFile_ << graph.toString();
 }
 
 std::string Printer::typeToString(const nlohmann::json& t)
@@ -161,21 +154,4 @@ void Printer::printGameState()
     headerFile_ << "{" << std::endl;
     printVariables();
     headerFile_ << "};" << std::endl;
-}
-
-
-void Printer::printStateChanges()
-{
-    Graph graph;
-
-    for (const auto& edge : parser_.getEdges())
-    {
-        Node *nodeFrom = new Node(edge["lhs"]["parts"]);
-        Node *nodeTo   = new Node(edge["rhs"]["parts"]);
-        Action *action = new Action(edge["label"]);
-
-        graph.addEdge(new Edge(nodeFrom, nodeTo, action));
-    }
-
-    sourceFile_ << graph.toString();
 }

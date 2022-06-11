@@ -4,7 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #include <parser/parser.hpp>
-#include <printer/printer.hpp>
+#include <compiler/compiler.hpp>
 
 
 int main(const int argc, const char **argv)
@@ -21,10 +21,9 @@ int main(const int argc, const char **argv)
     std::ofstream headerFile("reasoner.hpp");
     std::ofstream sourceFile("reasoner.cpp");
 
-    Printer printer(parser, headerFile, sourceFile);
-
-    printer.printHeaderFile();
-    printer.printSourceFile();
+    Compiler compiler(parser);
+    compiler.compile();
+    compiler.generateSourceCode(headerFile, sourceFile);
 
     return 0;
 }

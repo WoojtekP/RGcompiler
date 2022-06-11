@@ -8,12 +8,26 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(src)
 
-add_library(parser src/parser/parser.cpp)
-add_library(printer src/printer/printer.cpp)
-add_library(action src/graph/action.cpp)
-add_library(expression src/graph/expression.cpp)
-add_library(graph src/graph/graph.cpp)
+# TODO fix it
 
-add_executable(rg2cpp src/main.cpp)
+# add_library(parser src/parser/parser.cpp)
+# add_library(printer src/printer/printer.cpp)
+# add_library(action src/graph/action.cpp)
+# add_library(expression src/graph/expression.cpp)
+# add_library(graph src/graph/graph.cpp)
+# add_library(program src/program/program.cpp)
+# add_library(compiler src/compiler/compiler.cpp)
 
-target_link_libraries(rg2cpp PRIVATE nlohmann_json::nlohmann_json parser printer action expression graph)
+# add_executable(rg2cpp src/main.cpp)
+
+# target_link_libraries(rg2cpp PRIVATE nlohmann_json::nlohmann_json parser printer action expression graph program compiler)
+
+add_executable(rg2cpp
+    src/main.cpp
+    src/parser/parser.cpp
+    src/printer/printer.cpp
+    src/graph/action.cpp
+    src/graph/expression.cpp
+    src/graph/graph.cpp
+    src/program/program.cpp
+    src/compiler/compiler.cpp)

@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #include <parser/parser.hpp>
+#include <program/program.hpp>
 
 
 namespace

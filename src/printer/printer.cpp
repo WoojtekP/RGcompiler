@@ -32,6 +32,18 @@ void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& t
     headerFile_ << std::endl;
 }
 
+void Printer::printSymbolValues()
+{
+    for (const auto& [typeIdentifier, symbolAndValues] : parser_.getTypeToSymbolsAndValuesMap())
+    {
+        for (const auto& [symbol, value] : symbolAndValues)
+        {
+            headerFile_ << "constexpr " << typeIdentifier << " " << typeIdentifier + "_" + symbol << " = " << value << ";" << std::endl;
+        }
+    }
+    headerFile_ << std::endl;
+}
+
 void Printer::printStateChanges()
 {
     Graph graph;

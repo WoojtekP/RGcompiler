@@ -18,6 +18,7 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     Printer printer(parser_, headerFile, sourceFile);
     printer.initializeHeaderFile();
     printer.printTypeDeclarations(program_.getTypes());
+    printer.printSymbolValues();
 
     printer.printStateChanges();
     // TODO: transform program into C++ source code using printer

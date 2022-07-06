@@ -8,23 +8,6 @@
 #include <program/program.hpp>
 
 
-namespace
-{
-void printValuesAssignmentDebugInfo(const std::map<std::string, int>& symbolToValue)
-{
-    std::map<int, std::string> valueToSymbol;
-    for (const auto& [symbol, value] : symbolToValue)
-    {
-        valueToSymbol.emplace(value, symbol);
-    }
-    for (const auto& [value, symbol] : valueToSymbol)
-    {
-        std::cout << std::setw(3) <<  value << " : " << symbol << std::endl;
-    }
-}
-}  // namespace
-
-
 Parser::Parser(std::ifstream& jsonGameFile)
 : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
@@ -33,16 +16,23 @@ Parser::Parser(std::ifstream& jsonGameFile)
     {
         if (el["type"]["kind"] == "Set")
         {
+            const std::string typeIdentifier = el["identifier"];
             for (const auto& id : el["type"]["identifiers"])
             {
-                if (symbolToValue_.find(id) == symbolToValue_.end())
+                const auto it = symbolToValue_.find(id);
+                if (it != symbolToValue_.end())
                 {
-                    symbolToValue_.emplace(id, value++);
+                    typeToSymbolsAndValues_[typeIdentifier].emplace_back(id, it->second);
+                }
+                else
+                {
+                    symbolToValue_[id] = value;
+                    typeToSymbolsAndValues_[typeIdentifier].emplace_back(id, value);
+                    value++;
                 }
             }
         }
     }
-    printValuesAssignmentDebugInfo(symbolToValue_);
 }
 
 nlohmann::json Parser::getTypeDeclarations() const
@@ -63,6 +53,11 @@ nlohmann::json Parser::getConstants() const
 nlohmann::json Parser::getEdges() const
 {
     return parsedJson_["edges"];
+}
+
+const std::map<std::string, std::vector<std::pair<std::string, int>>>& Parser::getTypeToSymbolsAndValuesMap() const
+{
+    return typeToSymbolsAndValues_;
 }
 
 std::string Parser::getValue(const std::string& symbol) const

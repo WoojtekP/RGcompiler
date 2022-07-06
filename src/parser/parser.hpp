@@ -18,6 +18,7 @@ public:
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
     nlohmann::json getEdges() const;
+    const std::map<std::string, std::vector<std::pair<std::string, int>>>& getTypeToSymbolsAndValuesMap() const;
     std::string getValue(const std::string& symbol) const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
@@ -31,5 +32,6 @@ public:
 
 private:
     nlohmann::json parsedJson_;
+    std::map<std::string, std::vector<std::pair<std::string, int>>> typeToSymbolsAndValues_;
     std::map<std::string, int> symbolToValue_;
 };

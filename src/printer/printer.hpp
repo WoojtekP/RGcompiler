@@ -12,6 +12,7 @@ public:
     Printer(const Parser& parse, std::ofstream& headerFile, std::ofstream& sourceFile);
     void initializeHeaderFile();
     void printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations);
+    void printSymbolValues();
     void printStateChanges();
 
 private:

@@ -12,7 +12,17 @@ std::string ElementaryType::toString() const
 
 std::string FunctionType::toString() const
 {
-    return "std::map<" + source->toString() + ", " + destination->toString() + ">";
+    std::string srcType = source->identifier;
+    std::string dstType = destination->identifier;
+    if (srcType.empty())
+    {
+        srcType = source->toString();
+    }
+    if (dstType.empty())
+    {
+        dstType = destination->toString();
+    }
+    return "std::map<" + srcType + ", " + dstType + ">";
 }
 
 void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)

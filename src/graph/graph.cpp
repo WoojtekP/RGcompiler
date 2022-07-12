@@ -42,16 +42,14 @@ std::string Node::toString()
     return name_ + bindings;
 }
 
-Edge::Edge(Node *from, Node *to, Action *action) :
-    from_(from), to_(to), action_(action)
+Edge::Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to,
+    std::unique_ptr<Action> &&action) : from_(std::move(from)), to_(std::move(to)),
+    action_(std::move(action))
 {
 };
 
 Edge::~Edge()
 {
-    delete from_;
-    delete to_;
-    delete action_;
 }
 
 std::string Edge::toString()
@@ -81,22 +79,18 @@ std::string Edge::toName()
 
 Graph::~Graph()
 {
-    for (Edge *edge : edges_)
-    {
-        delete edge;
-    }
 }
 
-void Graph::addEdge(Edge *edge)
+void Graph::addEdge(std::unique_ptr<Edge> &&edge)
 {
-    edges_.emplace_back(edge);
+    edges_.emplace_back(std::move(edge));
 }
 
 std::vector<std::string> Graph::getTransitions(std::string from)
 {
     std::vector<std::string> v;
 
-    for (Edge *edge : edges_)
+    for (auto &&edge : edges_)
     {
        if (edge -> fromName() == from)
        {
@@ -127,11 +121,31 @@ std::string Edge::actionToString()
     return "";
 }
 
+ActionType Edge::getActionType()
+{
+    return action_ -> getType();
+}
+
+std::string Edge::getActionLeftSide()
+{
+    return action_ -> getLeftSide();
+}
+
+std::string Edge::getActionRightSide()
+{
+    return action_ -> getRightSide();
+}
+
+bool Edge::getActionNegationValue()
+{
+    return action_ -> getNegated();
+}
+
 std::string Graph::toString()
 {
     std::string graph;
 
-    for (Edge *edge : edges_)
+    for (auto &&edge : edges_)
     {
         std::vector<std::string> transitions = getTransitions(edge -> toName());
 
@@ -153,4 +167,141 @@ std::string Graph::toString()
     }
 
     return graph;
+}
+
+// TODO Belowed functions works in O(n) time, they should be changed to constant time
+// after mapping node names from string to int is done
+
+ActionType Graph::getActionType(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> getActionType();
+        }
+    }
+
+    return ActionType::Skip;
+}
+
+
+bool Graph::getActionNegationValue(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> getActionNegationValue();
+        }
+    }
+
+    return "";
+}
+
+std::string Graph::getActionLeftSide(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> getActionLeftSide();
+        }
+    }
+
+    return "";
+}
+
+std::string Graph::getActionRightSide(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> getActionRightSide();
+        }
+    }
+
+    return "";
+}
+
+std::string Graph::getAction(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> actionToString();
+        }
+    }
+
+    return "";
+}
+
+std::string Graph::getToName(std::string edgeName)
+{
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fullName() == edgeName)
+        {
+            return edge -> toName();
+        }
+    }
+
+    return "";
+}
+
+std::vector<std::string> Graph::getEdgeNames()
+{
+    std::vector<std::string> v;
+
+    for (auto &&edge : edges_)
+    {
+      v.push_back(edge -> fullName());
+    }
+
+    return v;
+}
+
+std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
+{
+    std::vector<std::string> outgingNodes;
+
+    for (auto &&edge : edges_)
+    {
+        if (edge -> fromName() == from)
+        {
+            outgingNodes.push_back(edge -> toName());
+        }
+    }
+
+    return outgingNodes;
+}
+
+std::vector<std::string> Graph::getNodeNames()
+{
+    std::vector<std::string> nodes;
+
+    std::function<bool(std::string)> notContain = [&nodes](std::string x)
+    {
+        for (auto &y : nodes)
+        {
+            if (x == y)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    for (auto &&edge : edges_)
+    {
+        if (notContain(edge -> fromName()))
+        {
+            nodes.push_back(edge -> fromName());
+        }
+    }
+
+    return nodes;
 }

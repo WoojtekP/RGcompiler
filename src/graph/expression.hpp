@@ -4,6 +4,14 @@
 
 #include <nlohmann/json.hpp>
 
+enum class ExpressionType
+{
+    Reference,
+    TypeReference,
+    Access,
+    Cast,
+    EdgeName
+};
 
 class ExpressionI
 {
@@ -16,8 +24,8 @@ public:
 class ExpressionBinaryBase : public ExpressionI
 {
 protected:
-    ExpressionI *left_;
-    ExpressionI *right_;
+    std::unique_ptr<ExpressionI> left_;
+    std::unique_ptr<ExpressionI> right_;
 
 public:
     ExpressionBinaryBase();
@@ -27,7 +35,7 @@ public:
 
 class Expression : public ExpressionI
 {
-    ExpressionI *expression_ = nullptr;
+    std::unique_ptr<ExpressionI> expression_;
 
 public:
     ~Expression();
@@ -64,4 +72,14 @@ class ExpressionReference : public ExpressionUnaryBase
 
 class ExpressionTypeReference : public ExpressionUnaryBase
 {
+};
+
+class ExpressionEdgeName : public ExpressionI
+{
+    std::string val_;
+
+public:
+    void parse(const nlohmann::json& t) override;
+
+    std::string toString() override;
 };

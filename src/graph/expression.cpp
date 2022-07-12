@@ -1,23 +1,31 @@
-#include <string>
-
 #include <nlohmann/json.hpp>
 
 #include <graph/expression.hpp>
+#include <parser/parser.hpp>
 
 
-ExpressionBinaryBase::ExpressionBinaryBase() : left_(new Expression), right_(new Expression)
+ExpressionBinaryBase::ExpressionBinaryBase()
 {
 }
 
 ExpressionBinaryBase::~ExpressionBinaryBase()
 {
-    delete left_;
-    delete right_;
 }
 
 void ExpressionBinaryBase::parse(const nlohmann::json& t)
 {
+    if (left_ == nullptr)
+    {
+        left_ = std::make_unique<Expression>();
+    }
+
     left_  -> parse(t["lhs"]);
+
+    if (right_ == nullptr)
+    {
+        right_ = std::make_unique<Expression>();
+    }
+
     right_ -> parse(t["rhs"]);
 }
 
@@ -29,13 +37,27 @@ std::string ExpressionAccess::toString()
 
 std::string ExpressionCast::toString()
 {
-    return "static_cast<" + left_ -> toString() + ">(" + right_ -> toString() + ");";
+    return "static_cast<" + left_ -> toString() + ">(" + right_ -> toString() + ")";
 }
-
 
 void ExpressionUnaryBase::parse(const nlohmann::json& t)
 {
     val_ = t["identifier"];
+}
+
+void ExpressionEdgeName::parse(const nlohmann::json& t)
+{
+    const auto& node = Parser::getPartFromParts(t["parts"], "Literal");
+
+    if (node)
+    {
+        val_ = (*node).get()["identifier"];
+    }
+}
+
+std::string ExpressionEdgeName::toString()
+{
+    return val_;
 }
 
 std::string ExpressionUnaryBase::toString()
@@ -45,31 +67,34 @@ std::string ExpressionUnaryBase::toString()
 
 Expression::~Expression()
 {
-    delete expression_;
 }
 
 void Expression::parse(const nlohmann::json& t)
 {
     if (expression_)
     {
-        delete expression_;
+        expression_.reset();
     }
 
     if (t["kind"] == "Reference")
     {
-        expression_ = new ExpressionReference;
+        expression_ = std::make_unique<ExpressionReference>();
     }
     else if (t["kind"] == "TypeReference")
     {
-        expression_ = new ExpressionTypeReference;
+        expression_ = std::make_unique<ExpressionTypeReference>();
     }
     else if (t["kind"] == "Access")
     {
-        expression_ = new ExpressionAccess;
+        expression_ = std::make_unique<ExpressionAccess>();
     }
     else if (t["kind"] == "Cast")
     {
-        expression_ = new ExpressionCast;
+        expression_ = std::make_unique<ExpressionCast>();
+    }
+    else if (t["kind"] == "EdgeName")
+    {
+        expression_ = std::make_unique<ExpressionEdgeName>();
     }
 
     if (expression_)

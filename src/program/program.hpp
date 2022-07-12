@@ -50,6 +50,15 @@ class VariableDeclaration
 class Function
 {
     // TODO: implement!
+    std::string str_;
+public:
+    Function(std::string str) : str_(str)
+    {}
+
+    std::string toString() const
+    {
+        return str_;
+    }
 };
 
 

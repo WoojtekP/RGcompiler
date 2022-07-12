@@ -3,8 +3,6 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/action.hpp>
-#include <graph/graph.hpp>
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
 #include <program/program.hpp>
@@ -44,20 +42,12 @@ void Printer::printSymbolValues()
     headerFile_ << std::endl;
 }
 
-void Printer::printStateChanges()
+void Printer::printStateChanges(const std::vector<Function> &v)
 {
-    Graph graph;
-
-    for (const auto& edge : parser_.getEdges())
+    for (const auto &f : v)
     {
-        Node *nodeFrom = new Node(edge["lhs"]["parts"]);
-        Node *nodeTo   = new Node(edge["rhs"]["parts"]);
-        Action *action = new Action(edge["label"]);
-
-        graph.addEdge(new Edge(nodeFrom, nodeTo, action));
+        sourceFile_ << f.toString() << "\n";
     }
-
-    sourceFile_ << graph.toString();
 }
 
 std::string Printer::typeToString(const nlohmann::json& t)

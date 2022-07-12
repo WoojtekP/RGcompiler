@@ -13,7 +13,7 @@ public:
     void initializeHeaderFile();
     void printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
-    void printStateChanges();
+    void printStateChanges(const std::vector<Function> &v);
 
 private:
     void printIncludes();

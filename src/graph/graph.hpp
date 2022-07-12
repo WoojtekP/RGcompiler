@@ -29,27 +29,41 @@ public:
 class Edge
 {
 private:
-    Node *from_     = nullptr;
-    Node *to_       = nullptr;
-    Action *action_ = nullptr;
+    std::unique_ptr<Node> from_;
+    std::unique_ptr<Node> to_;
+    std::unique_ptr<Action> action_;
 
 public:
-    Edge(Node *from, Node *to, Action *action);
+    Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to,
+        std::unique_ptr<Action> &&action);
     ~Edge();
     std::string toString();
     std::string fromName();
     std::string toName();
     std::string fullName();
     std::string actionToString();
+    ActionType getActionType();
+    std::string getActionLeftSide();
+    std::string getActionRightSide();
+    bool getActionNegationValue();
 };
 
 class Graph
 {
-    std::vector<Edge*> edges_;
+    std::vector<std::unique_ptr<Edge>> edges_;
     std::vector<std::string> getTransitions(std::string from);
 
 public:
     ~Graph();
-    void addEdge(Edge *edge);
+    void addEdge(std::unique_ptr<Edge> &&edge);
     std::string toString();
+    std::vector<std::string> getNodeNames();
+    std::vector<std::string> getOutgoingNodesFrom(std::string from);
+    std::vector<std::string> getEdgeNames();
+    ActionType getActionType(std::string edgeName);
+    std::string getActionLeftSide(std::string edgeName);
+    std::string getActionRightSide(std::string edgeName);
+    std::string getAction(std::string edgeName);
+    std::string getToName(std::string edgeName);
+    bool getActionNegationValue(std::string edgeName);
 };

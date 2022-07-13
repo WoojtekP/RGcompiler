@@ -16,10 +16,10 @@ private:
     void initializeGraph();
     void generateTypes();
     void generateFunctions();
-    void generateStateFunctions(std::string type, std::function<std::string(std::string)> begining,
-        std::function<std::string(std::string)> innerLoop, std::string ending);
-    void generateEdgeFunctions(std::string type, std::string retVal, std::function<std::string(std::string)> middle,
-        std::string ending);
+    void generateVoidStateFunctions();
+    void generateBoolStateFunctions();
+    void generateVoidEdgeFunctions();
+    void generateBoolEdgeFunctions();
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
 

@@ -57,76 +57,144 @@ void Compiler::generateTypes()
     }
 }
 
-void Compiler::generateStateFunctions(std::string type, std::function<std::string(std::string)> begining,
-    std::function<std::string(std::string)> innerLoop, std::string ending)
+void Compiler::generateVoidStateFunctions()
+{
+
+    std::vector<std::string> states = graph_.getNodeNames();
+
+    for (auto &state : states)
+    {
+        std::unique_ptr<Function> function = std::make_unique<Function>(state, "void");
+
+        function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + state + "\")"));
+
+        std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
+
+        for (auto &outgingState : outgoingStates)
+        {
+            function -> addInstruction(std::make_unique<CustomInstruction>("edge_" + state + "_" + outgingState + "()"));
+        }
+
+        function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+
+        program_.addFunction(std::move(function));
+    }
+}
+
+void Compiler::generateBoolStateFunctions()
 {
     std::vector<std::string> states = graph_.getNodeNames();
 
     for (auto &state : states)
     {
-        std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
+        std::unique_ptr<Function> function = std::make_unique<Function>("is_legal_" + state, "bool");
 
-        std::string func;
-        func = type + state + "()\n{\n";
-        func += begining(state);
+        std::unique_ptr<IfInstruction> ifInstruction =
+            std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + state + "\""));
+
+        ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
+
+        function -> addInstruction(std::move(ifInstruction));
+
+        std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
         for (auto &outgingState : outgoingStates)
         {
-            func += innerLoop(state + "_" + outgingState);
+            ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>("is_legal_edge_" + state + "_" + outgingState + "()", "true"));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
+            function -> addInstruction(std::move(ifInstruction));
         }
 
-        func += ending;
+        function -> addInstruction(std::make_unique<ReturnInstruction>("false"));
 
-        program_.addFunction(Function(func));
+        program_.addFunction(std::move(function));
     }
 }
 
-void Compiler::generateEdgeFunctions(std::string type, std::string retVal, std::function<std::string(std::string)> middle,
-    std::string ending)
+void Compiler::generateVoidEdgeFunctions()
 {
     std::vector<std::string> edges = graph_.getEdgeNames();
 
     for (auto &edge : edges)
     {
-        std::string func;
-
-        func += type + edge + "()\n{\n";
+        std::unique_ptr<Function> function = std::make_unique<Function>(edge, "void");
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
-            func += "    int old = " + graph_.getActionLeftSide(edge) + ";\n";
+            function -> addInstruction(std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
         }
         else if (graph_.getActionType(edge) == ActionType::Comparison)
         {
-            func += "    if (" + static_cast<std::string>((graph_.getActionNegationValue(edge) ? "" : "!(")) + graph_.getAction(edge) +
-                static_cast<std::string>((graph_.getActionNegationValue(edge) ? "" : ")")) + ")\n";
-            func += "    {\n";
-            func += "        return " + retVal + ";\n    }\n";
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(graph_.getActionLeftSide(edge),
+                graph_.getActionRightSide(edge), !graph_.getActionNegationValue(edge)));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>());
+            function -> addInstruction(std::move(ifInstruction));
         }
         else if (graph_.getActionType(edge) == ActionType::Reachability)
         {
-            func += "    currentPatterns.push_back(\""+ graph_.getActionRightSide(edge) +"\");\n";
-            func += "    if (" + static_cast<std::string>((graph_.getActionNegationValue(edge) ? "" : "!")) + "is_legal_" + graph_.getActionLeftSide(edge) + "())\n";
-            func += "    {\n";
-            func += "        currentPatternNode.pop_back();\n";
-            func += "        return "+ retVal +";\n    }\n";
-            func += "    currentPatterns.pop_back();\n";
-        }
-        else if (graph_.getActionType(edge) != ActionType::Skip)
-        {
-            func += "    " + graph_.getAction(edge) + ";\n";
+            function -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("is_legal_" + graph_.getActionLeftSide(edge) + "()",
+                "false"));
+            ifInstruction -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>());
+            function -> addInstruction(std::move(ifInstruction));
         }
 
-        func += middle(graph_.getToName(edge));
+        function -> addInstruction(std::make_unique<CustomInstruction>(graph_.getToName(edge) + "()"));
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
-            func += "    " + graph_.getActionLeftSide(edge) + " = old;\n";
+            function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
         }
 
-        func += ending;
+        program_.addFunction(std::move(function));
+    }
+}
 
-        program_.addFunction(Function(func));
+void Compiler::generateBoolEdgeFunctions()
+{
+    std::vector<std::string> edges = graph_.getEdgeNames();
+
+    for (auto &edge : edges)
+    {
+        std::unique_ptr<Function> function = std::make_unique<Function>("is_legal_" + edge, "bool");
+
+        if (graph_.getActionType(edge) == ActionType::Assignment)
+        {
+            function -> addInstruction(std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
+        }
+        else if (graph_.getActionType(edge) == ActionType::Comparison)
+        {
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(graph_.getActionLeftSide(edge),
+                graph_.getActionRightSide(edge), !graph_.getActionNegationValue(edge)));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("false"));
+            function -> addInstruction(std::move(ifInstruction));
+        }
+        else if (graph_.getActionType(edge) == ActionType::Reachability)
+        {
+            function -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("is_legal_" + graph_.getActionLeftSide(edge),
+                "false"));
+            ifInstruction -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("false"));
+            function -> addInstruction(std::move(ifInstruction));
+        }
+
+        function -> addInstruction(std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + graph_.getToName(edge) + "()", "bool"));
+
+        if (graph_.getActionType(edge) == ActionType::Assignment)
+        {
+            function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
+        }
+
+        function -> addInstruction(std::make_unique<ReturnInstruction>("tmp"));
+
+        program_.addFunction(std::move(function));
     }
 }
 
@@ -135,13 +203,11 @@ void Compiler::generateFunctions()
     // TODO node names should be represended by numbers not strings
     // TODO this should be changed after the proper implementation of the Function class comes out
 
-    generateStateFunctions("void ", [](std::string str){return "    currentMoves.push_back(\"" + str + "\");\n";},
-        [](std::string str){return "    edge_" + str + "();\n";}, "    currentMoves.pop_back();\n}\n");
-    generateStateFunctions("bool is_legal_", [](std::string str){return "    if (currentPatterns.back() == \"" + str + "\"){\n        return true\n    }\n";},
-        [](std::string str){return "    if (is_legal_edge_" + str + "())\n    { return true; }\n";}, "    return false;\n}\n");
+    generateVoidStateFunctions();
+    generateBoolStateFunctions();
 
-    generateEdgeFunctions("void ", "", [](std::string str){return "    " + str + "();\n";}, "}\n");
-    generateEdgeFunctions("bool is_legal_", "false", [](std::string str){return "    bool tmp = is_legal_" + str + "();\n";}, "    return tmp;\n}\n");
+    generateBoolEdgeFunctions();
+    generateVoidEdgeFunctions();
 }
 
 std::unique_ptr<IType> Compiler::generateType(const nlohmann::json& t)

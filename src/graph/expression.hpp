@@ -16,7 +16,7 @@ enum class ExpressionType
 class ExpressionI
 {
 public:
-    virtual ~ExpressionI() {}
+    virtual ~ExpressionI() = default;
     virtual std::string toString() = 0;
     virtual void parse(const nlohmann::json& t) = 0;
 };

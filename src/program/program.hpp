@@ -47,20 +47,114 @@ class VariableDeclaration
     // TODO: implement!
 };
 
-class Function
+class IInstruction
 {
-    // TODO: implement!
-    std::string str_;
-public:
-    Function(std::string str) : str_(str)
-    {}
-
-    std::string toString() const
+protected:
+    inline std::string getLeadingSpaces(int n)
     {
-        return str_;
+        return std::string(n, ' ');
     }
+
+    inline std::string getSemicolon(bool n)
+    {
+        return (n ? ";" : "");
+    }
+
+    inline std::string addSpacesAndSemicolon(int delimiter, bool semicolon, const std::string &str)
+    {
+        return getLeadingSpaces(delimiter) + str + getSemicolon(semicolon);
+    }
+
+public:
+    virtual ~IInstruction() = default;
+    virtual std::string toString(int delimiter, int shift, bool semicolon) = 0;
 };
 
+class ReturnInstruction : public IInstruction
+{
+    std::string value_;
+public:
+    ReturnInstruction();
+    ReturnInstruction(const std::string &value);
+
+    std::string toString(int delimiter, int shift, bool semicolon);
+};
+
+class VariableDeclarationInstruction : public IInstruction
+{
+    std::string name_;
+    std::string type_;
+public:
+    VariableDeclarationInstruction(const std::string &name);
+    VariableDeclarationInstruction(const std::string &name, std::string type);
+
+    std::string toString(int delimiter, int shift, bool semicolon);
+};
+
+class AssignmentInstruction : public IInstruction
+{
+    std::unique_ptr<VariableDeclarationInstruction> left_;
+    std::string right_;
+public:
+    AssignmentInstruction(const std::string &left, const std::string &right);
+    AssignmentInstruction(const std::string &left, const std::string &right, std::string type);
+
+    std::string toString(int delimiter, int shift, bool semicolon);
+};
+
+class ComparisonInstruction : public IInstruction
+{
+    std::string left_;
+    std::string right_;
+    bool negated_;
+public:
+    ComparisonInstruction(const std::string &left, const std::string &right);
+    ComparisonInstruction(const std::string &left, const std::string &right, bool negated);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
+
+class IfInstruction : public IInstruction
+{
+    std::unique_ptr<ComparisonInstruction> condition_;
+    std::vector<std::unique_ptr<IInstruction>> instructions_;
+public:
+    IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition);
+
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
+class LoopInstruction : public IInstruction
+{
+    // TODO: implement!
+};
+
+class CustomInstruction : public IInstruction
+{
+    std::string instruction_;
+public:
+    CustomInstruction(std::string instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
+class Function : public IInstruction
+{
+    std::string name_;
+    std::string returnType_;
+    std::vector<std::unique_ptr<IInstruction>> instructions_;
+    std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
+public:
+    Function(std::string name, std::string returnType);
+
+    void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
 
 class Program
 {
@@ -68,16 +162,16 @@ public:
     void addTypeDeclaration(std::unique_ptr<IType> typeDecl);
     void addConstantDeclaration(ConstantDeclaration constantDecl);
     void addVariableDeclaration(VariableDeclaration variableDecl);
-    void addFunction(Function function);
+    void addFunction(std::unique_ptr<Function> &&function);
 
     const std::vector<std::unique_ptr<IType>>& getTypes() const;
     std::vector<ConstantDeclaration> getConstants() const;
     std::vector<VariableDeclaration> getVariables() const;
-    std::vector<Function> getFunctions() const;
+    const std::vector<std::unique_ptr<Function>>& getFunctions() const;
 
 private:
     std::vector<std::unique_ptr<IType>> types_;
     std::vector<ConstantDeclaration> constants_;
     std::vector<VariableDeclaration> variables_;
-    std::vector<Function> functions_;
+    std::vector<std::unique_ptr<Function>> functions_;
 };

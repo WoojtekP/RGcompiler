@@ -185,7 +185,6 @@ ActionType Graph::getActionType(std::string edgeName)
     return ActionType::Skip;
 }
 
-
 bool Graph::getActionNegationValue(std::string edgeName)
 {
     for (auto &&edge : edges_)

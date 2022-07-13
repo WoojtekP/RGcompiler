@@ -42,11 +42,11 @@ void Printer::printSymbolValues()
     headerFile_ << std::endl;
 }
 
-void Printer::printStateChanges(const std::vector<Function> &v)
+void Printer::printStateChanges(const std::vector<std::unique_ptr<Function>> &functions)
 {
-    for (const auto &f : v)
+    for (const auto &f : functions)
     {
-        sourceFile_ << f.toString() << "\n";
+        sourceFile_ << f -> toString(0,4,false) << "\n";
     }
 }
 

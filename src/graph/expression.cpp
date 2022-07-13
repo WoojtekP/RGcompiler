@@ -34,7 +34,6 @@ std::string ExpressionAccess::toString()
     return left_ -> toString() + "[" + right_ -> toString() + "]";
 }
 
-
 std::string ExpressionCast::toString()
 {
     return "static_cast<" + left_ -> toString() + ">(" + right_ -> toString() + ")";

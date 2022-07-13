@@ -18,7 +18,7 @@ enum class ActionType
 class ActionI
 {
 public:
-    virtual ~ActionI() {}
+    virtual ~ActionI() = default;
     virtual std::string toString() = 0;
     virtual std::string getLeftSide() = 0;
     virtual std::string getRightSide() = 0;

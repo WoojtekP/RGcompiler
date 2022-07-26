@@ -1,6 +1,5 @@
 #include <fstream>
 #include <iomanip>
-#include <iostream>
 
 #include <nlohmann/json.hpp>
 
@@ -16,19 +15,11 @@ Parser::Parser(std::ifstream& jsonGameFile)
     {
         if (el["type"]["kind"] == "Set")
         {
-            const std::string typeIdentifier = el["identifier"];
             for (const auto& id : el["type"]["identifiers"])
             {
-                const auto it = symbolToValue_.find(id);
-                if (it != symbolToValue_.end())
+                if (symbolToValue_.find(id) == symbolToValue_.end())
                 {
-                    typeToSymbolsAndValues_[typeIdentifier].emplace_back(id, it->second);
-                }
-                else
-                {
-                    symbolToValue_[id] = value;
-                    typeToSymbolsAndValues_[typeIdentifier].emplace_back(id, value);
-                    value++;
+                    symbolToValue_.emplace(id, value++);
                 }
             }
         }
@@ -55,11 +46,6 @@ nlohmann::json Parser::getEdges() const
     return parsedJson_["edges"];
 }
 
-const std::map<std::string, std::vector<std::pair<std::string, int>>>& Parser::getTypeToSymbolsAndValuesMap() const
-{
-    return typeToSymbolsAndValues_;
-}
-
 std::string Parser::getValue(const std::string& symbol) const
 {
     const auto symbolIt = symbolToValue_.find(symbol);
@@ -80,6 +66,11 @@ std::string Parser::getValue(const std::string& symbol) const
         return symbol;
     }
     return "?";
+}
+
+const std::map<std::string, int>& Parser::getSymbolToValueMap() const
+{
+    return symbolToValue_;
 }
 
 std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) const

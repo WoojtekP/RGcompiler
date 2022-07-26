@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 
 #include <nlohmann/json.hpp>
@@ -32,12 +31,9 @@ void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& t
 
 void Printer::printSymbolValues()
 {
-    for (const auto& [typeIdentifier, symbolAndValues] : parser_.getTypeToSymbolsAndValuesMap())
+    for (const auto& [symbol, value] : parser_.getSymbolToValueMap())
     {
-        for (const auto& [symbol, value] : symbolAndValues)
-        {
-            headerFile_ << "constexpr " << typeIdentifier << " " << typeIdentifier + "_" + symbol << " = " << value << ";" << std::endl;
-        }
+        headerFile_ << "constexpr int _" << symbol << " = " << value << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }

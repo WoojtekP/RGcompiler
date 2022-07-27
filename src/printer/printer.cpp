@@ -16,15 +16,30 @@ Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream&
 
 void Printer::initializeHeaderFile()
 {
-    headerFile_ << "#include <map>" << std::endl;
+    headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
+}
+
+void Printer::initializeSourceFile()
+{
+    sourceFile_ << "#include \"reasoner.hpp\"" << std::endl;
+    sourceFile_ << std::endl;
 }
 
 void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations)
 {
     for (const auto& typeDecl : typeDeclarations)
     {
-        headerFile_ << "using " << typeDecl->identifier << " = " << typeDecl->toString() << ";" << std::endl;
+        std::string typeString;
+        if (dynamic_cast<ElementaryType*>(typeDecl.get()) != nullptr)
+        {
+            typeString = "int";
+        }
+        else
+        {
+            typeString = typeDecl->toString();
+        }
+        headerFile_ << "using " << typeDecl->identifier << " = " << typeString << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }
@@ -34,6 +49,30 @@ void Printer::printSymbolValues()
     for (const auto& [symbol, value] : parser_.getSymbolToValueMap())
     {
         headerFile_ << "constexpr int " << symbol << " = " << value << ";" << std::endl;
+    }
+    headerFile_ << std::endl;
+}
+
+void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& constants)
+{
+    for (const auto& constant : constants)
+    {
+        const std::string constType = constant->value->valueType->toString();
+        const std::string constValue = constant->value->toString();
+        const std::string constName = constant->identifier;
+        headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
+    }
+    headerFile_ << std::endl;
+}
+
+void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
+{
+    for (const auto& variable : variables)
+    {
+        const std::string varType = variable->value->valueType->toString();
+        const std::string varValue = variable->value->toString();
+        const std::string varName = variable->identifier;
+        headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }
@@ -66,30 +105,6 @@ std::string Printer::typeToString(const nlohmann::json& t)
 std::string Printer::functionTypeToString(const nlohmann::json& functionType)
 {
     return "std::map<" + typeToString(functionType["lhs"]) + ", " + typeToString(functionType["rhs"]) + ">";
-}
-
-void Printer::printConstants()
-{
-    for (const auto& constant : parser_.getConstants())
-    {
-        const std::string constType = typeToString(constant["type"]);
-        const std::string constName = constant["identifier"];
-        const std::string constValue =  valueToString(constant["type"], constant["value"]);
-        headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
-    }
-    headerFile_ << std::endl;
-}
-
-void Printer::printVariables()
-{
-    for (const auto& variable : parser_.getVariables())
-    {
-        const std::string varType = typeToString(variable["type"]);
-        const std::string varName = variable["identifier"];
-        const std::string varValue =  valueToString(variable["type"], variable["defaultValue"]);
-        headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
-    }
-    headerFile_ << std::endl;
 }
 
 std::string Printer::valueToString(const nlohmann::json& t, const nlohmann::json& value)
@@ -144,12 +159,4 @@ std::string Printer::defaultValueToString(const nlohmann::json& t, const nlohman
         }
     }
     return "?";
-}
-
-void Printer::printGameState()
-{
-    headerFile_ << "class Reasoner" << std::endl;
-    headerFile_ << "{" << std::endl;
-    printVariables();
-    headerFile_ << "};" << std::endl;
 }

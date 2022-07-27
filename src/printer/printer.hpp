@@ -11,8 +11,11 @@ class Printer
 public:
     Printer(const Parser& parse, std::ofstream& headerFile, std::ofstream& sourceFile);
     void initializeHeaderFile();
+    void initializeSourceFile();
     void printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
+    void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
+    void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);
     void printStateChanges(const std::vector<std::unique_ptr<Function>> &functions);
 
 private:

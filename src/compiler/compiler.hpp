@@ -15,6 +15,8 @@ public:
 private:
     void initializeGraph();
     void generateTypes();
+    void generateConstants();
+    void generateVariables();
     void generateFunctions();
     void generateVoidStateFunctions();
     void generateBoolStateFunctions();
@@ -22,6 +24,8 @@ private:
     void generateBoolEdgeFunctions();
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
+    std::unique_ptr<IValue> generateValue(const nlohmann::json& valueType, const nlohmann::json& value);
+    std::unique_ptr<IValue> generateMapValue(const nlohmann::json& valueType, const nlohmann::json& value);
 
     Parser& parser_;
     Graph graph_;

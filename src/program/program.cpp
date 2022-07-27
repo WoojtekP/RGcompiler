@@ -7,7 +7,7 @@
 
 std::string ElementaryType::toString() const
 {
-    return "int";
+    return identifier;
 }
 
 std::string FunctionType::toString() const
@@ -22,7 +22,34 @@ std::string FunctionType::toString() const
     {
         dstType = destination->toString();
     }
-    return "std::map<" + srcType + ", " + dstType + ">";
+    return "DefaultMap<" + srcType + ", " + dstType + ">";
+}
+
+std::string SingleValue::toString() const
+{
+    return symbol;
+}
+
+std::string MapValue::toString() const
+{
+    const std::string defaultValueString = (defaultValue ? defaultValue->toString() : "?");
+    std::string result = "{" + defaultValueString + ", {";
+    for (const auto& [id, value] : idToValueMap)
+    {
+        result += "{" + id + ", " + value->toString() + "},";
+    }
+    result += "}}";
+    return result;
+}
+
+std::string Constant::toString() const
+{
+    return identifier;
+}
+
+std::string Variable::toString() const
+{
+    return identifier;
 }
 
 ReturnInstruction::ReturnInstruction()
@@ -168,14 +195,14 @@ void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)
     types_.push_back(std::move(typeDecl));
 }
 
-void Program::addConstantDeclaration(ConstantDeclaration constantDecl)
+void Program::addConstantDeclaration(std::unique_ptr<IVariable> constantDecl)
 {
-    constants_.push_back(constantDecl);
+    constants_.push_back(std::move(constantDecl));
 }
 
-void Program::addVariableDeclaration(VariableDeclaration variableDecl)
+void Program::addVariableDeclaration(std::unique_ptr<IVariable> variableDecl)
 {
-    variables_.push_back(variableDecl);
+    variables_.push_back(std::move(variableDecl));
 }
 
 void Program::addFunction(std::unique_ptr<Function> &&function)
@@ -188,12 +215,12 @@ const std::vector<std::unique_ptr<IType>>& Program::getTypes() const
     return types_;
 }
 
-std::vector<ConstantDeclaration> Program::getConstants() const
+const std::vector<std::unique_ptr<IVariable>>& Program::getConstants() const
 {
     return constants_;
 }
 
-std::vector<VariableDeclaration> Program::getVariables() const
+const std::vector<std::unique_ptr<IVariable>>& Program::getVariables() const
 {
     return variables_;
 }

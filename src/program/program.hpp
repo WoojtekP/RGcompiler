@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -8,7 +9,7 @@
 struct IType
 {
     IType() = default;
-    IType(const std::string id) : identifier(id) {};
+    IType(const std::string& id) : identifier(id) {};
     virtual ~IType() = default;
     virtual std::string toString() const = 0;
 
@@ -37,14 +38,79 @@ struct FunctionType : public IType
     std::unique_ptr<IType> destination;
 };
 
-class ConstantDeclaration
+struct IValue
 {
-    // TODO: implement!
+    IValue() = default;
+    IValue(std::unique_ptr<IType> valType) : valueType(std::move(valType)) {}
+    virtual ~IValue() = default;
+    virtual std::string toString() const = 0;
+
+    std::unique_ptr<IType> valueType;
 };
 
-class VariableDeclaration
+struct SingleValue : public IValue
 {
-    // TODO: implement!
+    SingleValue() = default;
+    SingleValue(std::unique_ptr<IType> valType, const std::string& sym)
+    : symbol(sym)
+    , IValue(std::move(valType))
+    {}
+    ~SingleValue() = default;
+    std::string toString() const override;
+
+    std::string symbol;
+};
+
+struct MapValue : public IValue
+{
+    MapValue() = default;
+    MapValue(
+        std::unique_ptr<IType> valType,
+        std::map<std::string, std::unique_ptr<IValue>> idToValue,
+        std::unique_ptr<IValue> defaultVal)
+    : idToValueMap(std::move(idToValue))
+    , defaultValue(std::move(defaultVal))
+    , IValue(std::move(valType))
+    {}
+    ~MapValue() = default;
+    std::string toString() const override;
+
+    std::map<std::string, std::unique_ptr<IValue>> idToValueMap;
+    std::unique_ptr<IValue> defaultValue;
+};
+
+struct IVariable
+{
+    IVariable() = default;
+    IVariable(const std::string& id, std::unique_ptr<IValue> val)
+    : identifier(id)
+    , value(std::move(val))
+    {}
+    virtual ~IVariable() = default;
+    virtual std::string toString() const = 0;
+
+    std::string identifier;
+    std::unique_ptr<IValue> value;
+};
+
+struct Constant : public IVariable
+{
+    Constant() = default;
+    Constant(const std::string& id, std::unique_ptr<IValue> val)
+    : IVariable(id, std::move(val))
+    {}
+    ~Constant() = default;
+    std::string toString() const override;
+};
+
+struct Variable : public IVariable
+{
+    Variable() = default;
+    Variable(const std::string& id, std::unique_ptr<IValue> val)
+    : IVariable(id, std::move(val))
+    {}
+    ~Variable() = default;
+    std::string toString() const override;
 };
 
 class IInstruction
@@ -160,18 +226,18 @@ class Program
 {
 public:
     void addTypeDeclaration(std::unique_ptr<IType> typeDecl);
-    void addConstantDeclaration(ConstantDeclaration constantDecl);
-    void addVariableDeclaration(VariableDeclaration variableDecl);
+    void addConstantDeclaration(std::unique_ptr<IVariable> constantDecl);
+    void addVariableDeclaration(std::unique_ptr<IVariable> variableDecl);
     void addFunction(std::unique_ptr<Function> &&function);
 
     const std::vector<std::unique_ptr<IType>>& getTypes() const;
-    std::vector<ConstantDeclaration> getConstants() const;
-    std::vector<VariableDeclaration> getVariables() const;
+    const std::vector<std::unique_ptr<IVariable>>& getConstants() const;
+    const std::vector<std::unique_ptr<IVariable>>& getVariables() const;
     const std::vector<std::unique_ptr<Function>>& getFunctions() const;
 
 private:
     std::vector<std::unique_ptr<IType>> types_;
-    std::vector<ConstantDeclaration> constants_;
-    std::vector<VariableDeclaration> variables_;
+    std::vector<std::unique_ptr<IVariable>> constants_;
+    std::vector<std::unique_ptr<IVariable>> variables_;
     std::vector<std::unique_ptr<Function>> functions_;
 };

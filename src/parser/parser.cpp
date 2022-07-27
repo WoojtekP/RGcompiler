@@ -1,5 +1,5 @@
 #include <fstream>
-#include <iomanip>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
 
@@ -7,19 +7,51 @@
 #include <program/program.hpp>
 
 
+namespace
+{
+bool isNumber(const std::string& s)
+{
+    return std::all_of(s.begin(), s.end(), ::isdigit);
+}
+}
+
 Parser::Parser(std::ifstream& jsonGameFile)
 : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
+    std::set<int> forbiddenValues;
     int value = 0;
     for (const auto& el : parsedJson_["types"])
     {
         if (el["type"]["kind"] == "Set")
         {
-            for (const auto& id : el["type"]["identifiers"])
+            for (const auto& identifier : el["type"]["identifiers"])
             {
-                if (symbolToValue_.find(id) == symbolToValue_.end())
+                const std::string id = identifier.get<std::string>();
+                if (isNumber(id))
                 {
-                    symbolToValue_.emplace(id, value++);
+                    int n = std::stoi(id);
+                    forbiddenValues.insert(n);
+                }
+            }
+        }
+    }
+    for (const auto& el : parsedJson_["types"])
+    {
+        if (el["type"]["kind"] == "Set")
+        {
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                if (!isNumber(id))
+                {
+                    if (symbolToValue_.find(id) == symbolToValue_.end())
+                    {
+                        while (forbiddenValues.count(value))
+                        {
+                            value++;
+                        }
+                        symbolToValue_.emplace(id, value++);
+                    }
                 }
             }
         }

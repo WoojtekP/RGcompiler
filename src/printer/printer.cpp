@@ -33,7 +33,7 @@ void Printer::printSymbolValues()
 {
     for (const auto& [symbol, value] : parser_.getSymbolToValueMap())
     {
-        headerFile_ << "constexpr int _" << symbol << " = " << value << ";" << std::endl;
+        headerFile_ << "constexpr int " << symbol << " = " << value << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }

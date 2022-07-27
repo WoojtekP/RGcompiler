@@ -11,12 +11,12 @@ cd ${DIR}
 
 # create AST
 cd ../../rg/interpreter_node/
-node lib ../examples/${game}.rg print-ast > ../../RGcompiler/${game}-ast.json
-
+node lib/cli --expandGeneratorNodes rg-ast ../examples/${game}.rg > ../../RGcompiler/${game}.json
+cd ../../RGcompiler/
+python3 -m json.tool ${game}.json > ${game}-ast.json
+rm ${game}.json
 
 # generate cpp files
-cd ${DIR}
-cd ..
 ./build/rg2cpp ${game}-ast.json
 
 

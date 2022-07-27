@@ -19,15 +19,6 @@ public:
     void printStateChanges(const std::vector<std::unique_ptr<Function>> &functions);
 
 private:
-    void printIncludes();
-    std::string typeToString(const nlohmann::json& t);
-    std::string functionTypeToString(const nlohmann::json& functionType);
-    void printConstants();
-    void printGameState();
-    void printVariables();
-    std::string valueToString(const nlohmann::json& t, const nlohmann::json& value);
-    std::string defaultValueToString(const nlohmann::json& t, const nlohmann::json& entries);
-
     const Parser& parser_;
     std::ofstream& headerFile_;
     std::ofstream& sourceFile_;

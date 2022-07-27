@@ -147,6 +147,7 @@ void Compiler::generateVoidEdgeFunctions()
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
             function -> addInstruction(std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
+            function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
         }
         else if (graph_.getActionType(edge) == ActionType::Comparison)
         {
@@ -189,6 +190,7 @@ void Compiler::generateBoolEdgeFunctions()
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
             function -> addInstruction(std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
+            function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
         }
         else if (graph_.getActionType(edge) == ActionType::Comparison)
         {

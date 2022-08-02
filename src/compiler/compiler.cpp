@@ -83,6 +83,15 @@ void Compiler::generateVariables()
         program_.addVariableDeclaration(
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
+
+    auto currentMovesType = std::make_unique<CustomType>("std::vector<std::string>");
+    program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
+
+    auto currentPatternsType = std::make_unique<CustomType>("std::vector<std::string>");
+    program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
+
+    auto currentStateType = std::make_unique<CustomType>("int");
+    program_.addVariableDeclaration(std::make_unique<Variable>("currentState", std::move(currentStateType)));
 }
 
 void Compiler::generateVoidStateFunctions()

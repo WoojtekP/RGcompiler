@@ -16,6 +16,9 @@ Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream&
 
 void Printer::initializeHeaderFile()
 {
+    headerFile_ << "#include <vector>" << std::endl;
+    headerFile_ << "#include <string>" << std::endl;
+    headerFile_ << std::endl;
     headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
 }
@@ -61,9 +64,16 @@ void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& vari
     for (const auto& variable : variables)
     {
         const std::string varType = variable->valueType->toString();
-        const std::string varValue = variable->value->toString();
         const std::string varName = variable->identifier;
-        headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
+        if (variable->value)
+        {
+            const std::string varValue = variable->value->toString();
+            headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
+        }
+        else
+        {
+            headerFile_ << varType << " " << varName << ";" << std::endl;
+        }
     }
     headerFile_ << std::endl;
 }

@@ -30,16 +30,7 @@ void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& t
 {
     for (const auto& typeDecl : typeDeclarations)
     {
-        std::string typeString;
-        if (dynamic_cast<ElementaryType*>(typeDecl.get()) != nullptr)
-        {
-            typeString = "int";
-        }
-        else
-        {
-            typeString = typeDecl->toString();
-        }
-        headerFile_ << "using " << typeDecl->identifier << " = " << typeString << ";" << std::endl;
+        headerFile_ << "using " << typeDecl->identifier << " = " << typeDecl->definitionToString() << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }

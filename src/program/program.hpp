@@ -12,6 +12,7 @@ struct IType
     IType(const std::string& id) : identifier(id) {};
     virtual ~IType() = default;
     virtual std::string toString() const = 0;
+    virtual std::string definitionToString() const = 0;
 
     std::string identifier;
 };
@@ -22,6 +23,7 @@ struct ElementaryType : public IType
     ElementaryType(const std::string& id) : IType(id) {}
     ~ElementaryType() = default;
     std::string toString() const override;
+    std::string definitionToString() const override;
 };
 
 struct FunctionType : public IType
@@ -33,9 +35,25 @@ struct FunctionType : public IType
     {}
     ~FunctionType() = default;
     std::string toString() const override;
+    std::string definitionToString() const override;
 
     std::unique_ptr<IType> source;
     std::unique_ptr<IType> destination;
+};
+
+struct CustomType : public IType
+{
+    CustomType() = default;
+    CustomType(const std::string& id) : IType(id) {}
+    CustomType(const std::string& id, const std::string& typeDef)
+    : IType(id)
+    , typeDefinition(typeDef)
+    {}
+    ~CustomType() = default;
+    std::string toString() const override;
+    std::string definitionToString() const override;
+
+    std::string typeDefinition;
 };
 
 struct IValue

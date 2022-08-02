@@ -10,6 +10,11 @@ std::string ElementaryType::toString() const
     return identifier;
 }
 
+std::string ElementaryType::definitionToString() const
+{
+    return "int";
+}
+
 std::string FunctionType::toString() const
 {
     std::string srcType = source->identifier;
@@ -23,6 +28,21 @@ std::string FunctionType::toString() const
         dstType = destination->toString();
     }
     return "DefaultMap<" + srcType + ", " + dstType + ">";
+}
+
+std::string FunctionType::definitionToString() const
+{
+    return toString();
+}
+
+std::string CustomType::toString() const
+{
+    return identifier;
+}
+
+std::string CustomType::definitionToString() const
+{
+    return typeDefinition;
 }
 
 std::string SingleValue::toString() const

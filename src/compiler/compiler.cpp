@@ -65,9 +65,11 @@ void Compiler::generateConstants()
 {
     for (const auto& constant : parser_.getConstants())
     {
-        auto value = generateValue(constant["type"], constant["value"]);
+        auto valueType = generateType(constant["type"]);
+        auto value = generateValue(constant["value"]);
         const std::string identifier = constant["identifier"].get<std::string>();
-        program_.addConstantDeclaration(std::make_unique<Constant>(identifier, std::move(value)));
+        program_.addConstantDeclaration(
+            std::make_unique<Constant>(identifier, std::move(valueType), std::move(value)));
     }
 }
 
@@ -75,9 +77,11 @@ void Compiler::generateVariables()
 {
     for (const auto& variable : parser_.getVariables())
     {
-        auto value = generateValue(variable["type"], variable["defaultValue"]);
+        auto valueType = generateType(variable["type"]);
+        auto value = generateValue(variable["defaultValue"]);
         const std::string identifier = variable["identifier"].get<std::string>();
-        program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(value)));
+        program_.addVariableDeclaration(
+            std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 }
 
@@ -258,34 +262,33 @@ std::unique_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     return std::make_unique<FunctionType>(generateType(functionType["lhs"]), generateType(functionType["rhs"]));
 }
 
-std::unique_ptr<IValue> Compiler::generateValue(const nlohmann::json& valueType, const nlohmann::json& value)
+std::unique_ptr<IValue> Compiler::generateValue(const nlohmann::json& value)
 {
     if (value["kind"] == "Element")
     {
-        return std::make_unique<SingleValue>(generateType(valueType), value["identifier"].get<std::string>());
+        return std::make_unique<SingleValue>(value["identifier"].get<std::string>());
     }
     else if (value["kind"] == "Map")
     {
-        return generateMapValue(valueType, value);
+        return generateMapValue(value);
     }
     return nullptr;
 }
 
-std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& valueType, const nlohmann::json& value)
+std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
 {
     std::map<std::string, std::unique_ptr<IValue>> idToValueMap;
     std::unique_ptr<IValue> defaultValue;
-    const auto destinationType = parser_.getDestinationType(valueType);
     for (const auto& entry : value["entries"])
     {
         if (entry["kind"] == "NamedEntry")
         {
-            idToValueMap.emplace(entry["identifier"].get<std::string>(), generateValue(destinationType, entry["value"]));
+            idToValueMap.emplace(entry["identifier"].get<std::string>(), generateValue(entry["value"]));
         }
         else if (entry["kind"] == "DefaultEntry")
         {
-            defaultValue = generateValue(destinationType, entry["value"]);
+            defaultValue = generateValue(entry["value"]);
         }
     }
-    return std::make_unique<MapValue>(generateType(valueType), std::move(idToValueMap), std::move(defaultValue));
+    return std::make_unique<MapValue>(std::move(idToValueMap), std::move(defaultValue));
 }

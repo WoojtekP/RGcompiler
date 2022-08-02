@@ -59,19 +59,15 @@ struct CustomType : public IType
 struct IValue
 {
     IValue() = default;
-    IValue(std::unique_ptr<IType> valType) : valueType(std::move(valType)) {}
     virtual ~IValue() = default;
     virtual std::string toString() const = 0;
-
-    std::unique_ptr<IType> valueType;
 };
 
 struct SingleValue : public IValue
 {
     SingleValue() = default;
-    SingleValue(std::unique_ptr<IType> valType, const std::string& sym)
+    SingleValue(const std::string& sym)
     : symbol(sym)
-    , IValue(std::move(valType))
     {}
     ~SingleValue() = default;
     std::string toString() const override;
@@ -82,13 +78,9 @@ struct SingleValue : public IValue
 struct MapValue : public IValue
 {
     MapValue() = default;
-    MapValue(
-        std::unique_ptr<IType> valType,
-        std::map<std::string, std::unique_ptr<IValue>> idToValue,
-        std::unique_ptr<IValue> defaultVal)
+    MapValue(std::map<std::string, std::unique_ptr<IValue>> idToValue, std::unique_ptr<IValue> defaultVal)
     : idToValueMap(std::move(idToValue))
     , defaultValue(std::move(defaultVal))
-    , IValue(std::move(valType))
     {}
     ~MapValue() = default;
     std::string toString() const override;
@@ -100,22 +92,28 @@ struct MapValue : public IValue
 struct IVariable
 {
     IVariable() = default;
-    IVariable(const std::string& id, std::unique_ptr<IValue> val)
+    IVariable(const std::string& id, std::unique_ptr<IType> valType)
     : identifier(id)
+    , valueType(std::move(valType))
+    {}
+    IVariable(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    : identifier(id)
+    , valueType(std::move(valType))
     , value(std::move(val))
     {}
     virtual ~IVariable() = default;
     virtual std::string toString() const = 0;
 
     std::string identifier;
+    std::unique_ptr<IType> valueType;
     std::unique_ptr<IValue> value;
 };
 
 struct Constant : public IVariable
 {
     Constant() = default;
-    Constant(const std::string& id, std::unique_ptr<IValue> val)
-    : IVariable(id, std::move(val))
+    Constant(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    : IVariable(id, std::move(valType), std::move(val))
     {}
     ~Constant() = default;
     std::string toString() const override;
@@ -124,8 +122,11 @@ struct Constant : public IVariable
 struct Variable : public IVariable
 {
     Variable() = default;
-    Variable(const std::string& id, std::unique_ptr<IValue> val)
-    : IVariable(id, std::move(val))
+    Variable(const std::string& id, std::unique_ptr<IType> valType)
+    : IVariable(id, std::move(valType))
+    {}
+    Variable(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    : IVariable(id, std::move(valType), std::move(val))
     {}
     ~Variable() = default;
     std::string toString() const override;

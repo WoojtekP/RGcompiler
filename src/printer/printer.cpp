@@ -48,7 +48,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
 {
     for (const auto& constant : constants)
     {
-        const std::string constType = constant->value->valueType->toString();
+        const std::string constType = constant->valueType->toString();
         const std::string constValue = constant->value->toString();
         const std::string constName = constant->identifier;
         headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
@@ -60,7 +60,7 @@ void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& vari
 {
     for (const auto& variable : variables)
     {
-        const std::string varType = variable->value->valueType->toString();
+        const std::string varType = variable->valueType->toString();
         const std::string varValue = variable->value->toString();
         const std::string varName = variable->identifier;
         headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;

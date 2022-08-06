@@ -85,3 +85,15 @@ void Printer::printStateChanges(const std::vector<std::unique_ptr<Function>> &fu
         sourceFile_ << f -> toString(0,4,false) << "\n";
     }
 }
+
+void Printer::printMainClass(std::string obj, const std::vector<std::string> &functions)
+{
+    headerFile_ << obj << std::endl;
+
+    sourceFile_ << "void game_state::game_state()\n{\n";
+    for (auto &name : functions)
+    {
+        sourceFile_ << "    nameToFunction[\"" << name << "\"] = " << name << ";\n";
+    }
+    sourceFile_ << "}\n";
+}

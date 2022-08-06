@@ -17,6 +17,7 @@ public:
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
     void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);
     void printStateChanges(const std::vector<std::unique_ptr<Function>> &functions);
+    void printMainClass(std::string obj, const std::vector<std::string> &functions);
 
 private:
     const Parser& parser_;

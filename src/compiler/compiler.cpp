@@ -37,6 +37,92 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printConstants(program_.getConstants());
     printer.printVariables(program_.getVariables());
     printer.printStateChanges(program_.getFunctions());
+
+    std::tuple<std::string, std::vector<std::string>> mainClass = generateMainClass();
+
+    printer.printMainClass(std::get<0>(mainClass), std::get<1>(mainClass));
+}
+
+std::tuple<std::string, std::vector<std::string>> Compiler::generateMainClass()
+{
+    std::vector<std::string> functionNames;
+    std::vector<std::string> states = graph_.getNodeNames();
+    std::vector<std::string> edges = graph_.getEdgeNames();
+
+    functionNames.insert(functionNames.end(), states.begin(), states.end());
+    functionNames.insert(functionNames.end(), edges.begin(), edges.end());
+
+    for (auto &edge : edges)
+    {
+        functionNames.push_back("apply_" + edge);
+    }
+
+    std::string obj = R"(
+typedef std::vector<std::string> move_representation;
+typedef void(*funcPtr)();
+struct Move
+{
+  move_representation mr;
+
+  Move(void) = default;
+  Move(const move_representation& mv)
+  {
+    mr.assign(mv.begin(),mv.end());
+  }
+  bool operator==(const Move& rhs) const;
+};
+
+class game_state
+{
+private:
+    std::string state = "begin";
+    std::vector<std::string> currentPatterns;
+    std::vector<std::string> currentMoves;
+    std::vector<std::vector<std::string>> allMoves;
+    std::map<std::string, funcPtr> nameToFunction;
+
+    void runFunction(std::string functionName)
+    {
+        if (nameToFunction.count(functionName) > 0)
+        {
+            nameToFunction.at(functionName)();
+        }
+    }
+
+public:
+    game_state();
+
+    void get_all_moves(std::vector<Move>& moves)
+    {
+        allMoves.clear();
+        moves.clear();
+
+        runFunction(state);
+
+        moves.assign(allMoves.begin(), allMoves.end());
+    }
+
+    void apply_move(const Move &m)
+    {
+        const std::vector<std::string> &v = m.mr;
+
+        std::string from = v.front();
+        std:: string to;
+
+        for (int i=1;i<v.size();i++)
+        {
+            to = v[i];
+
+            runFunction("apply_" + from + "_" + to);
+
+            from = to;
+        }
+
+        state = v.back();
+    }
+};)";
+
+    return std::make_tuple(obj, functionNames);
 }
 
 void Compiler::generateTypes()
@@ -159,6 +245,17 @@ void Compiler::generateVoidEdgeFunctions()
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
+            if (graph_.getActionLeftSide(edge) == "player")
+            {
+                function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + graph_.getToName(edge) + "\")"));
+                function -> addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
+                function -> addInstruction(std::make_unique<ReturnInstruction>());
+
+                program_.addFunction(std::move(function));
+
+                continue;
+            }
+
             function -> addInstruction(std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
             function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
         }
@@ -237,10 +334,29 @@ void Compiler::generateBoolEdgeFunctions()
     }
 }
 
+void Compiler::generateApplyEdgeFunctions()
+{
+    std::vector<std::string> edges = graph_.getEdgeNames();
+
+    for (auto &edge : edges)
+    {
+        std::unique_ptr<Function> function = std::make_unique<Function>("apply_" + edge, "void");
+
+        if (graph_.getActionType(edge) == ActionType::Assignment)
+        {
+            function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
+        }
+
+        program_.addFunction(std::move(function));
+    }
+}
+
 void Compiler::generateFunctions()
 {
     // TODO node names should be represended by numbers not strings
     // TODO this should be changed after the proper implementation of the Function class comes out
+
+    generateApplyEdgeFunctions();
 
     generateVoidStateFunctions();
     generateBoolStateFunctions();

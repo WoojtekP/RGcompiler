@@ -116,6 +116,8 @@ void Printer::printFunctions(const std::vector<std::unique_ptr<Function>> &funct
 void Printer::printMoveRepresentationDeclaration()
 {
     std::string obj = R"(
+class game_state;
+
 typedef std::vector<std::string> move_representation;
 typedef void(game_state::*funcPtr)();
 
@@ -130,7 +132,7 @@ struct Move
     }
     bool operator==(const Move& rhs) const
     {
-        mr == rhs.mr;
+        return mr == rhs.mr;
     }
 };)";
 

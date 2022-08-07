@@ -241,14 +241,25 @@ void Compiler::generateBoolEdgeFunctions()
             function -> addInstruction(std::move(ifInstruction));
         }
 
-        function -> addInstruction(std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + graph_.getToName(edge) + "()", "bool"));
+        const std::string nextState = graph_.getToName(edge);
+        if (nextState != "end")
+        {
+            function -> addInstruction(std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + graph_.getToName(edge) + "()", "bool"));
+        }
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
             function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
         }
 
-        function -> addInstruction(std::make_unique<ReturnInstruction>("tmp"));
+        if (nextState != "end")
+        {
+            function -> addInstruction(std::make_unique<ReturnInstruction>("tmp"));
+        }
+        else
+        {
+            function -> addInstruction(std::make_unique<ReturnInstruction>("true"));
+        }
 
         program_.addFunction(std::move(function));
     }
@@ -276,15 +287,15 @@ void Compiler::generateSpecialFunctions()
     std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "", true);
     for (const auto& state : graph_.getNodeNames())
     {
-        std::string instruction = "nameToFunction[\"" + state + "\"] = state_" + state;
+        std::string instruction = "nameToFunction[\"" + state + "\"] = &game_state::state_" + state;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
     for (const auto& egde : graph_.getEdgeNames())
     {
-        std::string instruction = "nameToFunction[\"" + egde + "\"] = " + egde;
+        std::string instruction = "nameToFunction[\"" + egde + "\"] = &game_state::" + egde;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
 
-        instruction = "nameToFunction[\"apply_" + egde + "\"] = apply_" + egde;
+        instruction = "nameToFunction[\"apply_" + egde + "\"] = &game_state::apply_" + egde;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 
@@ -316,7 +327,7 @@ void Compiler::generateSpecialFunctions()
     runFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("functionName", "std::string"));
     runFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(if (nameToFunction.count(functionName) > 0)
-        nameToFunction.at(functionName)())"
+        (this->*nameToFunction.at(functionName))())"
     ));
 
     program_.addFunction(std::move(gameStateConstructor));

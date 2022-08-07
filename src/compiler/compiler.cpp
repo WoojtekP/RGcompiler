@@ -109,7 +109,7 @@ void Compiler::generateVoidStateFunctions()
 
     for (auto &state : states)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>(state, "void");
+        std::unique_ptr<Function> function = std::make_unique<Function>("state_" + state, "void");
 
         function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + state + "\")"));
 
@@ -200,7 +200,7 @@ void Compiler::generateVoidEdgeFunctions()
             function -> addInstruction(std::move(ifInstruction));
         }
 
-        function -> addInstruction(std::make_unique<CustomInstruction>(graph_.getToName(edge) + "()"));
+        function -> addInstruction(std::make_unique<CustomInstruction>("state_" + graph_.getToName(edge) + "()"));
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
@@ -278,7 +278,7 @@ void Compiler::generateSpecialFunctions()
     std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "", true);
     for (const auto& state : graph_.getNodeNames())
     {
-        std::string instruction = "nameToFunction[\"" + state + "\"] = " + state;
+        std::string instruction = "nameToFunction[\"" + state + "\"] = state_" + state;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
     for (const auto& egde : graph_.getEdgeNames())

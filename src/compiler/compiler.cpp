@@ -87,6 +87,12 @@ void Compiler::generateVariables()
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
+    auto nameToFunctionType = std::make_unique<CustomType>("std::map<std::string, funcPtr>");
+    program_.addVariableDeclaration(std::make_unique<Variable>("nameToFunction", std::move(nameToFunctionType)));
+
+    auto allMovesType = std::make_unique<CustomType>("std::vector<std::vector<std::string>>");
+    program_.addVariableDeclaration(std::make_unique<Variable>("allMoves", std::move(allMovesType)));
+
     auto currentMovesType = std::make_unique<CustomType>("std::vector<std::string>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
 

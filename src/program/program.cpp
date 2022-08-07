@@ -179,36 +179,49 @@ void Function::addInstruction(std::unique_ptr<IInstruction> &&instruction)
     instructions_.push_back(std::move(instruction));
 }
 
+std::string Function::declarationToString()
+{
+    std::string argumentsList = getArgumentsList();
+    return returnType_ + " " + name_ + "(" + argumentsList + ");";
+}
+
+
 std::string Function::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result;
-    std::string argumentList;
     std::string body;
-
-    for (auto & arg : arguments_)
-    {
-        if (arg -> toString(0, 0, false) != arguments_.back() -> toString(0, 0, false))
-        {
-            argumentList += arg -> toString(0, 0, false) + ", ";
-        }
-        else
-        {
-            argumentList += arg -> toString(0, 0, false);
-        }
-    }
+    std::string argumentsList = getArgumentsList();
 
     for (auto & instruction : instructions_)
     {
         body += instruction -> toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " " + name_ + "(" + argumentList + ")\n";
+    result += getLeadingSpaces(delimiter) + returnType_ + " game_state::" + name_ + "(" + argumentsList + ")\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
     result += getLeadingSpaces(delimiter) + "}\n";
 
     return result;
 }
+
+std::string Function::getArgumentsList()
+{
+    std::string argumentsList;
+    for (auto & arg : arguments_)
+    {
+        if (arg -> toString(0, 0, false) != arguments_.back() -> toString(0, 0, false))
+        {
+            argumentsList += arg -> toString(0, 0, false) + ", ";
+        }
+        else
+        {
+            argumentsList += arg -> toString(0, 0, false);
+        }
+    }
+    return argumentsList;
+}
+
 
 void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)
 {

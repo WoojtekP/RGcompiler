@@ -238,7 +238,10 @@ public:
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
+    std::string declarationToString();
     std::string toString(int delimiter, int shift, bool semicolon) override;
+private:
+    std::string getArgumentsList();
 };
 
 class Program

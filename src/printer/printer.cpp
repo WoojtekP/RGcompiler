@@ -94,6 +94,7 @@ void Printer::printFunctions(const std::vector<std::unique_ptr<Function>> &funct
 {
     for (const auto &f : functions)
     {
+        headerFile_ << f->declarationToString() << std::endl;
         sourceFile_ << f->toString(0,4,false) << std::endl;
     }
 }

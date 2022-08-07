@@ -228,16 +228,18 @@ public:
 
 class Function : public IInstruction
 {
+    bool isPublic_;
     std::string name_;
     std::string returnType_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
     std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
 public:
-    Function(std::string name, std::string returnType);
+    Function(std::string name, std::string returnType, bool isPublic = false);
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
+    bool isPublic();
     std::string declarationToString();
     std::string toString(int delimiter, int shift, bool semicolon) override;
 private:

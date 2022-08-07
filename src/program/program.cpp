@@ -165,7 +165,10 @@ std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon
     return addSpacesAndSemicolon(delimiter, semicolon, instruction_);
 }
 
-Function::Function(std::string name, std::string returnType) : name_(name), returnType_(returnType)
+Function::Function(std::string name, std::string returnType, bool isPublic)
+: name_(name)
+, returnType_(returnType)
+, isPublic_(isPublic)
 {
 }
 
@@ -177,6 +180,11 @@ void Function::addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var
 void Function::addInstruction(std::unique_ptr<IInstruction> &&instruction)
 {
     instructions_.push_back(std::move(instruction));
+}
+
+bool Function::isPublic()
+{
+    return isPublic_;
 }
 
 std::string Function::declarationToString()

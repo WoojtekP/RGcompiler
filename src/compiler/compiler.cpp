@@ -269,14 +269,22 @@ void Compiler::generateApplyEdgeFunctions()
 
 void Compiler::generateSpecialFunctions()
 {
-    auto runFunction = std::make_unique<Function>("runFunction", "void");
-    runFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("functionName", "std::string"));
-    runFunction->addInstruction(std::make_unique<CustomInstruction>(
-        R"(if (nameToFunction.count(functionName) > 0)
-        nameToFunction.at(functionName)())"
-    ));
+    std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "", true);
+    for (const auto& state : graph_.getNodeNames())
+    {
+        std::string instruction = "nameToFunction[\"" + state + "\"] = " + state;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
+    }
+    for (const auto& egde : graph_.getEdgeNames())
+    {
+        std::string instruction = "nameToFunction[\"" + egde + "\"] = " + egde;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
 
-    auto getAllMovesFunction = std::make_unique<Function>("get_all_moves", "void");
+        instruction = "nameToFunction[\"apply_" + egde + "\"] = apply_" + egde;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
+    }
+
+    auto getAllMovesFunction = std::make_unique<Function>("get_all_moves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(allMoves.clear();
@@ -285,7 +293,7 @@ void Compiler::generateSpecialFunctions()
     moves.assign(allMoves.begin(), allMoves.end()))"
     ));
 
-    auto applyMoveFunction = std::make_unique<Function>("apply_move", "void");
+    auto applyMoveFunction = std::make_unique<Function>("apply_move", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const std::vector<std::string> &v = m.mr;
@@ -300,26 +308,17 @@ void Compiler::generateSpecialFunctions()
     currentState = v.back())"
     ));
 
-    std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "");
-    for (const auto& state : graph_.getNodeNames())
-    {
-        std::string instruction = "nameToFunction[\"" + state + "\"] = " + state;
-        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
-    }
+    auto runFunction = std::make_unique<Function>("runFunction", "void");
+    runFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("functionName", "std::string"));
+    runFunction->addInstruction(std::make_unique<CustomInstruction>(
+        R"(if (nameToFunction.count(functionName) > 0)
+        nameToFunction.at(functionName)())"
+    ));
 
-    for (const auto& egde : graph_.getEdgeNames())
-    {
-        std::string instruction = "nameToFunction[\"" + egde + "\"] = " + egde;
-        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
-
-        instruction = "nameToFunction[\"apply_" + egde + "\"] = apply_" + egde;
-        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
-    }
-
-    program_.addFunction(std::move(runFunction));
+    program_.addFunction(std::move(gameStateConstructor));
     program_.addFunction(std::move(getAllMovesFunction));
     program_.addFunction(std::move(applyMoveFunction));
-    program_.addFunction(std::move(gameStateConstructor));
+    program_.addFunction(std::move(runFunction));
 }
 
 void Compiler::generateFunctions()

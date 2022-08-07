@@ -92,10 +92,24 @@ void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& vari
 
 void Printer::printFunctions(const std::vector<std::unique_ptr<Function>> &functions)
 {
+    headerFile_ << "public:" << std::endl;
     for (const auto &f : functions)
     {
-        headerFile_ << f->declarationToString() << std::endl;
-        sourceFile_ << f->toString(0,4,false) << std::endl;
+        if (f->isPublic())
+        {
+            headerFile_ << f->declarationToString() << std::endl;
+            sourceFile_ << f->toString(0,4,false) << std::endl;
+        }
+    }
+
+    headerFile_ << "private:" << std::endl;
+    for (const auto &f : functions)
+    {
+        if (!f->isPublic())
+        {
+            headerFile_ << f->declarationToString() << std::endl;
+            sourceFile_ << f->toString(0,4,false) << std::endl;
+        }
     }
 }
 

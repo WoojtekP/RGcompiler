@@ -117,7 +117,7 @@ void Printer::printMoveRepresentationDeclaration()
 {
     std::string obj = R"(
 typedef std::vector<std::string> move_representation;
-typedef void(*funcPtr)();
+typedef void(game_state::*funcPtr)();
 
 struct Move
 {

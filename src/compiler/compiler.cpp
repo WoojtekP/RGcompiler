@@ -35,94 +35,11 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printTypeDeclarations(program_.getTypes());
     printer.printSymbolValues();
     printer.printConstants(program_.getConstants());
+    printer.printMoveRepresentationDeclaration();
+    printer.initializeMainClass();
     printer.printVariables(program_.getVariables());
-    printer.printStateChanges(program_.getFunctions());
-
-    std::tuple<std::string, std::vector<std::string>> mainClass = generateMainClass();
-
-    printer.printMainClass(std::get<0>(mainClass), std::get<1>(mainClass));
-}
-
-std::tuple<std::string, std::vector<std::string>> Compiler::generateMainClass()
-{
-    std::vector<std::string> functionNames;
-    std::vector<std::string> states = graph_.getNodeNames();
-    std::vector<std::string> edges = graph_.getEdgeNames();
-
-    functionNames.insert(functionNames.end(), states.begin(), states.end());
-    functionNames.insert(functionNames.end(), edges.begin(), edges.end());
-
-    for (auto &edge : edges)
-    {
-        functionNames.push_back("apply_" + edge);
-    }
-
-    std::string obj = R"(
-typedef std::vector<std::string> move_representation;
-typedef void(*funcPtr)();
-struct Move
-{
-  move_representation mr;
-
-  Move(void) = default;
-  Move(const move_representation& mv)
-  {
-    mr.assign(mv.begin(),mv.end());
-  }
-  bool operator==(const Move& rhs) const;
-};
-
-class game_state
-{
-private:
-    std::string state = "begin";
-    std::vector<std::string> currentPatterns;
-    std::vector<std::string> currentMoves;
-    std::vector<std::vector<std::string>> allMoves;
-    std::map<std::string, funcPtr> nameToFunction;
-
-    void runFunction(std::string functionName)
-    {
-        if (nameToFunction.count(functionName) > 0)
-        {
-            nameToFunction.at(functionName)();
-        }
-    }
-
-public:
-    game_state();
-
-    void get_all_moves(std::vector<Move>& moves)
-    {
-        allMoves.clear();
-        moves.clear();
-
-        runFunction(state);
-
-        moves.assign(allMoves.begin(), allMoves.end());
-    }
-
-    void apply_move(const Move &m)
-    {
-        const std::vector<std::string> &v = m.mr;
-
-        std::string from = v.front();
-        std:: string to;
-
-        for (int i=1;i<v.size();i++)
-        {
-            to = v[i];
-
-            runFunction("apply_" + from + "_" + to);
-
-            from = to;
-        }
-
-        state = v.back();
-    }
-};)";
-
-    return std::make_tuple(obj, functionNames);
+    printer.printFunctions(program_.getFunctions());
+    printer.endMainClass();
 }
 
 void Compiler::generateTypes()
@@ -176,13 +93,12 @@ void Compiler::generateVariables()
     auto currentPatternsType = std::make_unique<CustomType>("std::vector<std::string>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
-    auto currentStateType = std::make_unique<CustomType>("int");
+    auto currentStateType = std::make_unique<CustomType>("std::string");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentState", std::move(currentStateType)));
 }
 
 void Compiler::generateVoidStateFunctions()
 {
-
     std::vector<std::string> states = graph_.getNodeNames();
 
     for (auto &state : states)
@@ -351,6 +267,61 @@ void Compiler::generateApplyEdgeFunctions()
     }
 }
 
+void Compiler::generateSpecialFunctions()
+{
+    auto runFunction = std::make_unique<Function>("runFunction", "void");
+    runFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("functionName", "std::string"));
+    runFunction->addInstruction(std::make_unique<CustomInstruction>(
+        R"(if (nameToFunction.count(functionName) > 0)
+        nameToFunction.at(functionName)())"
+    ));
+
+    auto getAllMovesFunction = std::make_unique<Function>("get_all_moves", "void");
+    getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
+    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
+        R"(allMoves.clear();
+    moves.clear();
+    runFunction(currentState);
+    moves.assign(allMoves.begin(), allMoves.end()))"
+    ));
+
+    auto applyMoveFunction = std::make_unique<Function>("apply_move", "void");
+    applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
+    applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
+        R"(const std::vector<std::string> &v = m.mr;
+    std::string from = v.front();
+    std::string to;
+    for (int i=1;i<v.size();i++)
+    {
+        to = v[i];
+        runFunction("apply_" + from + "_" + to);
+        from = to;
+    }
+    currentState = v.back())"
+    ));
+
+    std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "");
+    for (const auto& state : graph_.getNodeNames())
+    {
+        std::string instruction = "nameToFunction[\"" + state + "\"] = " + state;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
+    }
+
+    for (const auto& egde : graph_.getEdgeNames())
+    {
+        std::string instruction = "nameToFunction[\"" + egde + "\"] = " + egde;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
+
+        instruction = "nameToFunction[\"apply_" + egde + "\"] = apply_" + egde;
+        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
+    }
+
+    program_.addFunction(std::move(runFunction));
+    program_.addFunction(std::move(getAllMovesFunction));
+    program_.addFunction(std::move(applyMoveFunction));
+    program_.addFunction(std::move(gameStateConstructor));
+}
+
 void Compiler::generateFunctions()
 {
     // TODO node names should be represended by numbers not strings
@@ -363,6 +334,8 @@ void Compiler::generateFunctions()
 
     generateBoolEdgeFunctions();
     generateVoidEdgeFunctions();
+
+    generateSpecialFunctions();
 }
 
 std::unique_ptr<IType> Compiler::generateType(const nlohmann::json& t)

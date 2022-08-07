@@ -29,6 +29,17 @@ void Printer::initializeSourceFile()
     sourceFile_ << std::endl;
 }
 
+void Printer::initializeMainClass()
+{
+    headerFile_ << "class game_state" << std::endl;
+    headerFile_ << "{" << std::endl;
+}
+
+void Printer::endMainClass()
+{
+    headerFile_ << "};" << std::endl;
+}
+
 void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations)
 {
     for (const auto& typeDecl : typeDeclarations)
@@ -61,6 +72,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
 
 void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
 {
+    headerFile_ << "private:" << std::endl;
     for (const auto& variable : variables)
     {
         const std::string varType = variable->valueType->toString();
@@ -78,22 +90,34 @@ void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& vari
     headerFile_ << std::endl;
 }
 
-void Printer::printStateChanges(const std::vector<std::unique_ptr<Function>> &functions)
+void Printer::printFunctions(const std::vector<std::unique_ptr<Function>> &functions)
 {
     for (const auto &f : functions)
     {
-        sourceFile_ << f -> toString(0,4,false) << "\n";
+        sourceFile_ << f->toString(0,4,false) << std::endl;
     }
 }
 
-void Printer::printMainClass(std::string obj, const std::vector<std::string> &functions)
+void Printer::printMoveRepresentationDeclaration()
 {
-    headerFile_ << obj << std::endl;
+    std::string obj = R"(
+typedef std::vector<std::string> move_representation;
+typedef void(*funcPtr)();
 
-    sourceFile_ << "void game_state::game_state()\n{\n";
-    for (auto &name : functions)
+struct Move
+{
+    move_representation mr;
+
+    Move(void) = default;
+    Move(const move_representation& mv)
     {
-        sourceFile_ << "    nameToFunction[\"" << name << "\"] = " << name << ";\n";
+        mr.assign(mv.begin(), mv.end());
     }
-    sourceFile_ << "}\n";
+    bool operator==(const Move& rhs) const
+    {
+        mr == rhs.mr;
+    }
+};)";
+
+    headerFile_ << obj << std::endl << std::endl;
 }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <tuple>
-
 #include <graph/graph.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
@@ -25,11 +23,11 @@ private:
     void generateVoidEdgeFunctions();
     void generateBoolEdgeFunctions();
     void generateApplyEdgeFunctions();
+    void generateSpecialFunctions();
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json& value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json& value);
-    std::tuple<std::string, std::vector<std::string>> generateMainClass();
 
     Parser& parser_;
     Graph graph_;

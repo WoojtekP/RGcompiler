@@ -308,6 +308,9 @@ void Compiler::generateSpecialFunctions()
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 
+    auto getCurrentState = std::make_unique<Function>("get_current_state", "std::string", true);
+    getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("currentState"));
+
     auto getAllMovesFunction = std::make_unique<Function>("get_all_moves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
@@ -340,6 +343,7 @@ void Compiler::generateSpecialFunctions()
     ));
 
     program_.addFunction(std::move(gameStateConstructor));
+    program_.addFunction(std::move(getCurrentState));
     program_.addFunction(std::move(getAllMovesFunction));
     program_.addFunction(std::move(applyMoveFunction));
     program_.addFunction(std::move(runFunction));

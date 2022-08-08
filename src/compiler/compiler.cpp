@@ -178,6 +178,7 @@ void Compiler::generateVoidEdgeFunctions()
             {
                 function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + graph_.getToName(edge) + "\")"));
                 function -> addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
+                function -> addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
                 function -> addInstruction(std::make_unique<ReturnInstruction>());
 
                 program_.addFunction(std::move(function));

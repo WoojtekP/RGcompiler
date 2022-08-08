@@ -9,7 +9,7 @@ ActionBase::ActionBase(ActionType actionType) : ActionBase(actionType, false)
 {
 }
 
-ActionBase::ActionBase(ActionType actionType, bool negated) : actionType_(actionType), negated_(negated_)
+ActionBase::ActionBase(ActionType actionType, bool negated) : actionType_(actionType), negated_(negated)
 {
 }
 
@@ -146,11 +146,11 @@ void Action::parse(const nlohmann::json& t)
     }
     else if (t["kind"] == "Reachability")
     {
-        action_ = std::make_unique<ActionReachability>(t["mode"] == "not" ? true : false);
+        action_ = std::make_unique<ActionReachability>(t["negated"].get<bool>());
     }
     else if (t["kind"] == "Comparison")
     {
-        action_ = std::make_unique<ActionComparison>(t["mode"] == "not" ? true : false);
+        action_ = std::make_unique<ActionComparison>(t["negated"].get<bool>());
     }
     else
     {

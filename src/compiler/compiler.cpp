@@ -185,8 +185,10 @@ void Compiler::generateVoidEdgeFunctions()
         else if (graph_.getActionType(edge) == ActionType::Comparison)
         {
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(graph_.getActionLeftSide(edge),
-                graph_.getActionRightSide(edge), !graph_.getActionNegationValue(edge)));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    graph_.getActionLeftSide(edge),
+                    graph_.getActionRightSide(edge),
+                    !graph_.getActionNegationValue(edge)));
             ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>());
             function -> addInstruction(std::move(ifInstruction));
         }
@@ -194,7 +196,9 @@ void Compiler::generateVoidEdgeFunctions()
         {
             function -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("is_legal_" + graph_.getActionLeftSide(edge) + "()", "false"));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    "is_legal_" + graph_.getActionLeftSide(edge) + "()",
+                    graph_.getActionNegationValue(edge) ? "true" : "false"));
             ifInstruction -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>());
             function -> addInstruction(std::move(ifInstruction));
@@ -227,8 +231,10 @@ void Compiler::generateBoolEdgeFunctions()
         else if (graph_.getActionType(edge) == ActionType::Comparison)
         {
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(graph_.getActionLeftSide(edge),
-                graph_.getActionRightSide(edge), !graph_.getActionNegationValue(edge)));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    graph_.getActionLeftSide(edge),
+                    graph_.getActionRightSide(edge),
+                    !graph_.getActionNegationValue(edge)));
             ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("false"));
             function -> addInstruction(std::move(ifInstruction));
         }
@@ -236,7 +242,9 @@ void Compiler::generateBoolEdgeFunctions()
         {
             function -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("is_legal_" + graph_.getActionLeftSide(edge) + "()", "false"));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    "is_legal_" + graph_.getActionLeftSide(edge) + "()",
+                    graph_.getActionNegationValue(edge) ? "true" : "false"));
             ifInstruction -> addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("false"));
             function -> addInstruction(std::move(ifInstruction));

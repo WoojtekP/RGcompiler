@@ -278,28 +278,13 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
 
 std::vector<std::string> Graph::getNodeNames()
 {
-    std::vector<std::string> nodes;
-
-    std::function<bool(std::string)> notContain = [&nodes](std::string x)
-    {
-        for (auto &y : nodes)
-        {
-            if (x == y)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    };
+    std::set<std::string> nodes;
 
     for (auto &&edge : edges_)
     {
-        if (notContain(edge -> fromName()))
-        {
-            nodes.push_back(edge -> fromName());
-        }
+        nodes.insert(edge->fromName());
+        nodes.insert(edge->toName());
     }
 
-    return nodes;
+    return {nodes.begin(), nodes.end()};
 }

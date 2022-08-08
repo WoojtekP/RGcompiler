@@ -134,25 +134,31 @@ void Compiler::generateBoolStateFunctions()
     for (auto &state : states)
     {
         std::unique_ptr<Function> function = std::make_unique<Function>("is_legal_" + state, "bool");
-
-        std::unique_ptr<IfInstruction> ifInstruction =
-            std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + state + "\""));
-
-        ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
-
-        function -> addInstruction(std::move(ifInstruction));
-
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
-        for (auto &outgingState : outgoingStates)
+        if (outgoingStates.empty())
         {
-            ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>("is_legal_edge_" + state + "_" + outgingState + "()", "true"));
-            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
-            function -> addInstruction(std::move(ifInstruction));
+            function -> addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
+        else
+        {
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + state + "\""));
 
-        function -> addInstruction(std::make_unique<ReturnInstruction>("false"));
+            ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
+
+            function -> addInstruction(std::move(ifInstruction));
+
+            for (auto &outgingState : outgoingStates)
+            {
+                ifInstruction = std::make_unique<IfInstruction>(
+                    std::make_unique<ComparisonInstruction>("is_legal_edge_" + state + "_" + outgingState + "()", "true"));
+                ifInstruction -> addInstruction(std::make_unique<ReturnInstruction>("true"));
+                function -> addInstruction(std::move(ifInstruction));
+            }
+
+            function -> addInstruction(std::make_unique<ReturnInstruction>("false"));
+        }
 
         program_.addFunction(std::move(function));
     }
@@ -251,7 +257,8 @@ void Compiler::generateBoolEdgeFunctions()
         }
 
         const std::string nextState = graph_.getToName(edge);
-        if (nextState != "end")
+        const auto outNodes = graph_.getOutgoingNodesFrom(nextState);
+        if (!outNodes.empty())
         {
             function -> addInstruction(std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + graph_.getToName(edge) + "()", "bool"));
         }
@@ -261,7 +268,7 @@ void Compiler::generateBoolEdgeFunctions()
             function -> addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
         }
 
-        if (nextState != "end")
+        if (!outNodes.empty())
         {
             function -> addInstruction(std::make_unique<ReturnInstruction>("tmp"));
         }

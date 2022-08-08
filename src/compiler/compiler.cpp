@@ -337,7 +337,7 @@ void Compiler::generateSpecialFunctions()
     for (int i=1;i<v.size();i++)
     {
         to = v[i];
-        runFunction("apply_" + from + "_" + to);
+        runFunction("apply_edge_" + from + "_" + to);
         from = to;
     }
     currentState = v.back())"

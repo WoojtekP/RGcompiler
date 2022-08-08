@@ -100,7 +100,8 @@ void Compiler::generateVariables()
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
     auto currentStateType = std::make_unique<CustomType>("std::string");
-    program_.addVariableDeclaration(std::make_unique<Variable>("currentState", std::move(currentStateType)));
+    auto currentStateValue = std::make_unique<SingleValue>("\"begin\"");
+    program_.addVariableDeclaration(std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 }
 
 void Compiler::generateVoidStateFunctions()

@@ -14,7 +14,16 @@ ulong numSimulations;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 
-void exitError(const std::string msg) {std::cerr << msg; exit(2);}
+void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
+
+void keeperCompletion(game_state &state) {
+  while (state.get_current_player() == keeper) {
+    std::cout << state.get_current_state() << std::endl;
+    state.get_all_moves(moves);
+    if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
+    state.apply_move(moves[0]);
+  }
+}
 
 void doSimulation() {
   game_state state = initial;
@@ -43,12 +52,8 @@ int main(int argc, char** argv) {
       return 1;
   }
   
-  while (initial.get_current_player() == keeper) {
-      initial.get_all_moves(moves);
-      if (moves.size() != 1) exitError("Initial keeper has " + std::to_string(moves.size()) + " moves");
-      initial.apply_move(moves[0]);
-  }
-  
+  keeperCompletion(initial);
+   
   numSimulations = std::stoi(argv[1]);
   
   std::chrono::steady_clock::time_point startTime(std::chrono::steady_clock::now());

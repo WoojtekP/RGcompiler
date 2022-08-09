@@ -9,7 +9,7 @@ set -e
 set -o pipefail
 
 game=$1
-echo "Compiling $1"
+echo "Compiling $1..."
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}

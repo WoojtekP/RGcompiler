@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [[ $# -ne 2 ]] ; then
-  echo "usage: simulations.sh [game] [count]"
+  echo "usage: perft.sh [game] [depth]"
   exit 1
 fi
 
@@ -9,10 +9,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}
 
 game=$1
-count=$2
+depth=$2
 
 ./compile.sh $game
 cd ../test
-make simulations
-echo "Running simulations count=${count} ..."
-./simulations $count
+make perft
+echo "Running perft depth=${depth} ..."
+./perft $depth

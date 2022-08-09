@@ -316,6 +316,16 @@ void Compiler::generateSpecialFunctions()
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 
+    auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
+    isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == \"end\""));
+
+    auto getPlayerScore = std::make_unique<Function>("get_player_score", "Score", true);
+    getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
+    getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player]"));
+
+    auto getCurrentPlayer = std::make_unique<Function>("get_current_player", "PlayerOrKeeper", true);
+    getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
+
     auto getCurrentState = std::make_unique<Function>("get_current_state", "std::string", true);
     getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("currentState"));
 
@@ -351,6 +361,9 @@ void Compiler::generateSpecialFunctions()
     ));
 
     program_.addFunction(std::move(gameStateConstructor));
+    program_.addFunction(std::move(isTerminal));
+    program_.addFunction(std::move(getPlayerScore));
+    program_.addFunction(std::move(getCurrentPlayer));
     program_.addFunction(std::move(getCurrentState));
     program_.addFunction(std::move(getAllMovesFunction));
     program_.addFunction(std::move(applyMoveFunction));

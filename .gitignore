@@ -7,6 +7,10 @@
 *.rg
 *-ast.json
 
+# Compiled benchmark object
+test/perft
+test/simulations
+
 # Generated files
 reasoner.cpp
 reasoner.hpp

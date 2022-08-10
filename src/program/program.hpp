@@ -8,7 +8,7 @@
 struct IType
 {
     IType() = default;
-    IType(const std::string& id) : identifier(id) {};
+    IType(const std::string &id) : identifier(id) {};
     virtual ~IType() = default;
     virtual std::string toString() const = 0;
     virtual std::string definitionToString() const = 0;
@@ -19,7 +19,7 @@ struct IType
 struct ElementaryType : public IType
 {
     ElementaryType() = default;
-    ElementaryType(const std::string& id) : IType(id) {}
+    ElementaryType(const std::string &id) : IType(id) {}
     ~ElementaryType() = default;
     std::string toString() const override;
     std::string definitionToString() const override;
@@ -27,7 +27,7 @@ struct ElementaryType : public IType
 
 struct FunctionType : public IType
 {
-    FunctionType(const std::string& id) : IType(id) {};
+    FunctionType(const std::string &id) : IType(id) {};
     FunctionType(std::unique_ptr<IType> src, std::unique_ptr<IType> dst)
     : source(std::move(src)), destination(std::move(dst))
     {}
@@ -42,8 +42,8 @@ struct FunctionType : public IType
 struct CustomType : public IType
 {
     CustomType() = default;
-    CustomType(const std::string& id) : IType(id) {}
-    CustomType(const std::string& id, const std::string& typeDef) : IType(id), typeDefinition(typeDef) {}
+    CustomType(const std::string &id) : IType(id) {}
+    CustomType(const std::string &id, const std::string &typeDef) : IType(id), typeDefinition(typeDef) {}
     ~CustomType() = default;
     std::string toString() const override;
     std::string definitionToString() const override;
@@ -61,7 +61,7 @@ struct IValue
 struct SingleValue : public IValue
 {
     SingleValue() = default;
-    SingleValue(const std::string& sym) : symbol(sym) {}
+    SingleValue(const std::string &sym) : symbol(sym) {}
     ~SingleValue() = default;
     std::string toString() const override;
 
@@ -84,8 +84,8 @@ struct MapValue : public IValue
 struct IVariable
 {
     IVariable() = default;
-    IVariable(const std::string& id, std::unique_ptr<IType> valType) : identifier(id), valueType(std::move(valType)) {}
-    IVariable(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    IVariable(const std::string &id, std::unique_ptr<IType> valType) : identifier(id), valueType(std::move(valType)) {}
+    IVariable(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
     : identifier(id), valueType(std::move(valType)), value(std::move(val))
     {}
     virtual ~IVariable() = default;
@@ -99,7 +99,7 @@ struct IVariable
 struct Constant : public IVariable
 {
     Constant() = default;
-    Constant(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    Constant(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
     : IVariable(id, std::move(valType), std::move(val))
     {}
     ~Constant() = default;
@@ -109,8 +109,8 @@ struct Constant : public IVariable
 struct Variable : public IVariable
 {
     Variable() = default;
-    Variable(const std::string& id, std::unique_ptr<IType> valType) : IVariable(id, std::move(valType)) {}
-    Variable(const std::string& id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    Variable(const std::string &id, std::unique_ptr<IType> valType) : IVariable(id, std::move(valType)) {}
+    Variable(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
     : IVariable(id, std::move(valType), std::move(val))
     {}
     ~Variable() = default;
@@ -124,7 +124,7 @@ protected:
 
     inline std::string getSemicolon(bool n) { return (n ? ";" : ""); }
 
-    inline std::string addSpacesAndSemicolon(int delimiter, bool semicolon, const std::string& str)
+    inline std::string addSpacesAndSemicolon(int delimiter, bool semicolon, const std::string &str)
     {
         return getLeadingSpaces(delimiter) + str + getSemicolon(semicolon);
     }
@@ -140,7 +140,7 @@ class ReturnInstruction : public IInstruction
 
 public:
     ReturnInstruction();
-    ReturnInstruction(const std::string& value);
+    ReturnInstruction(const std::string &value);
 
     std::string toString(int delimiter, int shift, bool semicolon);
 };
@@ -151,8 +151,8 @@ class VariableDeclarationInstruction : public IInstruction
     std::string type_;
 
 public:
-    VariableDeclarationInstruction(const std::string& name);
-    VariableDeclarationInstruction(const std::string& name, std::string type);
+    VariableDeclarationInstruction(const std::string &name);
+    VariableDeclarationInstruction(const std::string &name, std::string type);
 
     std::string toString(int delimiter, int shift, bool semicolon);
 };
@@ -163,8 +163,8 @@ class AssignmentInstruction : public IInstruction
     std::string right_;
 
 public:
-    AssignmentInstruction(const std::string& left, const std::string& right);
-    AssignmentInstruction(const std::string& left, const std::string& right, std::string type);
+    AssignmentInstruction(const std::string &left, const std::string &right);
+    AssignmentInstruction(const std::string &left, const std::string &right, std::string type);
 
     std::string toString(int delimiter, int shift, bool semicolon);
 };
@@ -176,8 +176,8 @@ class ComparisonInstruction : public IInstruction
     bool negated_;
 
 public:
-    ComparisonInstruction(const std::string& left, const std::string& right);
-    ComparisonInstruction(const std::string& left, const std::string& right, bool negated);
+    ComparisonInstruction(const std::string &left, const std::string &right);
+    ComparisonInstruction(const std::string &left, const std::string &right, bool negated);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
@@ -188,9 +188,9 @@ class IfInstruction : public IInstruction
     std::vector<std::unique_ptr<IInstruction>> instructions_;
 
 public:
-    IfInstruction(std::unique_ptr<ComparisonInstruction>&& condition);
+    IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition);
 
-    void addInstruction(std::unique_ptr<IInstruction>&& instruction);
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
@@ -221,8 +221,8 @@ class Function : public IInstruction
 public:
     Function(std::string name, std::string returnType, bool isPublic = false);
 
-    void addArgument(std::unique_ptr<VariableDeclarationInstruction>&& var);
-    void addInstruction(std::unique_ptr<IInstruction>&& instruction);
+    void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
     bool isPublic();
     std::string declarationToString();
@@ -238,12 +238,12 @@ public:
     void addTypeDeclaration(std::unique_ptr<IType> typeDecl);
     void addConstantDeclaration(std::unique_ptr<IVariable> constantDecl);
     void addVariableDeclaration(std::unique_ptr<IVariable> variableDecl);
-    void addFunction(std::unique_ptr<Function>&& function);
+    void addFunction(std::unique_ptr<Function> &&function);
 
-    const std::vector<std::unique_ptr<IType>>& getTypes() const;
-    const std::vector<std::unique_ptr<IVariable>>& getConstants() const;
-    const std::vector<std::unique_ptr<IVariable>>& getVariables() const;
-    const std::vector<std::unique_ptr<Function>>& getFunctions() const;
+    const std::vector<std::unique_ptr<IType>> &getTypes() const;
+    const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
+    const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
+    const std::vector<std::unique_ptr<Function>> &getFunctions() const;
 
 private:
     std::vector<std::unique_ptr<IType>> types_;

@@ -21,7 +21,7 @@ class Node
     std::vector<Binding> bindings_;
 
 public:
-    Node(const nlohmann::json& t);
+    Node(const nlohmann::json &t);
     std::string toString();
 };
 
@@ -33,7 +33,7 @@ private:
     std::unique_ptr<Action> action_;
 
 public:
-    Edge(std::unique_ptr<Node>&& from, std::unique_ptr<Node>&& to, std::unique_ptr<Action>&& action);
+    Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to, std::unique_ptr<Action> &&action);
     ~Edge();
     std::string toString();
     std::string fromName();
@@ -53,7 +53,7 @@ class Graph
 
 public:
     ~Graph();
-    void addEdge(std::unique_ptr<Edge>&& edge);
+    void addEdge(std::unique_ptr<Edge> &&edge);
     std::string toString();
     std::vector<std::string> getNodeNames();
     std::vector<std::string> getOutgoingNodesFrom(std::string from);

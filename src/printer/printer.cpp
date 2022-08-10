@@ -14,6 +14,7 @@ void Printer::initializeHeaderFile()
 {
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
+    headerFile_ << std::endl;
     headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
 }

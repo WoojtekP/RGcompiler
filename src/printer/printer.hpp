@@ -1,10 +1,9 @@
 #pragma once
 
-#include <parser/parser.hpp>
-#include <program/program.hpp>
-
 #include <nlohmann/json.hpp>
 
+#include <parser/parser.hpp>
+#include <program/program.hpp>
 
 class Printer
 {
@@ -18,7 +17,7 @@ public:
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
     void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);
-    void printFunctions(const std::vector<std::unique_ptr<Function>> &functions);
+    void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration();
 
 private:

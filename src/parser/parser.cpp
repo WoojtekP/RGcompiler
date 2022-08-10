@@ -1,11 +1,10 @@
-#include <fstream>
 #include <algorithm>
+#include <fstream>
 
 #include <nlohmann/json.hpp>
 
 #include <parser/parser.hpp>
 #include <program/program.hpp>
-
 
 namespace
 {
@@ -13,10 +12,9 @@ bool isNumber(const std::string& s)
 {
     return std::all_of(s.begin(), s.end(), ::isdigit);
 }
-}
+}  // namespace
 
-Parser::Parser(std::ifstream& jsonGameFile)
-: parsedJson_(nlohmann::json::parse(jsonGameFile))
+Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
     std::set<int> forbiddenValues;
     int value = 0;
@@ -85,10 +83,7 @@ std::string Parser::getValue(const std::string& symbol) const
     {
         return std::to_string(symbolIt->second);
     }
-    const auto symbolMatcher = [symbol](const auto& var)
-    {
-        return var["identifier"] == symbol;
-    };
+    const auto symbolMatcher = [symbol](const auto& var) { return var["identifier"] == symbol; };
     if (std::any_of(parsedJson_["variables"].begin(), parsedJson_["variables"].end(), symbolMatcher))
     {
         return symbol;
@@ -169,8 +164,8 @@ nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) c
     throw std::invalid_argument("Cannot found type identifier: " + typeIdentifier);
 }
 
-std::string Parser::getValueFromEntries(const nlohmann::json& entries, const std::string& entryKind,
-    const std::string& entryName)
+std::string Parser::getValueFromEntries(
+    const nlohmann::json& entries, const std::string& entryKind, const std::string& entryName)
 {
     for (const auto& entry : entries)
     {
@@ -183,7 +178,8 @@ std::string Parser::getValueFromEntries(const nlohmann::json& entries, const std
     return "?";
 }
 
-std::optional<std::reference_wrapper<const nlohmann::json>> Parser::getPartFromParts(const nlohmann::json& parts, const std::string& entryKind)
+std::optional<std::reference_wrapper<const nlohmann::json>> Parser::getPartFromParts(
+    const nlohmann::json& parts, const std::string& entryKind)
 {
     for (const auto& entry : parts)
     {

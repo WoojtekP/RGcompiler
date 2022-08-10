@@ -4,18 +4,11 @@
 
 #include <graph/action.hpp>
 
+ActionBase::ActionBase(ActionType actionType) : ActionBase(actionType, false) {}
 
-ActionBase::ActionBase(ActionType actionType) : ActionBase(actionType, false)
-{
-}
+ActionBase::ActionBase(ActionType actionType, bool negated) : actionType_(actionType), negated_(negated) {}
 
-ActionBase::ActionBase(ActionType actionType, bool negated) : actionType_(actionType), negated_(negated)
-{
-}
-
-ActionBase::~ActionBase()
-{
-}
+ActionBase::~ActionBase() {}
 
 void ActionBase::parse(const nlohmann::json& t)
 {
@@ -24,14 +17,14 @@ void ActionBase::parse(const nlohmann::json& t)
         left_ = std::make_unique<Expression>();
     }
 
-    left_  -> parse(t["lhs"]);
+    left_->parse(t["lhs"]);
 
     if (right_ == nullptr)
     {
         right_ = std::make_unique<Expression>();
     }
 
-    right_ -> parse(t["rhs"]);
+    right_->parse(t["rhs"]);
 }
 
 bool ActionBase::getNegated()
@@ -41,12 +34,12 @@ bool ActionBase::getNegated()
 
 std::string ActionBase::getLeftSide()
 {
-    return left_ -> toString();
+    return left_->toString();
 }
 
 std::string ActionBase::getRightSide()
 {
-    return right_ -> toString();
+    return right_->toString();
 }
 
 ActionType ActionBase::getType()
@@ -54,45 +47,35 @@ ActionType ActionBase::getType()
     return actionType_;
 }
 
-ActionAssignment::ActionAssignment() : ActionBase(ActionType::Assignment)
-{
-}
+ActionAssignment::ActionAssignment() : ActionBase(ActionType::Assignment) {}
 
 std::string ActionAssignment::toString()
 {
-    return left_ -> toString() + " = " + right_ -> toString();
+    return left_->toString() + " = " + right_->toString();
 }
 
-ActionComparison::ActionComparison(bool negated) : ActionBase(ActionType::Comparison, negated)
-{
-}
+ActionComparison::ActionComparison(bool negated) : ActionBase(ActionType::Comparison, negated) {}
 
 std::string ActionComparison::toString()
 {
-    return left_ -> toString() + " == " + right_ -> toString();
+    return left_->toString() + " == " + right_->toString();
 }
 
-ActionPattern::ActionPattern() : ActionBase(ActionType::Pattern)
-{
-}
+ActionPattern::ActionPattern() : ActionBase(ActionType::Pattern) {}
 
 std::string ActionPattern::toString()
 {
     return "";
 }
 
-ActionReachability::ActionReachability(bool negated) : ActionBase(ActionType::Reachability, negated)
-{
-}
+ActionReachability::ActionReachability(bool negated) : ActionBase(ActionType::Reachability, negated) {}
 
 std::string ActionReachability::toString()
 {
-    return (negated_ ? "!" : "?") + left_ -> toString() + " -> " + right_ -> toString();
+    return (negated_ ? "!" : "?") + left_->toString() + " -> " + right_->toString();
 }
 
-void ActionSkip::parse(const nlohmann::json& t)
-{
-}
+void ActionSkip::parse(const nlohmann::json& t) {}
 
 std::string ActionSkip::toString()
 {
@@ -119,14 +102,11 @@ bool ActionSkip::getNegated()
     return false;
 }
 
-
-Action::~Action()
-{
-}
+Action::~Action() {}
 
 Action::Action(const nlohmann::json& t)
 {
-    this -> parse(t);
+    this->parse(t);
 }
 
 void Action::parse(const nlohmann::json& t)
@@ -157,14 +137,14 @@ void Action::parse(const nlohmann::json& t)
         action_ = std::make_unique<ActionSkip>();
     }
 
-    action_ -> parse(t);
+    action_->parse(t);
 }
 
 std::string Action::toString()
 {
     if (action_)
     {
-        return action_ -> toString();
+        return action_->toString();
     }
 
     return "";
@@ -174,7 +154,7 @@ ActionType Action::getType()
 {
     if (action_)
     {
-        return action_ -> getType();
+        return action_->getType();
     }
 
     return ActionType::Skip;
@@ -184,7 +164,7 @@ std::string Action::getLeftSide()
 {
     if (action_)
     {
-        return action_ -> getLeftSide();
+        return action_->getLeftSide();
     }
 
     return "";
@@ -194,7 +174,7 @@ std::string Action::getRightSide()
 {
     if (action_)
     {
-        return action_ -> getRightSide();
+        return action_->getRightSide();
     }
 
     return "";
@@ -204,7 +184,7 @@ bool Action::getNegated()
 {
     if (action_)
     {
-        return action_ -> getNegated();
+        return action_->getNegated();
     }
 
     return false;

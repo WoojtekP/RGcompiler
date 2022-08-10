@@ -5,7 +5,6 @@
 
 #include <graph/action.hpp>
 
-
 class Binding
 {
     std::string variableName_;
@@ -34,8 +33,7 @@ private:
     std::unique_ptr<Action> action_;
 
 public:
-    Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to,
-        std::unique_ptr<Action> &&action);
+    Edge(std::unique_ptr<Node>&& from, std::unique_ptr<Node>&& to, std::unique_ptr<Action>&& action);
     ~Edge();
     std::string toString();
     std::string fromName();
@@ -55,7 +53,7 @@ class Graph
 
 public:
     ~Graph();
-    void addEdge(std::unique_ptr<Edge> &&edge);
+    void addEdge(std::unique_ptr<Edge>&& edge);
     std::string toString();
     std::vector<std::string> getNodeNames();
     std::vector<std::string> getOutgoingNodesFrom(std::string from);

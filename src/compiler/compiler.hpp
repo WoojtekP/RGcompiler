@@ -4,7 +4,6 @@
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
-
 class Compiler
 {
 public:

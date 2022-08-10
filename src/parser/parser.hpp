@@ -9,7 +9,6 @@
 
 #include <nlohmann/json.hpp>
 
-
 class Parser
 {
 public:
@@ -25,10 +24,10 @@ public:
     nlohmann::json getDestinationType(const nlohmann::json& t) const;
     nlohmann::json findTypeByIdentifier(const std::string& typeIdentifier) const;
 
-    static std::string getValueFromEntries(const nlohmann::json& entries, const std::string& entryKind,
-        const std::string& entryName);
-    static std::optional<std::reference_wrapper<const nlohmann::json>> getPartFromParts(const nlohmann::json& parts,
-        const std::string& entryKind);
+    static std::string getValueFromEntries(
+        const nlohmann::json& entries, const std::string& entryKind, const std::string& entryName);
+    static std::optional<std::reference_wrapper<const nlohmann::json>> getPartFromParts(
+        const nlohmann::json& parts, const std::string& entryKind);
 
 private:
     nlohmann::json parsedJson_;

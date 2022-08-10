@@ -67,12 +67,10 @@ public:
 };
 
 class ExpressionReference : public ExpressionUnaryBase
-{
-};
+{};
 
 class ExpressionTypeReference : public ExpressionUnaryBase
-{
-};
+{};
 
 class ExpressionEdgeName : public ExpressionI
 {

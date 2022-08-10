@@ -6,19 +6,14 @@
 #include <printer/printer.hpp>
 #include <program/program.hpp>
 
-
 Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream& sourceFile)
-: parser_(parser)
-, headerFile_(headerFile)
-, sourceFile_(sourceFile)
-{
-}
+: parser_(parser), headerFile_(headerFile), sourceFile_(sourceFile)
+{}
 
 void Printer::initializeHeaderFile()
 {
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
-    headerFile_ << std::endl;
     headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
 }
@@ -90,25 +85,25 @@ void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& vari
     headerFile_ << std::endl;
 }
 
-void Printer::printFunctions(const std::vector<std::unique_ptr<Function>> &functions)
+void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& functions)
 {
     headerFile_ << "public:" << std::endl;
-    for (const auto &f : functions)
+    for (const auto& f : functions)
     {
         if (f->isPublic())
         {
             headerFile_ << f->declarationToString() << std::endl;
-            sourceFile_ << f->toString(0,4,false) << std::endl;
+            sourceFile_ << f->toString(0, 4, false) << std::endl;
         }
     }
 
     headerFile_ << "private:" << std::endl;
-    for (const auto &f : functions)
+    for (const auto& f : functions)
     {
         if (!f->isPublic())
         {
             headerFile_ << f->declarationToString() << std::endl;
-            sourceFile_ << f->toString(0,4,false) << std::endl;
+            sourceFile_ << f->toString(0, 4, false) << std::endl;
         }
     }
 }

@@ -6,7 +6,6 @@
 #include <graph/graph.hpp>
 #include <parser/parser.hpp>
 
-
 Binding::Binding(std::string variableName, std::string iteratedType)
 : variableName_(variableName), iteratedType_(iteratedType)
 {}
@@ -41,26 +40,21 @@ std::string Node::toString()
     return name_ + bindings;
 }
 
-Edge::Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to,
-    std::unique_ptr<Action> &&action) : from_(std::move(from)), to_(std::move(to)),
-    action_(std::move(action))
-{
-};
+Edge::Edge(std::unique_ptr<Node>&& from, std::unique_ptr<Node>&& to, std::unique_ptr<Action>&& action)
+: from_(std::move(from)), to_(std::move(to)), action_(std::move(action)) {};
 
-Edge::~Edge()
-{
-}
+Edge::~Edge() {}
 
 std::string Edge::toString()
 {
-    return "<" + from_ -> toString() + ", " + to_ -> toString() + ", " + action_ -> toString() + ">";
+    return "<" + from_->toString() + ", " + to_->toString() + ", " + action_->toString() + ">";
 }
 
 std::string Edge::fromName()
 {
     if (from_)
     {
-        return from_ -> toString();
+        return from_->toString();
     }
 
     return "";
@@ -70,17 +64,15 @@ std::string Edge::toName()
 {
     if (to_)
     {
-        return to_ -> toString();
+        return to_->toString();
     }
 
     return "";
 }
 
-Graph::~Graph()
-{
-}
+Graph::~Graph() {}
 
-void Graph::addEdge(std::unique_ptr<Edge> &&edge)
+void Graph::addEdge(std::unique_ptr<Edge>&& edge)
 {
     edges_.emplace_back(std::move(edge));
 }
@@ -89,12 +81,12 @@ std::vector<std::string> Graph::getTransitions(std::string from)
 {
     std::vector<std::string> v;
 
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-       if (edge -> fromName() == from)
-       {
-           v.push_back(edge -> fullName());
-       }
+        if (edge->fromName() == from)
+        {
+            v.push_back(edge->fullName());
+        }
     }
 
     return v;
@@ -114,7 +106,7 @@ std::string Edge::actionToString()
 {
     if (action_)
     {
-        return action_ -> toString();
+        return action_->toString();
     }
 
     return "";
@@ -122,39 +114,39 @@ std::string Edge::actionToString()
 
 ActionType Edge::getActionType()
 {
-    return action_ -> getType();
+    return action_->getType();
 }
 
 std::string Edge::getActionLeftSide()
 {
-    return action_ -> getLeftSide();
+    return action_->getLeftSide();
 }
 
 std::string Edge::getActionRightSide()
 {
-    return action_ -> getRightSide();
+    return action_->getRightSide();
 }
 
 bool Edge::getActionNegationValue()
 {
-    return action_ -> getNegated();
+    return action_->getNegated();
 }
 
 std::string Graph::toString()
 {
     std::string graph;
 
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        std::vector<std::string> transitions = getTransitions(edge -> toName());
+        std::vector<std::string> transitions = getTransitions(edge->toName());
 
-        std::string functionName = edge -> fullName();
-        std::string functionAction = edge -> actionToString();
+        std::string functionName = edge->fullName();
+        std::string functionAction = edge->actionToString();
         std::string functionBody;
 
         functionBody += "    " + functionAction + "\n";
 
-        for (std::string &name : transitions)
+        for (std::string& name : transitions)
         {
             functionBody += "    " + name + "();\n";
         }
@@ -173,11 +165,11 @@ std::string Graph::toString()
 
 ActionType Graph::getActionType(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> getActionType();
+            return edge->getActionType();
         }
     }
 
@@ -186,11 +178,11 @@ ActionType Graph::getActionType(std::string edgeName)
 
 bool Graph::getActionNegationValue(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> getActionNegationValue();
+            return edge->getActionNegationValue();
         }
     }
 
@@ -199,11 +191,11 @@ bool Graph::getActionNegationValue(std::string edgeName)
 
 std::string Graph::getActionLeftSide(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> getActionLeftSide();
+            return edge->getActionLeftSide();
         }
     }
 
@@ -212,11 +204,11 @@ std::string Graph::getActionLeftSide(std::string edgeName)
 
 std::string Graph::getActionRightSide(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> getActionRightSide();
+            return edge->getActionRightSide();
         }
     }
 
@@ -225,11 +217,11 @@ std::string Graph::getActionRightSide(std::string edgeName)
 
 std::string Graph::getAction(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> actionToString();
+            return edge->actionToString();
         }
     }
 
@@ -238,11 +230,11 @@ std::string Graph::getAction(std::string edgeName)
 
 std::string Graph::getToName(std::string edgeName)
 {
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fullName() == edgeName)
+        if (edge->fullName() == edgeName)
         {
-            return edge -> toName();
+            return edge->toName();
         }
     }
 
@@ -253,9 +245,9 @@ std::vector<std::string> Graph::getEdgeNames()
 {
     std::vector<std::string> v;
 
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-      v.push_back(edge -> fullName());
+        v.push_back(edge->fullName());
     }
 
     return v;
@@ -265,11 +257,11 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
 {
     std::vector<std::string> outgingNodes;
 
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
-        if (edge -> fromName() == from)
+        if (edge->fromName() == from)
         {
-            outgingNodes.push_back(edge -> toName());
+            outgingNodes.push_back(edge->toName());
         }
     }
 
@@ -280,7 +272,7 @@ std::vector<std::string> Graph::getNodeNames()
 {
     std::set<std::string> nodes;
 
-    for (auto &&edge : edges_)
+    for (auto&& edge : edges_)
     {
         nodes.insert(edge->fromName());
         nodes.insert(edge->toName());

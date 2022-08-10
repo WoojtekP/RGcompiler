@@ -310,35 +310,35 @@ void Compiler::generateApplyEdgeFunctions()
 
 void Compiler::generateSpecialFunctions()
 {
-    std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("game_state", "", true);
+    std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("GameState", "", true);
     for (const auto& state : graph_.getNodeNames())
     {
-        std::string instruction = "nameToFunction[\"" + state + "\"] = &game_state::state_" + state;
+        std::string instruction = "nameToFunction[\"" + state + "\"] = &GameState::state_" + state;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
     for (const auto& egde : graph_.getEdgeNames())
     {
-        std::string instruction = "nameToFunction[\"" + egde + "\"] = &game_state::" + egde;
+        std::string instruction = "nameToFunction[\"" + egde + "\"] = &GameState::" + egde;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
 
-        instruction = "nameToFunction[\"apply_" + egde + "\"] = &game_state::apply_" + egde;
+        instruction = "nameToFunction[\"apply_" + egde + "\"] = &GameState::apply_" + egde;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
     isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == \"end\""));
 
-    auto getPlayerScore = std::make_unique<Function>("get_player_score", "Score", true);
+    auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
     getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player]"));
 
-    auto getCurrentPlayer = std::make_unique<Function>("get_current_player", "PlayerOrKeeper", true);
+    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrKeeper", true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
 
-    auto getCurrentState = std::make_unique<Function>("get_current_state", "std::string", true);
+    auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", true);
     getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("currentState"));
 
-    auto getAllMovesFunction = std::make_unique<Function>("get_all_moves", "void", true);
+    auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(allMoves.clear();
@@ -346,7 +346,7 @@ void Compiler::generateSpecialFunctions()
     runFunction(currentState);
     moves.assign(allMoves.begin(), allMoves.end()))"));
 
-    auto applyMoveFunction = std::make_unique<Function>("apply_move", "void", true);
+    auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const std::vector<std::string> &v = m.mr;

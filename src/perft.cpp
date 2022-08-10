@@ -7,13 +7,13 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 constexpr uint MAX_DEPTH = 100;
 
-game_state initial_state;
+GameState initial_state;
 ulong states_count, leaves_count;
 std::vector<Move> legal_moves[MAX_DEPTH];
 
-void perft_state_at_depth(game_state& state, uint depth)
+void perft_state_at_depth(GameState& state, uint depth)
 {
-    if (depth == 0 and state.get_current_player() != keeper)
+    if (depth == 0 and state.getCurrentPlayer() != keeper)
     {
         ++states_count;
         ++leaves_count;
@@ -21,7 +21,7 @@ void perft_state_at_depth(game_state& state, uint depth)
     }
     else
     {
-        if (state.get_current_player() == keeper)
+        if (state.getCurrentPlayer() == keeper)
         {
             auto any_move = state.apply_any_move(cache);
             if (any_move)
@@ -37,11 +37,11 @@ void perft_state_at_depth(game_state& state, uint depth)
         else
         {
             ++states_count;
-            state.get_all_moves(legal_moves[depth]);
+            state.getAllMoves(legal_moves[depth]);
             for (const auto& el : legal_moves[depth])
             {
                 auto temp_state = state;
-                temp_state.apply_move(el);
+                temp_state.applyMove(el);
                 perft_state_at_depth(temp_state, depth - 1);
             }
         }
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
         std::cerr << "usage: " << argv[0] << " [depth]" << std::endl;
         return 1;
     }
-    while (initial_state.get_current_player() == keeper)
+    while (initial_state.getCurrentPlayer() == keeper)
     {
         auto any_move = initial_state.apply_any_move(cache);
         if (not any_move)

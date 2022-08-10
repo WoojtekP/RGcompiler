@@ -185,7 +185,7 @@ std::string Function::toString(int delimiter, int shift, bool semicolon)
         body += instruction->toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " game_state::" + name_ + "(" + argumentsList + ")\n";
+    result += getLeadingSpaces(delimiter) + returnType_ + " GameState::" + name_ + "(" + argumentsList + ")\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
     result += getLeadingSpaces(delimiter) + "}\n";

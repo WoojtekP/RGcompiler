@@ -116,9 +116,17 @@ void Compiler::generateVoidStateFunctions()
 
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
-        for (auto& outgingState : outgoingStates)
+        if (state == "end")
         {
-            function->addInstruction(std::make_unique<CustomInstruction>("edge_" + state + "_" + outgingState + "()"));
+            function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
+        }
+        else
+        {
+            for (auto& outgingState : outgoingStates)
+            {
+                function->addInstruction(
+                    std::make_unique<CustomInstruction>("edge_" + state + "_" + outgingState + "()"));
+            }
         }
 
         function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
@@ -213,6 +221,7 @@ void Compiler::generateVoidEdgeFunctions()
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
             function->addInstruction(std::move(ifInstruction));
+            function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
         }
 
         function->addInstruction(std::make_unique<CustomInstruction>("state_" + graph_.getToName(edge) + "()"));
@@ -262,6 +271,7 @@ void Compiler::generateBoolEdgeFunctions()
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
             function->addInstruction(std::move(ifInstruction));
+            function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
         }
 
         const std::string nextState = graph_.getToName(edge);

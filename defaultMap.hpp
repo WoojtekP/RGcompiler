@@ -16,10 +16,6 @@ public:
     , defaultValue_(defaultValue)
     {}
 
-    DefaultMap(std::initializer_list<value_type> init)
-    : DefaultMap(T(), std::move(init))
-    {}
-
     T& operator[](const Key& key)
     {
         return std::map<Key, T>::insert(std::make_pair(key, defaultValue_)).first->second;

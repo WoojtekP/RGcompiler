@@ -25,4 +25,4 @@ rm ${game}.json
 ./build/rg2cpp ${game}-ast.json
 
 # format generated files
-clang-format -style="{BasedOnStyle: Google, IndentWidth: 4}" -i reasoner.hpp
+clang-format -style=file -i reasoner.hpp reasoner.cpp

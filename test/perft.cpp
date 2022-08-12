@@ -16,7 +16,7 @@ ulong numStates, numLeaves, numTerminals;
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(GameState &state, const uint depth) {
-  while (state.getCurrentPlayer() == keeper) {
+  while (state.getCurrentPlayer() == keeper && !state.isTerminal()) {
     state.getAllMoves(moves[depth]);
     if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves");
     state.applyMove(moves[depth][0]);
@@ -25,7 +25,11 @@ void keeperCompletion(GameState &state, const uint depth) {
 
 void doPerft(GameState &state, const uint depth) {
   numStates++;
-  if (depth == 0) {numLeaves++; return;}
+  if (depth == 0 || state.isTerminal()) {
+    if (depth == 0) numLeaves++;
+    if (state.isTerminal()) numTerminals++;
+    return;
+  }
   state.getAllMoves(moves[depth]);
   if (moves[depth].size() == 0) exitError("Player has 0 moves");
   for (uint i = 0; i < moves[depth].size(); i++) {
@@ -54,7 +58,7 @@ int main(int argc, char** argv) {
   std::cout << std::fixed;
   std::cout << "time: " << seconds << " sec" << std::endl;
   std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
-  std::cout << "terminals: " << numTerminals << std::endl;
   std::cout << "leaves: " << numLeaves << std::endl;
+  std::cout << "terminals: " << numTerminals << std::endl;
   return 0;
 }

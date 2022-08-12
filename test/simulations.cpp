@@ -17,8 +17,7 @@ ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(GameState &state) {
-  while (state.getCurrentPlayer() == keeper) {
-    std::cout << state.getCurrentState() << std::endl;
+  while (state.getCurrentPlayer() == keeper && !state.isTerminal()) {
     state.getAllMoves(moves);
     if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
     state.applyMove(moves[0]);

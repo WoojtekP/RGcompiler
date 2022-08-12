@@ -7,8 +7,8 @@ using ulong = unsigned long;
 
 RBGRandomGenerator randomGenerator(1);
 
-GameState initial;
-std::vector<Move> moves;
+reasoner::GameState initial;
+std::vector<reasoner::Move> moves;
 
 ulong numSimulations;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
@@ -16,8 +16,8 @@ ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
-void keeperCompletion(GameState &state) {
-  while (state.getCurrentPlayer() == keeper && !state.isTerminal()) {
+void keeperCompletion(reasoner::GameState &state) {
+  while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves);
     if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
     state.applyMove(moves[0]);
@@ -25,11 +25,11 @@ void keeperCompletion(GameState &state) {
 }
 
 void doSimulation() {
-  GameState state = initial;
+  reasoner::GameState state = initial;
   uint depth = 0;
   while (!state.isTerminal()) {
     state.getAllMoves(moves);
-    if (state.getCurrentPlayer() == keeper) {
+    if (state.getCurrentPlayer() == reasoner::keeper) {
       if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
     } else {
       if (moves.size() == 0) exitError("Player has 0 moves");

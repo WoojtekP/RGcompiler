@@ -17,12 +17,14 @@ void Printer::initializeHeaderFile()
     headerFile_ << std::endl;
     headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
+    headerFile_ << "namespace reasoner {" << std::endl;
 }
 
 void Printer::initializeSourceFile()
 {
     sourceFile_ << "#include \"reasoner.hpp\"" << std::endl;
     sourceFile_ << std::endl;
+    sourceFile_ << "namespace reasoner {" << std::endl;
 }
 
 void Printer::initializeMainClass()
@@ -34,6 +36,16 @@ void Printer::initializeMainClass()
 void Printer::endMainClass()
 {
     headerFile_ << "};" << std::endl;
+}
+
+void Printer::endHeaderFile()
+{
+    headerFile_ << "}  // namespace reasoner" << std::endl;
+}
+
+void Printer::endSourceFile()
+{
+    sourceFile_ << "}  // namespace reasoner" << std::endl;
 }
 
 void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations)

@@ -13,6 +13,8 @@ public:
     void initializeSourceFile();
     void initializeMainClass();
     void endMainClass();
+    void endHeaderFile();
+    void endSourceFile();
     void printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);

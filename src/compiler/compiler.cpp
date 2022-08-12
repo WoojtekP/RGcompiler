@@ -41,6 +41,8 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printVariables(program_.getVariables());
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
+    printer.endHeaderFile();
+    printer.endSourceFile();
 }
 
 void Compiler::generateTypes()

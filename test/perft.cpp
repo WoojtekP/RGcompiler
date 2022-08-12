@@ -7,23 +7,23 @@ using ulong = unsigned long;
 
 RBGRandomGenerator randomGenerator(1);
 
-GameState initial;
-std::vector<Move> moves[100];
+reasoner::GameState initial;
+std::vector<reasoner::Move> moves[100];
 
 uint maxDepth;
 ulong numStates, numLeaves, numTerminals;
 
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
-void keeperCompletion(GameState &state, const uint depth) {
-  while (state.getCurrentPlayer() == keeper && !state.isTerminal()) {
+void keeperCompletion(reasoner::GameState &state, const uint depth) {
+  while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves[depth]);
     if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves");
     state.applyMove(moves[depth][0]);
   }
 }
 
-void doPerft(GameState &state, const uint depth) {
+void doPerft(reasoner::GameState &state, const uint depth) {
   numStates++;
   if (depth == 0 || state.isTerminal()) {
     if (depth == 0) numLeaves++;
@@ -33,7 +33,7 @@ void doPerft(GameState &state, const uint depth) {
   state.getAllMoves(moves[depth]);
   if (moves[depth].size() == 0) exitError("Player has 0 moves");
   for (uint i = 0; i < moves[depth].size(); i++) {
-    GameState nextState = state;
+    reasoner::GameState nextState = state;
     nextState.applyMove(moves[depth][i]);
     keeperCompletion(nextState, 0);
     doPerft(nextState, depth-1);

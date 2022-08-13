@@ -5,10 +5,10 @@
 using uint = unsigned int;
 using ulong = unsigned long;
 
-RBGRandomGenerator randomGenerator(1);
+constexpr uint MAX_DEPTH = 100;
 
 reasoner::GameState initial;
-std::vector<reasoner::Move> moves[100];
+std::vector<reasoner::Move> moves[MAX_DEPTH];
 
 uint maxDepth;
 ulong numStates, numLeaves, numTerminals;

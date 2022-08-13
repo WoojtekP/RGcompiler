@@ -5,7 +5,7 @@
 using uint = unsigned int;
 using ulong = unsigned long;
 
-RBGRandomGenerator randomGenerator(1);
+fast_random::GenDefault randomGenerator(1);
 
 reasoner::GameState initial;
 std::vector<reasoner::Move> moves;
@@ -38,7 +38,7 @@ void doSimulation() {
       if (moves.size() < minMoves) minMoves = moves.size();
       if (moves.size() > maxMoves) maxMoves = moves.size();
     }
-    state.applyMove(moves[randomGenerator.uniform_choice(moves.size())]);
+    state.applyMove(moves[randomGenerator.rand_uint(moves.size())]);
   }
   numStates += depth;
   if (depth < minDepth) minDepth = depth;
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
   }
 
   keeperCompletion(initial);
-
+  
   numSimulations = std::stoi(argv[1]);
 
   std::chrono::steady_clock::time_point startTime(std::chrono::steady_clock::now());

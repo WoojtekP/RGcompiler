@@ -1,46 +1,54 @@
-#ifndef _RBG_RANDOM_GENERATOR_HPP
-#define _RBG_RANDOM_GENERATOR_HPP
-
-// TODO Make different structs
-// TODO Add function for reals
-
-#define RBG_RANDOM_GENERATOR 0
-/**
- * RBG_RANDOM_GENERATOR:
- * 0 -- std::mt19937 with Lemire's method (unbiased)
- * 1 -- std::mt19937 with std::uniform_int_distribution (the standard unbiased method)
- * 2 -- Java's algorithm (lcg48, unbiased)
- * 3 -- lcg48 with multiplication method (biased)
- * 4 -- xorShift64 with multiplication method (biased)
- */
-#include <cstdint>
-//*********************************************************************
-#if RBG_RANDOM_GENERATOR == 1
-
-// The standard method
+#ifndef _FAST_RANDOM_HPP
+#define _FAST_RANDOM_HPP
 #include <random>
-struct RBGRandomGenerator {
-  std::mt19937 random_generator;
-  RBGRandomGenerator(const unsigned long _seed): random_generator(_seed) {}
-  unsigned int uniform_choice(const unsigned int upper_bound) {
-    return std::uniform_int_distribution<unsigned int>(0,upper_bound-1)(random_generator);
+#include <cstdint>
+namespace fast_random {
+  
+/**
+Unbiased:
+fast_random::GenMTStd randomGenerator(1);
+fast_random::GenJava randomGenerator(1);
+fast_random::GenMTLemire randomGenerator(1);
+fast_random::GenMTLemireTweak randomGenerator(1);
+fast_random::GenMTLemireTweak2 randomGenerator(1);
+Biased:
+fast_random::GenLC48Mult randomGenerator(1);
+fast_random::GenXORShift64Mult randomGenerator(1);
+*/
+
+//*********************************************************************
+
+/**
+ * The standard method (unbiased)
+ */
+template<class RG32> struct GenStd {
+  RG32 rg;
+  GenStd(const uint64_t _seed): rg(_seed) {}
+  
+  uint32_t rand_uint(const uint32_t bound) {
+    return std::uniform_int_distribution<uint32_t>(0, bound-1)(rg);
+  }
+  
+  double rand_double(const double bound) {
+    return std::uniform_real_distribution<double>(0.0, bound)(rg);
   }
 };
-//*********************************************************************
-#elif RBG_RANDOM_GENERATOR == 2
+using GenMTStd = GenStd<std::mt19937>;
 
-// An exact reimplementation of the standard Java generator
-struct RBGRandomGenerator {
-  uint64_t seed;
-
-  RBGRandomGenerator(const uint64_t _seed): seed((_seed ^ 0x5DEECE66DUL) & ((1UL << 48) - 1)) {}
-
+/**
+ * An exact reimplementation of the standard lc48 Java generator (unbiased)
+ */
+class GenJava {
   uint32_t java_rand31() {
     seed = (seed * 0x5DEECE66DUL + 0xB) & ((1UL << 48) - 1);
     return seed >> (48 - 31);
   }
+public:
+  uint64_t seed;
 
-  unsigned int uniform_choice(uint32_t bound) {
+  GenJava(const uint64_t _seed): seed((_seed ^ 0x5DEECE66DUL) & ((1UL << 48) - 1)) {}
+
+  uint32_t rand_uint(uint32_t bound) {
     // assert(bound > 0 && bound <= (1U << 31));
     uint32_t boundm1 = bound-1;
     if ((bound & boundm1) == 0)
@@ -53,74 +61,136 @@ struct RBGRandomGenerator {
     return val;
   }
 };
+
+/**
+ * Custom generator with Lemire's method
+ * Source: https://www.pcg-random.org/posts/bounded-rands.html
+ */
+template<class RG32> struct GenLemire {
+  RG32 rg;
+  GenLemire(const uint64_t _seed): rg(_seed) {}
+
+  uint32_t rand_uint(uint32_t bound) {
+    uint32_t t = (-bound) % bound;
+    uint64_t m;
+    uint32_t l;
+    do {
+      uint32_t x = rg();
+      m = uint64_t(x) * uint64_t(bound);
+      l = uint32_t(m);
+    } while (l < t);
+    return m >> 32;
+  }
+
+  double rand_double(const double bound) {
+    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
+  }
+};
+using GenMTLemire = GenLemire<std::mt19937>;
+
+/**
+ * Custom generator with Lemire's method tweaked
+ * Source: https://www.pcg-random.org/posts/bounded-rands.html
+ */
+template<class RG32> struct GenLemireTweak {
+  RG32 rg;
+  GenLemireTweak(const uint64_t _seed): rg(_seed) {}
+
+  uint32_t rand_uint(const uint32_t bound) {
+    uint32_t x = rg();
+    uint64_t m = uint64_t(x) * uint64_t(bound);
+    uint32_t l = uint32_t(m);
+    if (l < bound) {
+      uint32_t t = -bound;
+      if (t >= bound) {
+        t -= bound;
+        if (t >= bound)
+          t %= bound;
+      }
+      while (l < t) {
+        x = rg();
+        m = uint64_t(x) * uint64_t(bound);
+        l = uint32_t(m);
+      }
+    }
+    return m >> 32;
+  }
+
+  double rand_double(const double bound) {
+    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
+  }
+};
+using GenMTLemireTweak = GenLemireTweak<std::mt19937>;
+
+/**
+ * Custom generator with Lemire's method tweaked more
+ * Source: https://www.pcg-random.org/posts/bounded-rands.html
+ */
+template<class RG32> struct GenLemireTweak2 {
+  RG32 rg;
+  GenLemireTweak2(const uint64_t _seed): rg(_seed) {}
+
+  uint32_t rand_uint(const uint32_t bound) {
+    uint32_t x = rg();
+    uint64_t m = uint64_t(x) * uint64_t(bound);
+    uint32_t l = uint32_t(m);
+    if (__builtin_expect(l < bound, false)) {
+      uint32_t t = -bound % bound;
+      while (l < t) {
+        x = rg();
+        m = uint64_t(x) * uint64_t(bound);
+        l = uint32_t(m);
+      }
+    }
+    return m >> 32;
+  }
+  
+  double rand_double(const double bound) {
+    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
+  }
+};
+using GenMTLemireTweak2 = GenLemireTweak2<std::mt19937>;
+
+using GenDefault = fast_random::GenMTLemireTweak2;
+
 //*********************************************************************
-#elif RBG_RANDOM_GENERATOR == 3
 
-// Linear congruential 48 with the multiplication method (biased)
-struct RBGRandomGenerator {
-  uint64_t seed;
-  RBGRandomGenerator(const unsigned long _seed): seed(_seed) {}
-
+/**
+ * LC48 with the multiplication method (biased)
+ */
+class GenLC48Mult {
   uint64_t rand48() {
      seed = (0x5DEECE66DUL * seed + 0xBUL) & ((1UL << 48) - 1);
      return seed;
   }
+public:
+  uint64_t seed;
+  GenLC48Mult(const uint64_t _seed): seed(_seed) {}
 
-  unsigned int uniform_choice(const unsigned int bound) {
+  uint32_t rand_uint(const uint32_t bound) {
      return ((rand48() >> 16) * uint64_t(bound)) >> 32;
   }
 };
-//*********************************************************************
-#elif RBG_RANDOM_GENERATOR == 4
 
-// XORShift64 with the multiplication method (biased)
-struct RBGRandomGenerator {
-  uint64_t seed;
-  RBGRandomGenerator(const uint64_t _seed): seed(_seed) {}
-
+/**
+ * XORShift64 with the multiplication method (biased)
+ */
+class GenXORShift64Mult {
   uint64_t xorShift64() {
     seed ^= (seed << 21);
     seed ^= (seed >> 35);
     seed ^= (seed << 4);
     return seed;
   }
+public:
+  uint64_t seed;
+  GenXORShift64Mult(const uint64_t _seed): seed(_seed) {}
 
-  unsigned int uniform_choice(const unsigned int bound) {
+  uint32_t rand_uint(const uint32_t bound) {
      return ((xorShift64() >> 32) * uint64_t(bound)) >> 32;
   }
 };
+
 //*********************************************************************
-#else
-
-// Default for RBG.
-// std::mt19937 with the Lemire's method.
-// Source: https://www.pcg-random.org/posts/bounded-rands.html
-#include <random>
-struct RBGRandomGenerator {
-  std::mt19937 random_generator;
-  RBGRandomGenerator(const unsigned long seed): random_generator(seed) {}
-
-  unsigned int uniform_choice(const uint32_t upper_bound) {
-    uint32_t x = random_generator();
-    uint64_t m = uint64_t(x) * uint64_t(upper_bound);
-    uint32_t l = uint32_t(m);
-    if (l < upper_bound) {
-        uint32_t t = -upper_bound;
-        if (t >= upper_bound) {
-            t -= upper_bound;
-            if (t >= upper_bound)
-                t %= upper_bound;
-        }
-        while (l < t) {
-            x = random_generator();
-            m = uint64_t(x) * uint64_t(upper_bound);
-            l = uint32_t(m);
-        }
-    }
-    return m >> 32;
-  }
-};
-//*********************************************************************
+}
 #endif
-#endif
-

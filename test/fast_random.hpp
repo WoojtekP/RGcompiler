@@ -29,6 +29,9 @@ template<class RG32> struct GenStd {
     return std::uniform_int_distribution<uint32_t>(0, bound-1)(rg);
   }
   
+  double rand_double01() {
+    return std::uniform_real_distribution<double>(0.0, 1.0)(rg);
+  }
   double rand_double(const double bound) {
     return std::uniform_real_distribution<double>(0.0, bound)(rg);
   }
@@ -60,6 +63,13 @@ public:
     } while ((bits-val+boundm1) & (1U << 31));
     return val;
   }
+  
+  double rand_double01() {
+    return static_cast<double>(java_rand31()) / (1U << 31);
+  }  
+  double rand_double(const double bound) {
+    return static_cast<double>(java_rand31()) / (1U << 31) * bound;
+  }  
 };
 
 /**
@@ -82,53 +92,24 @@ template<class RG32> struct GenLemire {
     return m >> 32;
   }
 
+  double rand_double01() {
+    return static_cast<double>(rg()) / (static_cast<uint64_t>(1) << 32);
+  }
   double rand_double(const double bound) {
-    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
+    return static_cast<double>(rg()) / (static_cast<uint64_t>(1) << 32) * bound;
   }
 };
 using GenMTLemire = GenLemire<std::mt19937>;
 
+
 /**
- * Custom generator with Lemire's method tweaked
+ * Custom generator with Lemire's method tweaked a little
  * Source: https://www.pcg-random.org/posts/bounded-rands.html
  */
 template<class RG32> struct GenLemireTweak {
   RG32 rg;
-  GenLemireTweak(const uint64_t _seed): rg(_seed) {}
-
-  uint32_t rand_uint(const uint32_t bound) {
-    uint32_t x = rg();
-    uint64_t m = uint64_t(x) * uint64_t(bound);
-    uint32_t l = uint32_t(m);
-    if (l < bound) {
-      uint32_t t = -bound;
-      if (t >= bound) {
-        t -= bound;
-        if (t >= bound)
-          t %= bound;
-      }
-      while (l < t) {
-        x = rg();
-        m = uint64_t(x) * uint64_t(bound);
-        l = uint32_t(m);
-      }
-    }
-    return m >> 32;
-  }
-
-  double rand_double(const double bound) {
-    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
-  }
-};
-using GenMTLemireTweak = GenLemireTweak<std::mt19937>;
-
-/**
- * Custom generator with Lemire's method tweaked more
- * Source: https://www.pcg-random.org/posts/bounded-rands.html
- */
-template<class RG32> struct GenLemireTweak2 {
-  RG32 rg;
-  GenLemireTweak2(const uint64_t _seed): rg(_seed) {}
+  uint64_t seed;
+  GenLemireTweak(const uint64_t _seed): rg(_seed) {seed = _seed;}
 
   uint32_t rand_uint(const uint32_t bound) {
     uint32_t x = rg();
@@ -145,13 +126,55 @@ template<class RG32> struct GenLemireTweak2 {
     return m >> 32;
   }
   
+  double rand_double01() {
+    return static_cast<double>(rg()) / (static_cast<uint64_t>(1) << 32);
+  }
   double rand_double(const double bound) {
-    return static_cast<double>(rg()) / (rg.max() - rg.min() + 1) * bound;
+    return static_cast<double>(rg()) / (static_cast<uint64_t>(1) << 32) * bound;
   }
 };
-using GenMTLemireTweak2 = GenLemireTweak2<std::mt19937>;
+using GenMTLemireTweak = GenLemireTweak<std::mt19937>;
 
-using GenDefault = fast_random::GenMTLemireTweak2;
+/**
+ * Hard-coded LC48 with Lemire's method tweaked a little
+ * Source: https://www.pcg-random.org/posts/bounded-rands.html
+ */
+struct GenLC48LemireTweak {
+  uint64_t seed;
+  GenLC48LemireTweak(const uint64_t _seed): seed(_seed) {}
+
+  uint64_t rand48() {
+     seed = (0x5DEECE66DUL * seed + 0xBUL) & ((1UL << 48) - 1);
+     return seed;
+  }
+  
+  uint32_t rand32() {return rand48() >> 16;}
+  
+  uint32_t rand_uint(const uint32_t bound) {
+    uint32_t x = rand32();
+    uint64_t m = uint64_t(x) * uint64_t(bound);
+    uint32_t l = uint32_t(m);
+    if (__builtin_expect(l < bound, false)) {
+      uint32_t t = -bound % bound;
+      while (l < t) {
+        x = rand32();
+        m = uint64_t(x) * uint64_t(bound);
+        l = uint32_t(m);
+      }
+    }
+    return m >> 32;
+  }
+  
+  double rand_double01() {
+    return static_cast<double>(rand32()) / (static_cast<uint64_t>(1) << 32);
+  }
+  double rand_double(const double bound) {
+    return static_cast<double>(rand32()) / (static_cast<uint64_t>(1) << 32) * bound;
+  }
+};
+
+
+using GenDefault = GenLC48LemireTweak;
 
 //*********************************************************************
 
@@ -170,6 +193,13 @@ public:
   uint32_t rand_uint(const uint32_t bound) {
      return ((rand48() >> 16) * uint64_t(bound)) >> 32;
   }
+  
+  double rand_double01() {
+    return static_cast<double>(rand48() >> 16) / (static_cast<uint64_t>(1) << 32);
+  }  
+  double rand_double(const double bound) {
+    return static_cast<double>(rand48() >> 16) / (static_cast<uint64_t>(1) << 32) * bound;
+  }  
 };
 
 /**
@@ -189,6 +219,13 @@ public:
   uint32_t rand_uint(const uint32_t bound) {
      return ((xorShift64() >> 32) * uint64_t(bound)) >> 32;
   }
+
+  double rand_double01() {
+    return static_cast<double>(xorShift64() >> 32) / (static_cast<uint64_t>(1) << 32);
+  }  
+  double rand_double(const double bound) {
+    return static_cast<double>(xorShift64() >> 32) / (static_cast<uint64_t>(1) << 32) * bound;
+  }  
 };
 
 //*********************************************************************

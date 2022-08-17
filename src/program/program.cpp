@@ -174,6 +174,16 @@ std::string Function::declarationToString()
     return returnType_ + " " + name_ + "(" + argumentsList + ");";
 }
 
+std::string Function::getName()
+{
+    return name_;
+}
+
+std::string Function::getReturnType()
+{
+    return returnType_;
+}
+
 std::string Function::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result;
@@ -248,4 +258,19 @@ const std::vector<std::unique_ptr<IVariable>> &Program::getVariables() const
 const std::vector<std::unique_ptr<Function>> &Program::getFunctions() const
 {
     return functions_;
+}
+
+ std::vector<std::string> Program::getFunctionNames(std::string retrunType) const
+{
+    std::vector<std::string> names;
+
+    for (auto &func : functions_)
+    {
+        if (func->getReturnType() == retrunType)
+        {
+            names.push_back(func->getName());
+        }
+    }
+
+    return names;
 }

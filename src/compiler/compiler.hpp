@@ -29,6 +29,7 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json& value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
 
+    std::map<std::string, std::string> functionNameToState_;
     bool debugFlag_;
     Parser& parser_;
     Graph graph_;

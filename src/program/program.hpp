@@ -227,6 +227,8 @@ public:
     bool isPublic();
     std::string declarationToString();
     std::string toString(int delimiter, int shift, bool semicolon) override;
+    std::string getName();
+    std::string getReturnType();
 
 private:
     std::string getArgumentsList();
@@ -244,6 +246,7 @@ public:
     const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
     const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
     const std::vector<std::unique_ptr<Function>> &getFunctions() const;
+    std::vector<std::string> getFunctionNames(std::string returnType) const;
 
 private:
     std::vector<std::unique_ptr<IType>> types_;

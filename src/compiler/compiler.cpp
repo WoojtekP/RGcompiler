@@ -114,6 +114,7 @@ void Compiler::generateVoidStateFunctions()
     {
         std::string functionName = "state_" + state;
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+        functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
@@ -151,6 +152,7 @@ void Compiler::generateBoolStateFunctions()
     {
         std::string functionName = "is_legal_" + state;
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
+        functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
@@ -354,17 +356,11 @@ void Compiler::generateApplyEdgeFunctions()
 void Compiler::generateSpecialFunctions()
 {
     std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("GameState", "", true);
-    for (const auto& state : graph_.getNodeNames())
-    {
-        std::string instruction = "nameToFunction[\"" + state + "\"] = &GameState::state_" + state;
-        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
-    }
-    for (const auto& egde : graph_.getEdgeNames())
-    {
-        std::string instruction = "nameToFunction[\"" + egde + "\"] = &GameState::" + egde;
-        gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
 
-        instruction = "nameToFunction[\"apply_" + egde + "\"] = &GameState::apply_" + egde;
+    for (const auto& name : program_.getFunctionNames("void"))
+    {
+        std::string key = functionNameToState_.count(name) > 0 ? functionNameToState_[name] : name;
+        std::string instruction = "nameToFunction[\"" + key + "\"] = &GameState::" + name;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 

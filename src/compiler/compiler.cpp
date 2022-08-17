@@ -93,17 +93,17 @@ void Compiler::generateVariables()
     auto nameToFunctionType = std::make_unique<CustomType>("std::map<std::string, funcPtr>");
     program_.addVariableDeclaration(std::make_unique<Variable>("nameToFunction", std::move(nameToFunctionType)));
 
-    auto allMovesType = std::make_unique<CustomType>("std::vector<std::vector<std::string>>");
+    auto allMovesType = std::make_unique<CustomType>("std::vector<std::vector<int>>");
     program_.addVariableDeclaration(std::make_unique<Variable>("allMoves", std::move(allMovesType)));
 
-    auto currentMovesType = std::make_unique<CustomType>("std::vector<std::string>");
+    auto currentMovesType = std::make_unique<CustomType>("std::vector<int>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
 
-    auto currentPatternsType = std::make_unique<CustomType>("std::vector<std::string>");
+    auto currentPatternsType = std::make_unique<CustomType>("std::vector<int>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
-    auto currentStateType = std::make_unique<CustomType>("std::string");
-    auto currentStateValue = std::make_unique<SingleValue>("\"" + getStateName("begin") + "\"");
+    auto currentStateType = std::make_unique<CustomType>("int");
+    auto currentStateValue = std::make_unique<SingleValue>(getStateName("begin"));
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 }
@@ -125,7 +125,7 @@ void Compiler::generateVoidStateFunctions()
         }
 
         function->addInstruction(
-            std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + getStateName(state) + "\")"));
+            std::make_unique<CustomInstruction>("currentMoves.push_back(" + getStateName(state) + ")"));
 
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
@@ -173,7 +173,7 @@ void Compiler::generateBoolStateFunctions()
         else
         {
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + getStateName(state) + "\""));
+                std::make_unique<ComparisonInstruction>("currentPatterns.back()", getStateName(state)));
 
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
 
@@ -214,7 +214,7 @@ void Compiler::generateVoidEdgeFunctions()
             if (graph_.getActionLeftSide(stateFrom, stateTo) == "player")
             {
                 function->addInstruction(
-                    std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + getStateName(stateTo) + "\")"));
+                    std::make_unique<CustomInstruction>("currentMoves.push_back(" + getStateName(stateTo) + ")"));
                 function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
                 function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
                 function->addInstruction(std::make_unique<ReturnInstruction>());
@@ -242,7 +242,7 @@ void Compiler::generateVoidEdgeFunctions()
         else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Reachability)
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "currentPatterns.push_back(\"" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + "\")"));
+                "currentPatterns.push_back(" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + ")"));
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     "is_legal_" + getStateName(graph_.getActionLeftSide(stateFrom, stateTo)) + "()",
@@ -300,7 +300,7 @@ void Compiler::generateBoolEdgeFunctions()
         else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Reachability)
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "currentPatterns.push_back(\"" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + "\")"));
+                "currentPatterns.push_back(" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + ")"));
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     "is_legal_" + getStateName(graph_.getActionLeftSide(stateFrom, stateTo)) + "()",
@@ -375,7 +375,7 @@ void Compiler::generateSpecialFunctions()
     }
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
-    isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == \"" + getStateName("end") + "\""));
+    isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == " + getStateName("end")));
 
     auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
@@ -385,26 +385,26 @@ void Compiler::generateSpecialFunctions()
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
 
     auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", true);
-    getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("currentState"));
+    getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("std::to_string(currentState)"));
 
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(allMoves.clear();
     moves.clear();
-    runFunction(currentState);
+    runFunction(std::to_string(currentState));
     moves.assign(allMoves.begin(), allMoves.end()))"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
-        R"(const std::vector<std::string> &v = m.mr;
-    std::string from = v.front();
-    std::string to;
+        R"(const std::vector<int> &v = m.mr;
+    int from = v.front();
+    int to;
     for (int i=1;i<v.size();i++)
     {
         to = v[i];
-        runFunction("apply_edge_" + from + "_" + to);
+        runFunction("apply_edge_" + std::to_string(from) + "_" + std::to_string(to));
         from = to;
     }
     currentState = v.back())"));
@@ -510,5 +510,10 @@ void Compiler::changeStateNamesFromStringToInt()
 
 std::string Compiler::getStateName(std::string name)
 {
-    return std::to_string(statesStringToInt_[name]);
+    if (statesStringToInt_.count(name) > 0)
+    {
+        return std::to_string(statesStringToInt_[name]);
+    }
+
+    return "";
 }

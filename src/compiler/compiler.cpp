@@ -129,17 +129,10 @@ void Compiler::generateVoidStateFunctions()
 
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
-        if (state == "end")
+        for (auto& outgingState : outgoingStates)
         {
-            function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
-        }
-        else
-        {
-            for (auto& outgingState : outgoingStates)
-            {
-                function->addInstruction(std::make_unique<CustomInstruction>(
-                    "edge_" + getStateName(state) + "_" + getStateName(outgingState) + "()"));
-            }
+            function->addInstruction(std::make_unique<CustomInstruction>(
+                "edge_" + getStateName(state) + "_" + getStateName(outgingState) + "()"));
         }
 
         function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));

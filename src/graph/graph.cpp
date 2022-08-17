@@ -163,11 +163,11 @@ std::string Graph::toString()
 // TODO Belowed functions works in O(n) time, they should be changed to constant time
 // after mapping node names from string to int is done
 
-ActionType Graph::getActionType(std::string edgeName)
+ActionType Graph::getActionType(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->getActionType();
         }
@@ -176,11 +176,11 @@ ActionType Graph::getActionType(std::string edgeName)
     return ActionType::Skip;
 }
 
-bool Graph::getActionNegationValue(std::string edgeName)
+bool Graph::getActionNegationValue(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->getActionNegationValue();
         }
@@ -189,11 +189,11 @@ bool Graph::getActionNegationValue(std::string edgeName)
     return "";
 }
 
-std::string Graph::getActionLeftSide(std::string edgeName)
+std::string Graph::getActionLeftSide(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->getActionLeftSide();
         }
@@ -202,11 +202,11 @@ std::string Graph::getActionLeftSide(std::string edgeName)
     return "";
 }
 
-std::string Graph::getActionRightSide(std::string edgeName)
+std::string Graph::getActionRightSide(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->getActionRightSide();
         }
@@ -215,11 +215,11 @@ std::string Graph::getActionRightSide(std::string edgeName)
     return "";
 }
 
-std::string Graph::getAction(std::string edgeName)
+std::string Graph::getAction(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->actionToString();
         }
@@ -228,11 +228,11 @@ std::string Graph::getAction(std::string edgeName)
     return "";
 }
 
-std::string Graph::getToName(std::string edgeName)
+std::string Graph::getToName(std::string stateFrom, std::string stateTo)
 {
     for (auto &&edge : edges_)
     {
-        if (edge->fullName() == edgeName)
+        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
         {
             return edge->toName();
         }
@@ -241,13 +241,13 @@ std::string Graph::getToName(std::string edgeName)
     return "";
 }
 
-std::vector<std::string> Graph::getEdgeNames()
+std::vector<std::pair<std::string, std::string>> Graph::getEdgeNames()
 {
-    std::vector<std::string> v;
+    std::vector<std::pair<std::string, std::string>> v;
 
     for (auto &&edge : edges_)
     {
-        v.push_back(edge->fullName());
+        v.push_back(std::make_pair(edge->fromName(), edge->toName()));
     }
 
     return v;

@@ -57,11 +57,11 @@ public:
     std::string toString();
     std::vector<std::string> getNodeNames();
     std::vector<std::string> getOutgoingNodesFrom(std::string from);
-    std::vector<std::string> getEdgeNames();
-    ActionType getActionType(std::string edgeName);
-    std::string getActionLeftSide(std::string edgeName);
-    std::string getActionRightSide(std::string edgeName);
-    std::string getAction(std::string edgeName);
-    std::string getToName(std::string edgeName);
-    bool getActionNegationValue(std::string edgeName);
+    std::vector<std::pair<std::string, std::string>> getEdgeNames();
+    ActionType getActionType(std::string stateFrom, std::string stateTo);
+    std::string getActionLeftSide(std::string stateFrom, std::string stateTo);
+    std::string getActionRightSide(std::string stateFrom, std::string stateTo);
+    std::string getAction(std::string stateFrom, std::string stateTo);
+    std::string getToName(std::string stateFrom, std::string stateTo);
+    bool getActionNegationValue(std::string stateFrom, std::string stateTo);
 };

@@ -23,12 +23,15 @@ private:
     void generateBoolEdgeFunctions();
     void generateApplyEdgeFunctions();
     void generateSpecialFunctions();
+    void changeStateNamesFromStringToInt();
+    std::string getStateName(std::string name);
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json& value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json& value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
 
+    std::map<std::string, int> statesStringToInt_;
     std::map<std::string, std::string> functionNameToState_;
     bool debugFlag_;
     Parser& parser_;

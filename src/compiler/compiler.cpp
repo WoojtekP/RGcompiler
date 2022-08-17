@@ -11,6 +11,8 @@ Compiler::Compiler(Parser& parser, bool debugFlag) : parser_(parser), debugFlag_
 
 void Compiler::compile()
 {
+    changeStateNamesFromStringToInt();
+
     generateTypes();
     generateConstants();
     generateVariables();
@@ -101,7 +103,7 @@ void Compiler::generateVariables()
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
     auto currentStateType = std::make_unique<CustomType>("std::string");
-    auto currentStateValue = std::make_unique<SingleValue>("\"begin\"");
+    auto currentStateValue = std::make_unique<SingleValue>("\"" + getStateName("begin") + "\"");
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 }
@@ -112,16 +114,18 @@ void Compiler::generateVoidStateFunctions()
 
     for (auto& state : states)
     {
-        std::string functionName = "state_" + state;
+        std::string prefix = "state_";
+        std::string functionName = prefix + getStateName(state);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
         functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
-            function->addInstruction(debugInstruction(functionName));
+            function->addInstruction(debugInstruction(prefix + state));
         }
 
-        function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + state + "\")"));
+        function->addInstruction(
+            std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + getStateName(state) + "\")"));
 
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
@@ -133,8 +137,8 @@ void Compiler::generateVoidStateFunctions()
         {
             for (auto& outgingState : outgoingStates)
             {
-                function->addInstruction(
-                    std::make_unique<CustomInstruction>("edge_" + state + "_" + outgingState + "()"));
+                function->addInstruction(std::make_unique<CustomInstruction>(
+                    "edge_" + getStateName(state) + "_" + getStateName(outgingState) + "()"));
             }
         }
 
@@ -150,13 +154,14 @@ void Compiler::generateBoolStateFunctions()
 
     for (auto& state : states)
     {
-        std::string functionName = "is_legal_" + state;
+        std::string prefix = "is_legal_";
+        std::string functionName = prefix + getStateName(state);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
         functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
-            function->addInstruction(debugInstruction(functionName));
+            function->addInstruction(debugInstruction(prefix + state));
         }
 
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
@@ -168,7 +173,7 @@ void Compiler::generateBoolStateFunctions()
         else
         {
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + state + "\""));
+                std::make_unique<ComparisonInstruction>("currentPatterns.back()", "\"" + getStateName(state) + "\""));
 
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
 
@@ -177,7 +182,7 @@ void Compiler::generateBoolStateFunctions()
             for (auto& outgingState : outgoingStates)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_edge_" + state + "_" + outgingState + "()", "true"));
+                    "is_legal_edge_" + getStateName(state) + "_" + getStateName(outgingState) + "()", "true"));
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
                 function->addInstruction(std::move(ifInstruction));
             }
@@ -191,24 +196,25 @@ void Compiler::generateBoolStateFunctions()
 
 void Compiler::generateVoidEdgeFunctions()
 {
-    std::vector<std::string> edges = graph_.getEdgeNames();
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
 
-    for (auto& edge : edges)
+    for (auto& [stateFrom, stateTo] : edges)
     {
-        std::string functionName = edge;
+        std::string prefix = "edge_";
+        std::string functionName = prefix + getStateName(stateFrom) + "_" + getStateName(stateTo);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
         if (debugFlag_)
         {
-            function->addInstruction(debugInstruction(functionName));
+            function->addInstruction(debugInstruction(prefix + stateFrom + "_" + stateTo));
         }
 
-        if (graph_.getActionType(edge) == ActionType::Assignment)
+        if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
-            if (graph_.getActionLeftSide(edge) == "player")
+            if (graph_.getActionLeftSide(stateFrom, stateTo) == "player")
             {
                 function->addInstruction(
-                    std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + graph_.getToName(edge) + "\")"));
+                    std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + getStateName(stateTo) + "\")"));
                 function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
                 function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
                 function->addInstruction(std::make_unique<ReturnInstruction>());
@@ -219,39 +225,40 @@ void Compiler::generateVoidEdgeFunctions()
             }
 
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
+                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "int"));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
+                graph_.getActionLeftSide(stateFrom, stateTo), graph_.getActionRightSide(stateFrom, stateTo)));
         }
-        else if (graph_.getActionType(edge) == ActionType::Comparison)
+        else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Comparison)
         {
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    graph_.getActionLeftSide(edge),
-                    graph_.getActionRightSide(edge),
-                    !graph_.getActionNegationValue(edge)));
+                    graph_.getActionLeftSide(stateFrom, stateTo),
+                    graph_.getActionRightSide(stateFrom, stateTo),
+                    !graph_.getActionNegationValue(stateFrom, stateTo)));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
             function->addInstruction(std::move(ifInstruction));
         }
-        else if (graph_.getActionType(edge) == ActionType::Reachability)
+        else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Reachability)
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
+                "currentPatterns.push_back(\"" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + "\")"));
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_" + graph_.getActionLeftSide(edge) + "()",
-                    graph_.getActionNegationValue(edge) ? "true" : "false"));
+                    "is_legal_" + getStateName(graph_.getActionLeftSide(stateFrom, stateTo)) + "()",
+                    graph_.getActionNegationValue(stateFrom, stateTo) ? "true" : "false"));
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
             function->addInstruction(std::move(ifInstruction));
             function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
         }
 
-        function->addInstruction(std::make_unique<CustomInstruction>("state_" + graph_.getToName(edge) + "()"));
+        function->addInstruction(std::make_unique<CustomInstruction>("state_" + getStateName(stateTo) + "()"));
 
-        if (graph_.getActionType(edge) == ActionType::Assignment)
+        if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
-            function->addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
+            function->addInstruction(
+                std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(stateFrom, stateTo), "old"));
         }
 
         program_.addFunction(std::move(function));
@@ -260,63 +267,65 @@ void Compiler::generateVoidEdgeFunctions()
 
 void Compiler::generateBoolEdgeFunctions()
 {
-    std::vector<std::string> edges = graph_.getEdgeNames();
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
 
-    for (auto& edge : edges)
+    for (auto& [stateFrom, stateTo] : edges)
     {
-        std::string functionName = "is_legal_" + edge;
+        std::string prefix = "is_legal_edge_";
+        std::string functionName = prefix + getStateName(stateFrom) + "_" + getStateName(stateTo);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
         if (debugFlag_)
         {
-            function->addInstruction(debugInstruction(functionName));
+            function->addInstruction(debugInstruction(prefix + stateFrom + "_" + stateTo));
         }
 
-        if (graph_.getActionType(edge) == ActionType::Assignment)
+        if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(edge), "int"));
+                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "int"));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
+                graph_.getActionLeftSide(stateFrom, stateTo), graph_.getActionRightSide(stateFrom, stateTo)));
         }
-        else if (graph_.getActionType(edge) == ActionType::Comparison)
+        else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Comparison)
         {
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    graph_.getActionLeftSide(edge),
-                    graph_.getActionRightSide(edge),
-                    !graph_.getActionNegationValue(edge)));
+                    graph_.getActionLeftSide(stateFrom, stateTo),
+                    graph_.getActionRightSide(stateFrom, stateTo),
+                    !graph_.getActionNegationValue(stateFrom, stateTo)));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
             function->addInstruction(std::move(ifInstruction));
         }
-        else if (graph_.getActionType(edge) == ActionType::Reachability)
+        else if (graph_.getActionType(stateFrom, stateTo) == ActionType::Reachability)
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "currentPatterns.push_back(\"" + graph_.getActionRightSide(edge) + "\")"));
+                "currentPatterns.push_back(\"" + getStateName(graph_.getActionRightSide(stateFrom, stateTo)) + "\")"));
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_" + graph_.getActionLeftSide(edge) + "()",
-                    graph_.getActionNegationValue(edge) ? "true" : "false"));
+                    "is_legal_" + getStateName(graph_.getActionLeftSide(stateFrom, stateTo)) + "()",
+                    graph_.getActionNegationValue(stateFrom, stateTo) ? "true" : "false"));
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
             function->addInstruction(std::move(ifInstruction));
             function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
         }
 
-        const std::string nextState = graph_.getToName(edge);
-        const auto outNodes = graph_.getOutgoingNodesFrom(nextState);
-        if (!outNodes.empty())
+        bool outNodesExist = !graph_.getOutgoingNodesFrom(stateTo).empty();
+
+        if (outNodesExist)
         {
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + graph_.getToName(edge) + "()", "bool"));
+                std::make_unique<AssignmentInstruction>("tmp", "is_legal_" + getStateName(stateTo) + "()", "bool"));
         }
 
-        if (graph_.getActionType(edge) == ActionType::Assignment)
+        if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
-            function->addInstruction(std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(edge), "old"));
+            function->addInstruction(
+                std::make_unique<AssignmentInstruction>(graph_.getActionLeftSide(stateFrom, stateTo), "old"));
         }
 
-        if (!outNodes.empty())
+        if (outNodesExist)
         {
             function->addInstruction(std::make_unique<ReturnInstruction>("tmp"));
         }
@@ -331,22 +340,23 @@ void Compiler::generateBoolEdgeFunctions()
 
 void Compiler::generateApplyEdgeFunctions()
 {
-    std::vector<std::string> edges = graph_.getEdgeNames();
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
 
-    for (auto& edge : edges)
+    for (auto& [stateFrom, stateTo] : edges)
     {
-        std::string functionName = "apply_" + edge;
+        std::string prefix = "apply_edge_";
+        std::string functionName = prefix + getStateName(stateFrom) + "_" + getStateName(stateTo);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
         if (debugFlag_)
         {
-            function->addInstruction(debugInstruction(functionName));
+            function->addInstruction(debugInstruction(prefix + stateFrom + "_" + stateTo));
         }
 
-        if (graph_.getActionType(edge) == ActionType::Assignment)
+        if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                graph_.getActionLeftSide(edge), graph_.getActionRightSide(edge)));
+                graph_.getActionLeftSide(stateFrom, stateTo), graph_.getActionRightSide(stateFrom, stateTo)));
         }
 
         program_.addFunction(std::move(function));
@@ -359,13 +369,13 @@ void Compiler::generateSpecialFunctions()
 
     for (const auto& name : program_.getFunctionNames("void"))
     {
-        std::string key = functionNameToState_.count(name) > 0 ? functionNameToState_[name] : name;
+        std::string key = functionNameToState_.count(name) > 0 ? getStateName(functionNameToState_[name]) : name;
         std::string instruction = "nameToFunction[\"" + key + "\"] = &GameState::" + name;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
-    isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == \"end\""));
+    isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == \"" + getStateName("end") + "\""));
 
     auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
@@ -488,4 +498,17 @@ std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionNam
 {
     std::string information = "In function: " + functionName + "\\n";
     return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
+}
+
+void Compiler::changeStateNamesFromStringToInt()
+{
+    for (auto& state : graph_.getNodeNames())
+    {
+        statesStringToInt_[state] = statesStringToInt_.size();
+    }
+}
+
+std::string Compiler::getStateName(std::string name)
+{
+    return std::to_string(statesStringToInt_[name]);
 }

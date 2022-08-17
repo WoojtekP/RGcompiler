@@ -4,7 +4,7 @@
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
 
-Compiler::Compiler(Parser& parser) : parser_(parser)
+Compiler::Compiler(Parser& parser, bool debugFlag) : parser_(parser), debugFlag_(debugFlag)
 {
     initializeGraph();
 }
@@ -31,7 +31,7 @@ void Compiler::initializeGraph()
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
 {
     Printer printer(parser_, headerFile, sourceFile);
-    printer.initializeHeaderFile();
+    printer.initializeHeaderFile(debugFlag_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());
     printer.printSymbolValues();
@@ -112,7 +112,13 @@ void Compiler::generateVoidStateFunctions()
 
     for (auto& state : states)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>("state_" + state, "void");
+        std::string functionName = "state_" + state;
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+
+        if (debugFlag_)
+        {
+            function->addInstruction(debugInstruction(functionName));
+        }
 
         function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.push_back(\"" + state + "\")"));
 
@@ -143,7 +149,14 @@ void Compiler::generateBoolStateFunctions()
 
     for (auto& state : states)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>("is_legal_" + state, "bool");
+        std::string functionName = "is_legal_" + state;
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
+
+        if (debugFlag_)
+        {
+            function->addInstruction(debugInstruction(functionName));
+        }
+
         std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
 
         if (outgoingStates.empty())
@@ -180,7 +193,13 @@ void Compiler::generateVoidEdgeFunctions()
 
     for (auto& edge : edges)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>(edge, "void");
+        std::string functionName = edge;
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+
+        if (debugFlag_)
+        {
+            function->addInstruction(debugInstruction(functionName));
+        }
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
@@ -243,7 +262,13 @@ void Compiler::generateBoolEdgeFunctions()
 
     for (auto& edge : edges)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>("is_legal_" + edge, "bool");
+        std::string functionName = "is_legal_" + edge;
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
+
+        if (debugFlag_)
+        {
+            function->addInstruction(debugInstruction(functionName));
+        }
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
@@ -308,7 +333,13 @@ void Compiler::generateApplyEdgeFunctions()
 
     for (auto& edge : edges)
     {
-        std::unique_ptr<Function> function = std::make_unique<Function>("apply_" + edge, "void");
+        std::string functionName = "apply_" + edge;
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+
+        if (debugFlag_)
+        {
+            function->addInstruction(debugInstruction(functionName));
+        }
 
         if (graph_.getActionType(edge) == ActionType::Assignment)
         {
@@ -455,4 +486,10 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
         }
     }
     return std::make_unique<MapValue>(std::move(idToValueMap), std::move(defaultValue));
+}
+
+std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionName)
+{
+    std::string information = "In function: " + functionName + "\\n";
+    return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
 }

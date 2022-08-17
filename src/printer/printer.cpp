@@ -10,8 +10,12 @@ Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream&
 : parser_(parser), headerFile_(headerFile), sourceFile_(sourceFile)
 {}
 
-void Printer::initializeHeaderFile()
+void Printer::initializeHeaderFile(bool debug)
 {
+    if (debug)
+    {
+        headerFile_ << "#include <iostream>" << std::endl;
+    }
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
     headerFile_ << std::endl;

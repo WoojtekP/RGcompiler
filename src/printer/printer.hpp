@@ -9,7 +9,7 @@ class Printer
 {
 public:
     Printer(const Parser& parse, std::ofstream& headerFile, std::ofstream& sourceFile);
-    void initializeHeaderFile();
+    void initializeHeaderFile(bool debug);
     void initializeSourceFile();
     void initializeMainClass();
     void endMainClass();

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(RegularGamesCompiler CXX)
 
 find_package(nlohmann_json 3.10.5 REQUIRED)
+find_package(Boost 1.71.0 COMPONENTS program_options REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -31,3 +32,5 @@ add_executable(rg2cpp
     src/graph/graph.cpp
     src/program/program.cpp
     src/compiler/compiler.cpp)
+
+target_link_libraries(rg2cpp Boost::program_options)

@@ -7,7 +7,7 @@
 class Compiler
 {
 public:
-    Compiler(Parser& parser);
+    Compiler(Parser& parser, bool debugFlag);
     void compile();
     void generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile);
 
@@ -27,7 +27,9 @@ private:
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json& value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json& value);
+    std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
 
+    bool debugFlag_;
     Parser& parser_;
     Graph graph_;
     Program program_;

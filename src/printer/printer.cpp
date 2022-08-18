@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <fstream>
 
 #include <nlohmann/json.hpp>
@@ -82,24 +83,44 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
     headerFile_ << std::endl;
 }
 
-void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
+void Printer::printVariables(
+    const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix)
 {
-    headerFile_ << "private:" << std::endl;
+    headerFile_ << prefix << std::endl;
+
+    if (!std::accumulate(
+            variables.begin(), variables.end(), false, [isPublic](bool acc, const std::unique_ptr<IVariable>& f) {
+                return acc || (f->isPublic() == isPublic);
+            }))
+    {
+        return;
+    }
+
     for (const auto& variable : variables)
     {
-        const std::string varType = variable->valueType->toString();
-        const std::string varName = variable->identifier;
-        if (variable->value)
+        if (variable->isPublic() == isPublic)
         {
-            const std::string varValue = variable->value->toString();
-            headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
-        }
-        else
-        {
-            headerFile_ << varType << " " << varName << ";" << std::endl;
+            const std::string varType = variable->valueType->toString();
+            const std::string varName = variable->identifier;
+            if (variable->value)
+            {
+                const std::string varValue = variable->value->toString();
+                headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
+            }
+            else
+            {
+                headerFile_ << varType << " " << varName << ";" << std::endl;
+            }
         }
     }
+
     headerFile_ << std::endl;
+}
+
+void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
+{
+    printVariables(variables, true, "public:");
+    printVariables(variables, false, "private:");
 }
 
 void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& functions)

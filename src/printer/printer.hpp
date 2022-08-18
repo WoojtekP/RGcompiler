@@ -19,6 +19,8 @@ public:
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
     void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);
+    void printVariables(
+        const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration();
 

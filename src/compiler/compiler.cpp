@@ -101,10 +101,17 @@ void Compiler::generateVariables()
     auto currentPatternsType = std::make_unique<CustomType>("std::vector<int>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
+    std::string initialState = getStateIntId("begin");
+
     auto currentStateType = std::make_unique<CustomType>("int");
-    auto currentStateValue = std::make_unique<SingleValue>(getStateIntId("begin"));
+    auto currentStateValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
+
+    auto initialType = std::make_unique<CustomType>("static constexpr int");
+    auto initialValue = std::make_unique<SingleValue>(initialState);
+    program_.addVariableDeclaration(
+        std::make_unique<Variable>("initial", std::move(initialType), std::move(initialValue), true));
 }
 
 void Compiler::generateVoidStateFunctions()

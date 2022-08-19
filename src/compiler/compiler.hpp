@@ -24,6 +24,9 @@ private:
     void generateApplyEdgeFunctions();
     void generateSpecialFunctions();
     void generateIntRepresentationForStates();
+    void generateIntRepresentationForEdges();
+    void generateRunApplyEdgeFunction();
+    void generateRunStateFunction();
     std::string getStateIntId(std::string name);
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
@@ -32,6 +35,7 @@ private:
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
 
     std::map<std::string, int> stateStringToInt_;
+    std::map<std::pair<std::string, std::string>, int> edgeStringToInt_;
     std::map<std::string, std::string> functionNameToState_;
     bool debugFlag_;
     Parser& parser_;

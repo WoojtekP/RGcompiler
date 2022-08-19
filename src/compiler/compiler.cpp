@@ -8,6 +8,7 @@ Compiler::Compiler(Parser& parser, bool debugFlag) : parser_(parser), debugFlag_
 {
     initializeGraph();
     generateIntRepresentationForStates();
+    generateIntRepresentationForEdges();
 }
 
 void Compiler::compile()
@@ -362,6 +363,51 @@ void Compiler::generateApplyEdgeFunctions()
     }
 }
 
+void Compiler::generateRunApplyEdgeFunction()
+{
+    auto function = std::make_unique<Function>("runApplyEdge", "void", true);
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
+
+    auto sw = std::make_unique<SwitchInstruction>("val");
+
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
+
+    for (const auto& [stateFrom, stateTo] : edges)
+    {
+        auto block = std::make_unique<BlockInstruction>();
+        block->addInstruction(std::make_unique<CustomInstruction>(
+            "apply_edge_" + getStateIntId(stateFrom) + "_" + getStateIntId(stateTo) + "()"));
+        block->addInstruction(std::make_unique<ReturnInstruction>());
+
+        sw->addCaseInstruction(edgeStringToInt_[std::make_pair(stateFrom, stateTo)], std::move(block));
+    }
+
+    function->addInstruction(std::move(sw));
+    program_.addFunction(std::move(function));
+}
+
+void Compiler::generateRunStateFunction()
+{
+    auto function = std::make_unique<Function>("runState", "void", true);
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
+
+    auto sw = std::make_unique<SwitchInstruction>("val");
+
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
+
+    for (auto& state : graph_.getNodeNames())
+    {
+        auto block = std::make_unique<BlockInstruction>();
+        block->addInstruction(std::make_unique<CustomInstruction>("state_" + getStateIntId(state) + "()"));
+        block->addInstruction(std::make_unique<ReturnInstruction>());
+
+        sw->addCaseInstruction(stateStringToInt_[state], std::move(block));
+    }
+
+    function->addInstruction(std::move(sw));
+    program_.addFunction(std::move(function));
+}
+
 void Compiler::generateSpecialFunctions()
 {
     std::unique_ptr<Function> gameStateConstructor = std::make_unique<Function>("GameState", "", true);
@@ -372,6 +418,9 @@ void Compiler::generateSpecialFunctions()
         std::string instruction = "nameToFunction[\"" + key + "\"] = &GameState::" + name;
         gameStateConstructor->addInstruction(std::make_unique<CustomInstruction>(instruction));
     }
+
+    generateRunApplyEdgeFunction();
+    generateRunStateFunction();
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
     isTerminal->addInstruction(std::make_unique<ReturnInstruction>("currentState == " + getStateIntId("end")));
@@ -504,6 +553,18 @@ void Compiler::generateIntRepresentationForStates()
     for (auto& state : graph_.getNodeNames())
     {
         stateStringToInt_[state] = stateStringToInt_.size();
+    }
+}
+
+void Compiler::generateIntRepresentationForEdges()
+{
+    std::vector<std::pair<std::string, std::string>> edges = graph_.getEdgeNames();
+
+    int shift = stateStringToInt_.size();
+
+    for (const auto& [stateFrom, stateTo] : edges)
+    {
+        edgeStringToInt_[std::make_pair(stateFrom, stateTo)] = edgeStringToInt_.size() + shift;
     }
 }
 

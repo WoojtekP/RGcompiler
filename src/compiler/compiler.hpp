@@ -27,6 +27,7 @@ private:
     void generateIntRepresentationForEdges();
     void generateRunApplyEdgeFunction();
     void generateRunStateFunction();
+    void generateGetFromStateForEdge();
     std::string getStateIntId(std::string name);
     std::unique_ptr<IType> generateType(const nlohmann::json& t);
     std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);

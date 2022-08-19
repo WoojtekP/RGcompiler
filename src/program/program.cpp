@@ -142,6 +142,37 @@ std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
     return result;
 }
 
+SwitchInstruction::SwitchInstruction(const std::string &condition) : condition_(condition) {}
+
+void SwitchInstruction::addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction)
+{
+    instructions_.push_back(std::make_pair(val, std::move(instruction)));
+}
+
+void SwitchInstruction::addDefaultInstruction(std::unique_ptr<IInstruction> &&instruction)
+{
+    default_ = std::move(instruction);
+}
+
+std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon)
+{
+    std::string result;
+
+    result += getLeadingSpaces(delimiter) + "switch (" + condition_ + ")\n";
+    result += getLeadingSpaces(delimiter) + "{\n";
+
+    int newDelimiter = delimiter + shift;
+    for (const auto &[val, instruction] : instructions_)
+    {
+        result += getLeadingSpaces(newDelimiter) + "case " + std::to_string(val) + ":\n";
+        result += instruction->toString(newDelimiter + shift, shift, true) + "\n";
+    }
+
+    result += getLeadingSpaces(delimiter) + "}\n";
+
+    return result;
+}
+
 CustomInstruction::CustomInstruction(std::string instruction) : instruction_(instruction) {}
 
 std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon)
@@ -260,7 +291,7 @@ const std::vector<std::unique_ptr<Function>> &Program::getFunctions() const
     return functions_;
 }
 
- std::vector<std::string> Program::getFunctionNames(std::string retrunType) const
+std::vector<std::string> Program::getFunctionNames(std::string retrunType) const
 {
     std::vector<std::string> names;
 

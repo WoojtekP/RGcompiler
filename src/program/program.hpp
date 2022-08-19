@@ -201,6 +201,21 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
+class SwitchInstruction : public IInstruction
+{
+    std::string condition_;
+    std::vector<std::pair<int, std::unique_ptr<IInstruction>>> instructions_;
+    std::unique_ptr<IInstruction> default_;
+
+public:
+    SwitchInstruction(const std::string &condition);
+
+    void addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction);
+    void addDefaultInstruction(std::unique_ptr<IInstruction> &&instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
 class LoopInstruction : public IInstruction
 {
     // TODO: implement!

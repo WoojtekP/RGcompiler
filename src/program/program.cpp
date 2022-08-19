@@ -173,6 +173,25 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
     return result;
 }
 
+BlockInstruction::BlockInstruction() {}
+
+void BlockInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
+{
+    instructions_.push_back(std::move(instruction));
+}
+
+std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)
+{
+    std::string result;
+
+    for (const auto &instruction : instructions_)
+    {
+        result += instruction->toString(delimiter, shift, true) + "\n";
+    }
+
+    return result;
+}
+
 CustomInstruction::CustomInstruction(std::string instruction) : instruction_(instruction) {}
 
 std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon)

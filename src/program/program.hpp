@@ -188,6 +188,18 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
+class BlockInstruction : public IInstruction
+{
+    std::vector<std::unique_ptr<IInstruction>> instructions_;
+
+public:
+    BlockInstruction();
+
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
 class IfInstruction : public IInstruction
 {
     std::unique_ptr<ComparisonInstruction> condition_;

@@ -168,7 +168,13 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
         result += instruction->toString(newDelimiter + shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + "}\n";
+    if (default_)
+    {
+        result += getLeadingSpaces(newDelimiter) + "default:\n";
+        result += default_->toString(newDelimiter + shift, shift, true) + "\n";
+    }
+
+    result += getLeadingSpaces(delimiter) + "}";
 
     return result;
 }
@@ -184,9 +190,18 @@ std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result;
 
+    int cnt = 0;
+
     for (const auto &instruction : instructions_)
     {
-        result += instruction->toString(delimiter, shift, true) + "\n";
+        result += instruction->toString(delimiter, shift, true);
+
+        cnt++;
+
+        if (instructions_.size() > cnt)
+        {
+            result += "\n";
+        }
     }
 
     return result;

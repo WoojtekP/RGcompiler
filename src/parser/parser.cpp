@@ -16,19 +16,18 @@ bool isNumber(const std::string& s)
 
 Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
-    std::set<int> forbiddenValues;
-    int value = 0;
+    symbolToValue_.emplace("keeper", 0);
+    int value = 1;
     for (const auto& el : parsedJson_["types"])
     {
-        if (el["type"]["kind"] == "Set")
+        if (el["identifier"] == "PlayerOrKeeper")
         {
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const std::string id = identifier.get<std::string>();
-                if (isNumber(id))
+                if (id != "keeper")
                 {
-                    int n = std::stoi(id);
-                    forbiddenValues.insert(n);
+                    symbolToValue_.emplace(id, value++);
                 }
             }
         }
@@ -44,10 +43,6 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
                 {
                     if (symbolToValue_.find(id) == symbolToValue_.end())
                     {
-                        while (forbiddenValues.count(value))
-                        {
-                            value++;
-                        }
                         symbolToValue_.emplace(id, value++);
                     }
                 }

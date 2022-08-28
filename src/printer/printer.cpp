@@ -64,9 +64,17 @@ void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& t
 
 void Printer::printSymbolValues()
 {
+    std::map<int, std::vector<std::string>> valueToSymbols;
     for (const auto& [symbol, value] : parser_.getSymbolToValueMap())
     {
-        headerFile_ << "constexpr int " << symbol << " = " << value << ";" << std::endl;
+        valueToSymbols[value].push_back(symbol);
+    }
+    for (const auto& [value, symbols] : valueToSymbols)
+    {
+        for (const auto& symbol : symbols)
+        {
+            headerFile_ << "constexpr int " << symbol << " = " << value << ";" << std::endl;
+        }
     }
     headerFile_ << std::endl;
 }

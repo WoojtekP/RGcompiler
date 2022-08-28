@@ -22,7 +22,7 @@ python3 -m json.tool ${game}.json > ${game}-ast.json
 rm ${game}.json
 
 # generate cpp files
-./build/rg2cpp ${game}-ast.json
+./build/rg2cpp --file ${game}-ast.json
 
 # format generated files
 clang-format -style=file -i reasoner.hpp reasoner.cpp

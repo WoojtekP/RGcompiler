@@ -16,12 +16,12 @@ bool isNumber(const std::string& s)
 
 Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
-    symbolToValue_.emplace("keeper", 0);
-    int value = 1;
     for (const auto& el : parsedJson_["types"])
     {
         if (el["identifier"] == "PlayerOrKeeper")
         {
+            symbolToValue_.emplace("keeper", 0);
+            int value = 1;
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const std::string id = identifier.get<std::string>();
@@ -32,21 +32,67 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
             }
         }
     }
+    std::set<std::string> allSymbols;
+    std::set<std::string> commonSymbols;
     for (const auto& el : parsedJson_["types"])
     {
-        if (el["type"]["kind"] == "Set")
+        if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
         {
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const std::string id = identifier.get<std::string>();
-                if (!isNumber(id))
+                if (allSymbols.count(id))
                 {
-                    if (symbolToValue_.find(id) == symbolToValue_.end())
-                    {
-                        symbolToValue_.emplace(id, value++);
-                    }
+                    commonSymbols.insert(id);
+                }
+                else
+                {
+                    allSymbols.insert(id);
                 }
             }
+        }
+    }
+
+    for (const auto& el : parsedJson_["types"])
+    {
+        if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
+        {
+            if (std::all_of(el["type"]["identifiers"].begin(), el["type"]["identifiers"].end(), isNumber))
+            {
+                continue;
+            }
+            assert(!std::any_of(el["type"]["identifiers"].begin(), el["type"]["identifiers"].end(), isNumber));
+
+            int value = 0;
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                if (commonSymbols.count(id))
+                {
+                    if (!symbolToValue_.count(id))
+                    {
+                        symbolToValue_.emplace(id, value);
+                    }
+                    value++;
+                }
+            }
+
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                if (!commonSymbols.count(id))
+                {
+                    symbolToValue_.emplace(id, value++);
+                }
+            }
+
+            std::set<int> assignedValues;
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                assignedValues.insert(symbolToValue_[id]);
+            }
+            assert(assignedValues.size() == el["type"]["identifiers"].size());
         }
     }
 }

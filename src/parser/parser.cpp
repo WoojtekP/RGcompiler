@@ -18,18 +18,20 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
 {
     for (const auto& el : parsedJson_["types"])
     {
-        if (el["identifier"] == "PlayerOrKeeper")
+        if (el["identifier"] == "Player")
         {
             symbolToValue_.emplace("keeper", 0);
+            typeToSymbolToValue_["PlayerOrKeeper"].emplace("keeper", 0);
             int value = 1;
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const std::string id = identifier.get<std::string>();
-                if (id != "keeper")
-                {
-                    symbolToValue_.emplace(id, value++);
-                }
+                symbolToValue_.emplace(id, value);
+                typeToSymbolToValue_["Player"].emplace(id, value);
+                typeToSymbolToValue_["PlayerOrKeeper"].emplace(id, value);
+                value++;
             }
+            break;
         }
     }
     std::set<std::string> allSymbols;
@@ -63,6 +65,7 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
             }
             assert(!std::any_of(el["type"]["identifiers"].begin(), el["type"]["identifiers"].end(), isNumber));
 
+            const std::string& typeName = el["identifier"].get<std::string>();
             int value = 0;
             for (const auto& identifier : el["type"]["identifiers"])
             {
@@ -73,6 +76,7 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
                     {
                         symbolToValue_.emplace(id, value);
                     }
+                    typeToSymbolToValue_[typeName].emplace(id, symbolToValue_[id]);
                     value++;
                 }
             }
@@ -82,7 +86,9 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
                 const std::string id = identifier.get<std::string>();
                 if (!commonSymbols.count(id))
                 {
-                    symbolToValue_.emplace(id, value++);
+                    symbolToValue_.emplace(id, value);
+                    typeToSymbolToValue_[typeName].emplace(id, value);
+                    value++;
                 }
             }
 
@@ -139,6 +145,11 @@ std::string Parser::getValue(const std::string& symbol) const
 const std::map<std::string, int>& Parser::getSymbolToValueMap() const
 {
     return symbolToValue_;
+}
+
+const TypeToSymbolToValueMap& Parser::getTypeToSymbolToValueMap() const
+{
+    return typeToSymbolToValue_;
 }
 
 std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) const

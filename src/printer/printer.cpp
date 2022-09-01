@@ -53,7 +53,7 @@ void Printer::endSourceFile()
     sourceFile_ << "}  // namespace reasoner" << std::endl;
 }
 
-void Printer::printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations)
+void Printer::printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations)
 {
     for (const auto& typeDecl : typeDeclarations)
     {

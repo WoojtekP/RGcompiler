@@ -28,15 +28,15 @@ struct ElementaryType : public IType
 struct FunctionType : public IType
 {
     FunctionType(const std::string &id) : IType(id) {};
-    FunctionType(std::unique_ptr<IType> src, std::unique_ptr<IType> dst)
+    FunctionType(std::shared_ptr<IType> src, std::shared_ptr<IType> dst)
     : source(std::move(src)), destination(std::move(dst))
     {}
     ~FunctionType() = default;
     std::string toString() const override;
     std::string definitionToString() const override;
 
-    std::unique_ptr<IType> source;
-    std::unique_ptr<IType> destination;
+    std::shared_ptr<IType> source;
+    std::shared_ptr<IType> destination;
 };
 
 struct CustomType : public IType
@@ -84,10 +84,10 @@ struct MapValue : public IValue
 struct IVariable
 {
     IVariable() = default;
-    IVariable(const std::string &id, std::unique_ptr<IType> valType, bool isPublic = false)
+    IVariable(const std::string &id, std::shared_ptr<IType> valType, bool isPublic = false)
     : identifier(id), valueType(std::move(valType)), isPublic_(isPublic)
     {}
-    IVariable(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val, bool isPublic = false)
+    IVariable(const std::string &id, std::shared_ptr<IType> valType, std::unique_ptr<IValue> val, bool isPublic = false)
     : identifier(id), valueType(std::move(valType)), value(std::move(val)), isPublic_(isPublic)
     {}
     virtual ~IVariable() = default;
@@ -96,14 +96,14 @@ struct IVariable
 
     bool isPublic_;
     std::string identifier;
-    std::unique_ptr<IType> valueType;
+    std::shared_ptr<IType> valueType;
     std::unique_ptr<IValue> value;
 };
 
 struct Constant : public IVariable
 {
     Constant() = default;
-    Constant(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val)
+    Constant(const std::string &id, std::shared_ptr<IType> valType, std::unique_ptr<IValue> val)
     : IVariable(id, std::move(valType), std::move(val))
     {}
     ~Constant() = default;
@@ -113,10 +113,10 @@ struct Constant : public IVariable
 struct Variable : public IVariable
 {
     Variable() = default;
-    Variable(const std::string &id, std::unique_ptr<IType> valType, bool isPublic = false)
+    Variable(const std::string &id, std::shared_ptr<IType> valType, bool isPublic = false)
     : IVariable(id, std::move(valType), isPublic)
     {}
-    Variable(const std::string &id, std::unique_ptr<IType> valType, std::unique_ptr<IValue> val, bool isPublic = false)
+    Variable(const std::string &id, std::shared_ptr<IType> valType, std::unique_ptr<IValue> val, bool isPublic = false)
     : IVariable(id, std::move(valType), std::move(val), isPublic)
     {}
     ~Variable() = default;
@@ -270,19 +270,19 @@ private:
 class Program
 {
 public:
-    void addTypeDeclaration(std::unique_ptr<IType> typeDecl);
+    void addTypeDeclaration(std::shared_ptr<IType> typeDecl);
     void addConstantDeclaration(std::unique_ptr<IVariable> constantDecl);
     void addVariableDeclaration(std::unique_ptr<IVariable> variableDecl);
     void addFunction(std::unique_ptr<Function> &&function);
 
-    const std::vector<std::unique_ptr<IType>> &getTypes() const;
+    const std::vector<std::shared_ptr<IType>> &getTypes() const;
     const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
     const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
     const std::vector<std::unique_ptr<Function>> &getFunctions() const;
     std::vector<std::string> getFunctionNames(std::string returnType) const;
 
 private:
-    std::vector<std::unique_ptr<IType>> types_;
+    std::vector<std::shared_ptr<IType>> types_;
     std::vector<std::unique_ptr<IVariable>> constants_;
     std::vector<std::unique_ptr<IVariable>> variables_;
     std::vector<std::unique_ptr<Function>> functions_;

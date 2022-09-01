@@ -285,7 +285,7 @@ std::string Function::getArgumentsList()
     return argumentsList;
 }
 
-void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)
+void Program::addTypeDeclaration(std::shared_ptr<IType> typeDecl)
 {
     types_.push_back(std::move(typeDecl));
 }
@@ -305,7 +305,7 @@ void Program::addFunction(std::unique_ptr<Function> &&function)
     functions_.push_back(std::move(function));
 }
 
-const std::vector<std::unique_ptr<IType>> &Program::getTypes() const
+const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
 {
     return types_;
 }

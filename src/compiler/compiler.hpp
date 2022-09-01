@@ -29,8 +29,8 @@ private:
     void generateRunStateFunction();
     void generateGetFromStateForEdge();
     std::string getStateIntId(std::string name);
-    std::unique_ptr<IType> generateType(const nlohmann::json& t);
-    std::unique_ptr<IType> generateFunctionType(const nlohmann::json& t);
+    std::shared_ptr<IType> generateType(const nlohmann::json& t);
+    std::shared_ptr<IType> generateFunctionType(const nlohmann::json& t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json& value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json& value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);

@@ -53,7 +53,7 @@ void Compiler::generateTypes()
     {
         if (t["type"]["kind"] != "Arrow")
         {
-            auto newElementaryType = std::make_unique<ElementaryType>();
+            auto newElementaryType = std::make_shared<ElementaryType>();
             newElementaryType->identifier = t["identifier"].get<std::string>();
             program_.addTypeDeclaration(std::move(newElementaryType));
         }
@@ -90,26 +90,26 @@ void Compiler::generateVariables()
         program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
-    auto nameToFunctionType = std::make_unique<CustomType>("std::map<std::string, funcPtr>");
+    auto nameToFunctionType = std::make_shared<CustomType>("std::map<std::string, funcPtr>");
     program_.addVariableDeclaration(std::make_unique<Variable>("nameToFunction", std::move(nameToFunctionType)));
 
-    auto allMovesType = std::make_unique<CustomType>("std::vector<std::vector<int>>");
+    auto allMovesType = std::make_shared<CustomType>("std::vector<std::vector<int>>");
     program_.addVariableDeclaration(std::make_unique<Variable>("allMoves", std::move(allMovesType)));
 
-    auto currentMovesType = std::make_unique<CustomType>("std::vector<int>");
+    auto currentMovesType = std::make_shared<CustomType>("std::vector<int>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
 
-    auto currentPatternsType = std::make_unique<CustomType>("std::vector<int>");
+    auto currentPatternsType = std::make_shared<CustomType>("std::vector<int>");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
     std::string initialState = getStateIntId("begin");
 
-    auto currentStateType = std::make_unique<CustomType>("int");
+    auto currentStateType = std::make_shared<CustomType>("int");
     auto currentStateValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
-    auto initialType = std::make_unique<CustomType>("static constexpr int");
+    auto initialType = std::make_shared<CustomType>("static constexpr int");
     auto initialValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
         std::make_unique<Variable>("initial", std::move(initialType), std::move(initialValue), true));
@@ -492,15 +492,15 @@ void Compiler::generateFunctions()
     generateSpecialFunctions();
 }
 
-std::unique_ptr<IType> Compiler::generateType(const nlohmann::json& t)
+std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
 {
     if (t.is_string())
     {
-        return std::make_unique<ElementaryType>(t.get<std::string>());
+        return std::make_shared<ElementaryType>(t.get<std::string>());
     }
     else if (t["kind"] == "TypeReference")
     {
-        return std::make_unique<ElementaryType>(t["identifier"].get<std::string>());
+        return std::make_shared<ElementaryType>(t["identifier"].get<std::string>());
     }
     else if (t["kind"] == "Arrow")
     {
@@ -509,9 +509,9 @@ std::unique_ptr<IType> Compiler::generateType(const nlohmann::json& t)
     return nullptr;
 }
 
-std::unique_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)
+std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)
 {
-    return std::make_unique<FunctionType>(generateType(functionType["lhs"]), generateType(functionType["rhs"]));
+    return std::make_shared<FunctionType>(generateType(functionType["lhs"]), generateType(functionType["rhs"]));
 }
 
 std::unique_ptr<IValue> Compiler::generateValue(const nlohmann::json& value)

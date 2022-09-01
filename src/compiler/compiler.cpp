@@ -500,7 +500,7 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
     }
     else if (t["kind"] == "TypeReference")
     {
-        return std::make_shared<ElementaryType>(t["identifier"].get<std::string>());
+        return program_.findType(t["identifier"].get<std::string>());
     }
     else if (t["kind"] == "Arrow")
     {

@@ -276,6 +276,7 @@ public:
     void addFunction(std::unique_ptr<Function> &&function);
 
     const std::vector<std::shared_ptr<IType>> &getTypes() const;
+    std::shared_ptr<IType> findType(const std::string& identifier) const;
     const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
     const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
     const std::vector<std::unique_ptr<Function>> &getFunctions() const;

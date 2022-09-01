@@ -15,22 +15,16 @@ std::string ElementaryType::definitionToString() const
 
 std::string FunctionType::toString() const
 {
-    std::string srcType = source->identifier;
-    std::string dstType = destination->identifier;
-    if (srcType.empty())
+    if (identifier.empty())
     {
-        srcType = source->toString();
+        return definitionToString();
     }
-    if (dstType.empty())
-    {
-        dstType = destination->toString();
-    }
-    return "DefaultMap<" + srcType + ", " + dstType + ">";
+    return identifier;
 }
 
 std::string FunctionType::definitionToString() const
 {
-    return toString();
+    return "DefaultMap<" + source->toString() + ", " + destination->toString() + ">";
 }
 
 std::string CustomType::toString() const
@@ -308,6 +302,18 @@ void Program::addFunction(std::unique_ptr<Function> &&function)
 const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
 {
     return types_;
+}
+
+std::shared_ptr<IType> Program::findType(const std::string& identifier) const
+{
+    for (const auto& t : types_)
+    {
+        if (t->identifier == identifier)
+        {
+            return t;
+        }
+    }
+    return nullptr;
 }
 
 const std::vector<std::unique_ptr<IVariable>> &Program::getConstants() const

@@ -59,13 +59,18 @@ Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(
     {
         if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
         {
+            const std::string& typeName = el["identifier"].get<std::string>();
             if (std::all_of(el["type"]["identifiers"].begin(), el["type"]["identifiers"].end(), isNumber))
             {
+                for (const auto& identifier : el["type"]["identifiers"])
+                {
+                    const std::string id = identifier.get<std::string>();
+                    typeToSymbolToValue_[typeName].emplace(id, std::stoi(id));
+                }
                 continue;
             }
             assert(!std::any_of(el["type"]["identifiers"].begin(), el["type"]["identifiers"].end(), isNumber));
 
-            const std::string& typeName = el["identifier"].get<std::string>();
             int value = 0;
             for (const auto& identifier : el["type"]["identifiers"])
             {

@@ -7,6 +7,15 @@
 #include <printer/printer.hpp>
 #include <program/program.hpp>
 
+
+namespace
+{
+bool isNumber(const std::string& s)
+{
+    return std::all_of(s.begin(), s.end(), ::isdigit);
+}
+}  // namespace
+
 Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream& sourceFile)
 : parser_(parser), headerFile_(headerFile), sourceFile_(sourceFile)
 {}
@@ -70,7 +79,7 @@ void Printer::printSymbolValues()
         std::map<int, std::string> valueToSymbols;
         for (const auto& [symbol, value] : symbolToValueMap)
         {
-            if (!printedSymbols.count(symbol))
+            if (!printedSymbols.count(symbol) && !isNumber(symbol))
             {
                 valueToSymbols.emplace(value, symbol);
                 printedSymbols.insert(symbol);
@@ -89,7 +98,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
     for (const auto& constant : constants)
     {
         const std::string constType = constant->valueType->toString();
-        const std::string constValue = constant->value->toString();
+        const std::string constValue = constant->value->toString(constant->valueType, parser_.getTypeToSymbolToValueMap());
         const std::string constName = constant->identifier;
         headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
     }
@@ -117,7 +126,7 @@ void Printer::printVariables(
             const std::string varName = variable->identifier;
             if (variable->value)
             {
-                const std::string varValue = variable->value->toString();
+                const std::string varValue = variable->value->toString(variable->valueType, parser_.getTypeToSymbolToValueMap());
                 headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
             }
             else

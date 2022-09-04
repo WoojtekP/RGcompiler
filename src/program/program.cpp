@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <memory>
 #include <vector>
 
 #include <program/program.hpp>
+
 
 std::string ElementaryType::toString() const
 {
@@ -37,21 +39,37 @@ std::string CustomType::definitionToString() const
     return typeDefinition;
 }
 
-std::string SingleValue::toString() const
+std::string SingleValue::toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const
 {
     return symbol;
 }
 
-std::string MapValue::toString() const
+std::string MapValue::toString(const std::shared_ptr<IType>& t, const TypeToSymbolToValueMap& typeToSymbolToValueMap) const
 {
-    const std::string defaultValueString = (defaultValue ? defaultValue->toString() : "?");
-    std::string result = "{" + defaultValueString + ", {";
-    for (const auto &[id, value] : idToValueMap)
+    if (const FunctionType* functionType = dynamic_cast<FunctionType*>(t.get()))
     {
-        result += "{" + id + ", " + value->toString() + "},";
+        const std::string sourceTypeName = functionType->source->identifier;
+        const auto& symbolToValueMap = typeToSymbolToValueMap.at(sourceTypeName);
+        const auto maxValueIt = std::max_element(
+            symbolToValueMap.begin(),
+            symbolToValueMap.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+        const std::string defaultValueString = (defaultValue ? defaultValue->toString(functionType->destination, typeToSymbolToValueMap) : "?");
+        std::vector<std::string> values(maxValueIt->second + 1, defaultValueString);
+        for (const auto &[id, value] : idToValueMap)
+        {
+            const int pos = symbolToValueMap.at(id);
+            values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
+        }
+        std::string result = "{";
+        for (const auto& value : values)
+        {
+            result += value + ",";
+        }
+        result += "}";
+        return result;
     }
-    result += "}}";
-    return result;
+    throw std::invalid_argument("Function type is expected.");
 }
 
 std::string Constant::toString() const

@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 
+
+using TypeToSymbolToValueMap = std::map<std::string, std::map<std::string, int>>;
+
 struct IType
 {
     IType() = default;
@@ -55,7 +58,7 @@ struct IValue
 {
     IValue() = default;
     virtual ~IValue() = default;
-    virtual std::string toString() const = 0;
+    virtual std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const = 0;
 };
 
 struct SingleValue : public IValue
@@ -63,7 +66,7 @@ struct SingleValue : public IValue
     SingleValue() = default;
     SingleValue(const std::string &sym) : symbol(sym) {}
     ~SingleValue() = default;
-    std::string toString() const override;
+    std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const override;
 
     std::string symbol;
 };
@@ -75,7 +78,7 @@ struct MapValue : public IValue
     : idToValueMap(std::move(idToValue)), defaultValue(std::move(defaultVal))
     {}
     ~MapValue() = default;
-    std::string toString() const override;
+    std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const override;
 
     std::map<std::string, std::unique_ptr<IValue>> idToValueMap;
     std::unique_ptr<IValue> defaultValue;

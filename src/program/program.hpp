@@ -31,8 +31,8 @@ struct ElementaryType : public IType
 struct FunctionType : public IType
 {
     FunctionType(const std::string &id) : IType(id) {};
-    FunctionType(std::shared_ptr<IType> src, std::shared_ptr<IType> dst)
-    : source(std::move(src)), destination(std::move(dst))
+    FunctionType(std::shared_ptr<IType> src, std::shared_ptr<IType> dst, const int size)
+    : source(std::move(src)), destination(std::move(dst)), domainSize(size)
     {}
     ~FunctionType() = default;
     std::string toString() const override;
@@ -40,6 +40,7 @@ struct FunctionType : public IType
 
     std::shared_ptr<IType> source;
     std::shared_ptr<IType> destination;
+    int domainSize;
 };
 
 struct CustomType : public IType

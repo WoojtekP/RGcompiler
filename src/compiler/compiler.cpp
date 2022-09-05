@@ -511,7 +511,15 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
 
 std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)
 {
-    return std::make_shared<FunctionType>(generateType(functionType["lhs"]), generateType(functionType["rhs"]));
+    auto sourceType = generateType(functionType["lhs"]);
+    auto destinationType = generateType(functionType["rhs"]);
+    const std::string sourceTypeName = sourceType->identifier;
+    const auto& symbolToValueMap = parser_.getTypeToSymbolToValueMap().at(sourceTypeName);
+    const auto maxDomainValueIt = std::max_element(
+        symbolToValueMap.begin(),
+        symbolToValueMap.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+    return std::make_shared<FunctionType>(std::move(sourceType), std::move(destinationType), maxDomainValueIt->second + 1);
 }
 
 std::unique_ptr<IValue> Compiler::generateValue(const nlohmann::json& value)

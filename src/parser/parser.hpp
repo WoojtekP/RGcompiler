@@ -9,6 +9,9 @@
 
 #include <nlohmann/json.hpp>
 
+
+using TypeToSymbolToValueMap = std::map<std::string, std::map<std::string, int>>;
+
 class Parser
 {
 public:
@@ -19,6 +22,7 @@ public:
     nlohmann::json getEdges() const;
     std::string getValue(const std::string& symbol) const;
     const std::map<std::string, int>& getSymbolToValueMap() const;
+    const TypeToSymbolToValueMap& getTypeToSymbolToValueMap() const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
     nlohmann::json getDestinationType(const nlohmann::json& t) const;
@@ -32,4 +36,5 @@ public:
 private:
     nlohmann::json parsedJson_;
     std::map<std::string, int> symbolToValue_;
+    TypeToSymbolToValueMap typeToSymbolToValue_;
 };

@@ -1,7 +1,9 @@
+#include <algorithm>
 #include <memory>
 #include <vector>
 
 #include <program/program.hpp>
+
 
 std::string ElementaryType::toString() const
 {
@@ -15,22 +17,16 @@ std::string ElementaryType::definitionToString() const
 
 std::string FunctionType::toString() const
 {
-    std::string srcType = source->identifier;
-    std::string dstType = destination->identifier;
-    if (srcType.empty())
+    if (identifier.empty())
     {
-        srcType = source->toString();
+        return definitionToString();
     }
-    if (dstType.empty())
-    {
-        dstType = destination->toString();
-    }
-    return "DefaultMap<" + srcType + ", " + dstType + ">";
+    return identifier;
 }
 
 std::string FunctionType::definitionToString() const
 {
-    return toString();
+    return "std::array<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
 }
 
 std::string CustomType::toString() const
@@ -43,21 +39,37 @@ std::string CustomType::definitionToString() const
     return typeDefinition;
 }
 
-std::string SingleValue::toString() const
+std::string SingleValue::toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const
 {
     return symbol;
 }
 
-std::string MapValue::toString() const
+std::string MapValue::toString(const std::shared_ptr<IType>& t, const TypeToSymbolToValueMap& typeToSymbolToValueMap) const
 {
-    const std::string defaultValueString = (defaultValue ? defaultValue->toString() : "?");
-    std::string result = "{" + defaultValueString + ", {";
-    for (const auto &[id, value] : idToValueMap)
+    if (const FunctionType* functionType = dynamic_cast<FunctionType*>(t.get()))
     {
-        result += "{" + id + ", " + value->toString() + "},";
+        const std::string sourceTypeName = functionType->source->identifier;
+        const auto& symbolToValueMap = typeToSymbolToValueMap.at(sourceTypeName);
+        const auto maxValueIt = std::max_element(
+            symbolToValueMap.begin(),
+            symbolToValueMap.end(),
+            [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+        const std::string defaultValueString = (defaultValue ? defaultValue->toString(functionType->destination, typeToSymbolToValueMap) : "?");
+        std::vector<std::string> values(maxValueIt->second + 1, defaultValueString);
+        for (const auto &[id, value] : idToValueMap)
+        {
+            const int pos = symbolToValueMap.at(id);
+            values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
+        }
+        std::string result = "std::array{";
+        for (const auto& value : values)
+        {
+            result += value + ",";
+        }
+        result += "}";
+        return result;
     }
-    result += "}}";
-    return result;
+    throw std::invalid_argument("Function type is expected.");
 }
 
 std::string Constant::toString() const
@@ -285,7 +297,7 @@ std::string Function::getArgumentsList()
     return argumentsList;
 }
 
-void Program::addTypeDeclaration(std::unique_ptr<IType> typeDecl)
+void Program::addTypeDeclaration(std::shared_ptr<IType> typeDecl)
 {
     types_.push_back(std::move(typeDecl));
 }
@@ -305,9 +317,21 @@ void Program::addFunction(std::unique_ptr<Function> &&function)
     functions_.push_back(std::move(function));
 }
 
-const std::vector<std::unique_ptr<IType>> &Program::getTypes() const
+const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
 {
     return types_;
+}
+
+std::shared_ptr<IType> Program::findType(const std::string& identifier) const
+{
+    for (const auto& t : types_)
+    {
+        if (t->identifier == identifier)
+        {
+            return t;
+        }
+    }
+    return nullptr;
 }
 
 const std::vector<std::unique_ptr<IVariable>> &Program::getConstants() const

@@ -15,7 +15,7 @@ public:
     void endMainClass();
     void endHeaderFile();
     void endSourceFile();
-    void printTypeDeclarations(const std::vector<std::unique_ptr<IType>>& typeDeclarations);
+    void printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
     void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);

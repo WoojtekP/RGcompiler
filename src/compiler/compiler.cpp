@@ -221,7 +221,7 @@ void Compiler::generateVoidEdgeFunctions()
             }
 
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "int"));
+                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "const auto"));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
                 graph_.getActionLeftSide(stateFrom, stateTo), graph_.getActionRightSide(stateFrom, stateTo)));
         }
@@ -283,7 +283,7 @@ void Compiler::generateBoolEdgeFunctions()
         if (graph_.getActionType(stateFrom, stateTo) == ActionType::Assignment)
         {
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "int"));
+                std::make_unique<AssignmentInstruction>("old", graph_.getActionLeftSide(stateFrom, stateTo), "const auto"));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
                 graph_.getActionLeftSide(stateFrom, stateTo), graph_.getActionRightSide(stateFrom, stateTo)));
         }

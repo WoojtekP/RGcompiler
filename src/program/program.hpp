@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <stdexcept>
 
 
 using TypeToSymbolToValueMap = std::map<std::string, std::map<std::string, int>>;

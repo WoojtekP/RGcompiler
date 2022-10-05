@@ -33,4 +33,4 @@ clang-format -style=file -i reasoner.hpp
 clang-format -style=file -i reasoner.cpp
 ```
 
-You may also use `scripts/compile.sh [game]` instead of above steps.
+You may also use `scripts/compile.sh [game].(rg|hrg)` instead of above steps.

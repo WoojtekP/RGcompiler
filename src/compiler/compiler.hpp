@@ -37,7 +37,6 @@ private:
 
     std::map<std::string, int> stateStringToInt_;
     std::map<std::pair<std::string, std::string>, int> edgeStringToInt_;
-    std::map<std::string, std::string> functionNameToState_;
     bool debugFlag_;
     Parser& parser_;
     Graph graph_;

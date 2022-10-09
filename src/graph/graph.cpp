@@ -6,11 +6,12 @@
 #include <graph/graph.hpp>
 #include <parser/parser.hpp>
 
+
 Binding::Binding(std::string variableName, std::string iteratedType)
 : variableName_(variableName), iteratedType_(iteratedType)
 {}
 
-std::string Binding::toString()
+std::string Binding::toString() const
 {
     return "(" + iteratedType_ + ":" + variableName_ + ")";
 }
@@ -28,11 +29,11 @@ Node::Node(const nlohmann::json &t)
     }
 }
 
-std::string Node::toString()
+std::string Node::toString() const
 {
     std::string bindings;
 
-    for (Binding &binding : bindings_)
+    for (const Binding &binding : bindings_)
     {
         bindings += binding.toString();
     }
@@ -40,17 +41,22 @@ std::string Node::toString()
     return name_ + bindings;
 }
 
+bool Node::operator==(const Node& rhs) const
+{
+    return name_ == rhs.name_;
+}
+
 Edge::Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to, std::unique_ptr<Action> &&action)
 : from_(std::move(from)), to_(std::move(to)), action_(std::move(action)) {};
 
 Edge::~Edge() {}
 
-std::string Edge::toString()
+std::string Edge::toString() const
 {
     return "<" + from_->toString() + ", " + to_->toString() + ", " + action_->toString() + ">";
 }
 
-std::string Edge::fromName()
+std::string Edge::fromName() const
 {
     if (from_)
     {
@@ -60,7 +66,7 @@ std::string Edge::fromName()
     return "";
 }
 
-std::string Edge::toName()
+std::string Edge::toName() const
 {
     if (to_)
     {
@@ -72,7 +78,7 @@ std::string Edge::toName()
 
 Graph::~Graph() {}
 
-void Graph::addEdge(std::unique_ptr<Edge> &&edge)
+void Graph::addEdge(std::shared_ptr<Edge> &&edge)
 {
     edges_.emplace_back(std::move(edge));
 }
@@ -92,7 +98,7 @@ std::vector<std::string> Graph::getTransitions(std::string from)
     return v;
 }
 
-std::string Edge::fullName()
+std::string Edge::fullName() const
 {
     if (from_ && to_)
     {
@@ -102,7 +108,7 @@ std::string Edge::fullName()
     return "";
 }
 
-std::string Edge::actionToString()
+std::string Edge::actionToString() const
 {
     if (action_)
     {
@@ -112,24 +118,33 @@ std::string Edge::actionToString()
     return "";
 }
 
-ActionType Edge::getActionType()
+ActionType Edge::getActionType() const
 {
     return action_->getType();
 }
 
-std::string Edge::getActionLeftSide()
+std::string Edge::getActionLeftSide() const
 {
     return action_->getLeftSide();
 }
 
-std::string Edge::getActionRightSide()
+std::string Edge::getActionRightSide() const
 {
     return action_->getRightSide();
 }
 
-bool Edge::getActionNegationValue()
+bool Edge::getActionNegationValue() const
 {
     return action_->getNegated();
+}
+
+bool Edge::isComplementaryTo(const Edge& rhs) const
+{
+    return *from_ == *rhs.from_
+        && getActionType() == rhs.getActionType()
+        && getActionLeftSide() == rhs.getActionLeftSide()
+        && getActionRightSide() == rhs.getActionRightSide()
+        && getActionNegationValue() != rhs.getActionNegationValue();
 }
 
 std::string Graph::toString()
@@ -267,6 +282,22 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
 
     return outgingNodes;
 }
+
+std::vector<std::shared_ptr<Edge>> Graph::getOutgoingEdgesFrom(std::string from)
+{
+    std::vector<std::shared_ptr<Edge>> outgingEdges;
+
+    for (auto &&edge : edges_)
+    {
+        if (edge->fromName() == from)
+        {
+            outgingEdges.push_back(edge);
+        }
+    }
+
+    return outgingEdges;
+}
+
 
 std::vector<std::string> Graph::getNodeNames()
 {

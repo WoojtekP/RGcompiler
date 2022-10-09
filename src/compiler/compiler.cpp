@@ -4,6 +4,25 @@
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
 
+
+namespace
+{
+bool isAnyPairOfEdgesComplementary(const std::vector<std::shared_ptr<Edge>>& edges)
+{
+    for (const auto& edgeA : edges)
+    {
+        for (const auto& edgeB : edges)
+        {
+            if (edgeA != edgeB && edgeA->isComplementaryTo(*edgeB))
+            {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+}  // namespace
+
 Compiler::Compiler(Parser& parser, bool debugFlag) : parser_(parser), debugFlag_(debugFlag)
 {
     initializeGraph();
@@ -23,7 +42,7 @@ void Compiler::initializeGraph()
 {
     for (const auto& edge : parser_.getEdges())
     {
-        graph_.addEdge(std::make_unique<Edge>(
+        graph_.addEdge(std::make_shared<Edge>(
             std::make_unique<Node>(edge["lhs"]["parts"]),
             std::make_unique<Node>(edge["rhs"]["parts"]),
             std::make_unique<Action>(edge["label"])));
@@ -124,7 +143,6 @@ void Compiler::generateVoidStateFunctions()
         std::string prefix = "state_";
         std::string functionName = prefix + getStateIntId(state);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
-        functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
@@ -152,16 +170,14 @@ void Compiler::generateBoolStateFunctions()
         std::string prefix = "is_legal_";
         std::string functionName = prefix + getStateIntId(state);
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
-        functionNameToState_[functionName] = state;
 
         if (debugFlag_)
         {
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
-
-        if (outgoingStates.empty())
+        const auto& outgoingEdges = graph_.getOutgoingEdgesFrom(state);
+        if (outgoingEdges.empty() || isAnyPairOfEdgesComplementary(outgoingEdges))
         {
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
@@ -174,10 +190,10 @@ void Compiler::generateBoolStateFunctions()
 
             function->addInstruction(std::move(ifInstruction));
 
-            for (auto& outgingState : outgoingStates)
+            for (auto& outgingEdge : outgoingEdges)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_edge_" + getStateIntId(state) + "_" + getStateIntId(outgingState) + "()", "true"));
+                    "is_legal_edge_" + getStateIntId(state) + "_" + getStateIntId(outgingEdge->toName()) + "()", "true"));
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
                 function->addInstruction(std::move(ifInstruction));
             }

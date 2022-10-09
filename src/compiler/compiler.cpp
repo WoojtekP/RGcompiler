@@ -21,6 +21,18 @@ bool isAnyPairOfEdgesComplementary(const std::vector<std::shared_ptr<Edge>>& edg
     }
     return false;
 }
+
+std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, const std::vector<std::shared_ptr<Edge>>& edges)
+{
+    for (const auto& outgoingEdge : edges)
+    {
+        if (edge->isComplementaryTo(*outgoingEdge))
+        {
+            return outgoingEdge;
+        }
+    }
+    return nullptr;
+}
 }  // namespace
 
 Compiler::Compiler(Parser& parser, bool debugFlag) : parser_(parser), debugFlag_(debugFlag)
@@ -149,12 +161,37 @@ void Compiler::generateVoidStateFunctions()
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        std::vector<std::string> outgoingStates = graph_.getOutgoingNodesFrom(state);
+        std::set<std::shared_ptr<Edge>> complementaryEdges;
+        const auto& outgoingEdges = graph_.getOutgoingEdgesFrom(state);
 
-        for (auto& outgingState : outgoingStates)
+        for (auto& outgoingEdge : outgoingEdges)
         {
-            function->addInstruction(std::make_unique<CustomInstruction>(
-                "edge_" + getStateIntId(state) + "_" + getStateIntId(outgingState) + "()"));
+            if (complementaryEdges.count(outgoingEdge))
+            {
+                const std::string shouldCheckVarName = "should_check_" + outgoingEdge->toName();
+                std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                    std::make_unique<ComparisonInstruction>(shouldCheckVarName, "true"));
+                ifInstruction->addInstruction(std::make_unique<CustomInstruction>(
+                    "edge_" + getStateIntId(state) + "_" + getStateIntId(outgoingEdge->toName()) + "()"));
+                function->addInstruction(std::move(ifInstruction));
+            }
+            else if (const auto complementaryEdge = findComplementaryEdge(outgoingEdge, outgoingEdges))
+            {
+                complementaryEdges.insert(complementaryEdge);
+                const std::string sizeVarName = "size_before_" + outgoingEdge->toName();
+                const std::string shouldCheckVarName = "should_check_" + complementaryEdge->toName();
+                function->addInstruction(std::make_unique<AssignmentInstruction>(
+                    sizeVarName, "allMoves.size()", "const auto"));
+                function->addInstruction(std::make_unique<CustomInstruction>(
+                    "edge_" + getStateIntId(state) + "_" + getStateIntId(outgoingEdge->toName()) + "()"));
+                function->addInstruction(std::make_unique<AssignmentInstruction>(
+                    shouldCheckVarName, "(" + sizeVarName + "==allMoves.size())", "const auto"));
+            }
+            else
+            {
+                function->addInstruction(std::make_unique<CustomInstruction>(
+                    "edge_" + getStateIntId(state) + "_" + getStateIntId(outgoingEdge->toName()) + "()"));
+            }
         }
 
         program_.addFunction(std::move(function));
@@ -190,10 +227,10 @@ void Compiler::generateBoolStateFunctions()
 
             function->addInstruction(std::move(ifInstruction));
 
-            for (auto& outgingEdge : outgoingEdges)
+            for (auto& outgoingEdge : outgoingEdges)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_edge_" + getStateIntId(state) + "_" + getStateIntId(outgingEdge->toName()) + "()", "true"));
+                    "is_legal_edge_" + getStateIntId(state) + "_" + getStateIntId(outgoingEdge->toName()) + "()", "true"));
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
                 function->addInstruction(std::move(ifInstruction));
             }

@@ -20,25 +20,15 @@ Node::Node(const nlohmann::json &t)
 {
     name_ = Parser::getValueFromEntries(t, "Literal", "identifier");
 
-    // TODO: we should parse more than one binding
-    const auto &binding = Parser::getPartFromParts(t, "Binding");
-
-    if (binding)
+    if (const auto &binding = Parser::getPartFromParts(t, "Binding"))
     {
-        bindings_.emplace_back((*binding).get()["identifier"], (*binding).get()["type"]["identifier"]);
+        throw std::logic_error("Binds are not implemented. Use --expandGeneratorNodes to remove them when generating AST");
     }
 }
 
 std::string Node::toString() const
 {
-    std::string bindings;
-
-    for (const Binding &binding : bindings_)
-    {
-        bindings += binding.toString();
-    }
-
-    return name_ + bindings;
+    return name_;
 }
 
 bool Node::operator==(const Node& rhs) const

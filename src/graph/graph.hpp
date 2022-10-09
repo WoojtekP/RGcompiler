@@ -18,7 +18,6 @@ public:
 class Node
 {
     std::string name_;
-    std::vector<Binding> bindings_;
 
 public:
     Node(const nlohmann::json &t);

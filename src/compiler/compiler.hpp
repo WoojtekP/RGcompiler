@@ -4,10 +4,17 @@
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
+
+struct Options
+{
+    bool debug;
+    int optConditions;
+};
+
 class Compiler
 {
 public:
-    Compiler(Parser& parser, bool debugFlag);
+    Compiler(Parser& parser, const Options& options);
     void compile();
     void generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile);
 
@@ -18,6 +25,7 @@ private:
     void generateVariables();
     void generateFunctions();
     void generateVoidStateFunctions();
+    void generateVoidStateOptimizedFunction(const std::string& state, const std::unique_ptr<Function>& function);
     void generateBoolStateFunctions();
     void generateVoidEdgeFunctions();
     void generateBoolEdgeFunctions();
@@ -37,9 +45,10 @@ private:
 
     std::map<std::string, int> stateStringToInt_;
     std::map<std::pair<std::string, std::string>, int> edgeStringToInt_;
-    std::map<std::string, std::string> functionNameToState_;
-    bool debugFlag_;
     Parser& parser_;
     Graph graph_;
     Program program_;
+    const bool debugFlag_;
+    const bool optConditionsReachability_;
+    const bool optConditionsGeneratingMoves_;
 };

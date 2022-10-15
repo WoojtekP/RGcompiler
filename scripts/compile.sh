@@ -17,7 +17,7 @@ cd ${DIR}
 # create AST
 cd ../../rg/interpreter_node/
 node lib/cli rg-source ../examples/${game} > game-tmp.rg
-node lib/cli --expandGeneratorNodes rg-ast game-tmp.rg > ../../RGcompiler/${game}.json
+node lib/cli --expandGeneratorNodes --compactSkipEdges rg-ast game-tmp.rg > ../../RGcompiler/${game}.json
 rm game-tmp.rg
 cd ../../RGcompiler/
 python3 -m json.tool ${game}.json > ${game}-ast.json

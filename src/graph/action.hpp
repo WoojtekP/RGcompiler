@@ -103,8 +103,9 @@ class Action : public ActionI
     std::unique_ptr<ActionI> action_;
 
 public:
-    ~Action();
+    Action();
     Action(const nlohmann::json& t);
+    ~Action();
 
     std::string toString() override;
     std::string getLeftSide() override;

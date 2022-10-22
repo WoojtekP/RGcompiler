@@ -6,7 +6,6 @@
 #include <graph/graph.hpp>
 #include <parser/parser.hpp>
 
-
 Binding::Binding(std::string variableName, std::string iteratedType)
 : variableName_(variableName), iteratedType_(iteratedType)
 {}
@@ -22,8 +21,14 @@ Node::Node(const nlohmann::json &t)
 
     if (const auto &binding = Parser::getPartFromParts(t, "Binding"))
     {
-        throw std::logic_error("Binds are not implemented. Use --expandGeneratorNodes to remove them when generating AST");
+        throw std::logic_error(
+            "Binds are not implemented. Use --expandGeneratorNodes to remove them when generating AST");
     }
+}
+
+std::string Node::getName() const
+{
+    return name_;
 }
 
 std::string Node::toString() const
@@ -31,19 +36,37 @@ std::string Node::toString() const
     return name_;
 }
 
-bool Node::operator==(const Node& rhs) const
+bool Node::operator==(const Node &rhs) const
 {
     return name_ == rhs.name_;
 }
 
-Edge::Edge(std::unique_ptr<Node> &&from, std::unique_ptr<Node> &&to, std::unique_ptr<Action> &&action)
-: from_(std::move(from)), to_(std::move(to)), action_(std::move(action)) {};
+Edge::Edge(
+    const std::shared_ptr<Node> &from,
+    const std::shared_ptr<Node> &to,
+    const std::vector<std::shared_ptr<Action>> &actions)
+: Edge(from, to, actions, {})
+{}
+
+Edge::Edge(
+    const std::shared_ptr<Node> &from,
+    const std::shared_ptr<Node> &to,
+    const std::vector<std::shared_ptr<Action>> &actions,
+    const std::vector<std::shared_ptr<Node>> &innerNodes)
+: from_(from), to_(to), actions_(actions.begin(), actions.end()), innerNodes_(innerNodes.begin(), innerNodes.end()) {};
 
 Edge::~Edge() {}
 
 std::string Edge::toString() const
 {
-    return "<" + from_->toString() + ", " + to_->toString() + ", " + action_->toString() + ">";
+    std::string actions;
+
+    for (const auto &action : actions_)
+    {
+        actions += ", " + action->toString();
+    }
+
+    return "<" + from_->toString() + ", " + to_->toString() + actions + ">";
 }
 
 std::string Edge::fromName() const
@@ -100,41 +123,56 @@ std::string Edge::fullName() const
 
 std::string Edge::actionToString() const
 {
-    if (action_)
+    std::string actions;
+
+    for (const auto &action : actions_)
     {
-        return action_->toString();
+        actions = action->toString() + ";\n";
     }
 
-    return "";
+    return actions;
 }
 
 ActionType Edge::getActionType() const
 {
-    return action_->getType();
+    return actions_.front()->getType();
 }
 
 std::string Edge::getActionLeftSide() const
 {
-    return action_->getLeftSide();
+    return actions_.front()->getLeftSide();
 }
 
 std::string Edge::getActionRightSide() const
 {
-    return action_->getRightSide();
+    return actions_.front()->getRightSide();
 }
 
 bool Edge::getActionNegationValue() const
 {
-    return action_->getNegated();
+    return actions_.front()->getNegated();
 }
 
-bool Edge::isComplementaryTo(const Edge& rhs) const
+bool Edge::isComplementaryTo(const Edge &rhs) const
 {
-    return *from_ == *rhs.from_
-        && getActionType() == rhs.getActionType()
-        && getActionLeftSide() == rhs.getActionLeftSide()
-        && getActionRightSide() == rhs.getActionRightSide()
-        && getActionNegationValue() != rhs.getActionNegationValue();
+    return *from_ == *rhs.from_ && getActionType() == rhs.getActionType() &&
+           getActionLeftSide() == rhs.getActionLeftSide() && getActionRightSide() == rhs.getActionRightSide() &&
+           getActionNegationValue() != rhs.getActionNegationValue();
+}
+
+const std::vector<std::shared_ptr<Action>> &Edge::getActions() const
+{
+    return actions_;
+}
+
+std::shared_ptr<Node> Edge::getLeftNode() const
+{
+    return from_;
+}
+
+std::shared_ptr<Node> Edge::getRightNode() const
+{
+    return to_;
 }
 
 std::string Graph::toString()
@@ -165,97 +203,29 @@ std::string Graph::toString()
     return graph;
 }
 
-// TODO Belowed functions works in O(n) time, they should be changed to constant time
-// after mapping node names from string to int is done
-
-ActionType Graph::getActionType(std::string stateFrom, std::string stateTo)
+const std::vector<std::tuple<std::string, std::string, int>> &Graph::getEdgeNames()
 {
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->getActionType();
-        }
-    }
-
-    return ActionType::Skip;
+    return edgeNames_;
 }
 
-bool Graph::getActionNegationValue(std::string stateFrom, std::string stateTo)
+const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getOutgoingEdgesFrom(std::string from)
 {
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->getActionNegationValue();
-        }
-    }
-
-    return "";
+    return outgoingEdgesFromNode_[nodeStringToInt_[from]];
 }
 
-std::string Graph::getActionLeftSide(std::string stateFrom, std::string stateTo)
+const std::vector<std::shared_ptr<Action>> &Graph::getActions(std::string a, std::string b, int id)
 {
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->getActionLeftSide();
-        }
-    }
-
-    return "";
+    return edgeIdToEdge_[edgeStringToInt_[std::make_tuple(a, b, id)]]->getActions();
 }
 
-std::string Graph::getActionRightSide(std::string stateFrom, std::string stateTo)
+const std::vector<std::string> &Graph::getNodeNames()
 {
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->getActionRightSide();
-        }
-    }
-
-    return "";
+    return nodeNames_;
 }
 
-std::string Graph::getAction(std::string stateFrom, std::string stateTo)
+const std::vector<std::shared_ptr<Node>> &Edge::getInnerNodes()
 {
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->actionToString();
-        }
-    }
-
-    return "";
-}
-
-std::string Graph::getToName(std::string stateFrom, std::string stateTo)
-{
-    for (auto &&edge : edges_)
-    {
-        if (edge->fromName() == stateFrom && edge->toName() == stateTo)
-        {
-            return edge->toName();
-        }
-    }
-
-    return "";
-}
-
-std::vector<std::pair<std::string, std::string>> Graph::getEdgeNames()
-{
-    std::vector<std::pair<std::string, std::string>> v;
-
-    for (auto &&edge : edges_)
-    {
-        v.push_back(std::make_pair(edge->fromName(), edge->toName()));
-    }
-
-    return v;
+    return innerNodes_;
 }
 
 std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
@@ -273,23 +243,81 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
     return outgingNodes;
 }
 
-std::vector<std::shared_ptr<Edge>> Graph::getOutgoingEdgesFrom(std::string from)
+void Graph::traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths)
 {
-    std::vector<std::shared_ptr<Edge>> outgingEdges;
+    path.push_back(node);
 
-    for (auto &&edge : edges_)
+    if (next_[node].size() != 1 || getNumberOfIncomingEdges(nodeIdToNode_[node]->getName()) != 1)
     {
-        if (edge->fromName() == from)
+        return;
+    }
+
+    traverse(next_[node].front(), path, paths);
+}
+
+std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
+{
+    std::vector<std::vector<int>> paths;
+
+    for (const auto &name : nodeNames_)
+    {
+        int u = nodeStringToInt_[name];
+
+        if (getNumberOfIncomingEdges(name) != 1 || next_[u].size() != 1)
         {
-            outgingEdges.push_back(edge);
+            for (int v : next_[u])
+            {
+                std::vector<int> path {u};
+
+                traverse(v, path, paths);
+
+                paths.push_back(path);
+            }
         }
     }
 
-    return outgingEdges;
+    std::shared_ptr<Graph> newGraph = std::make_shared<Graph>();
+
+    for (const auto &path : paths)
+    {
+        int firstNode = path.front();
+        int lastNode = path.back();
+
+        std::vector<std::shared_ptr<Action>> actions;
+
+        for (int i = 0; i < path.size() - 1; i++)
+        {
+            const auto &edge = edgeIdToEdge_[edgeStringToInt_[std::make_tuple(
+                nodeIdToNode_[path[i]]->getName(), nodeIdToNode_[path[i + 1]]->getName(), 0)]];
+
+            for (const auto &action : edge->getActions())
+            {
+                actions.push_back(action);
+            }
+        }
+
+        std::vector<std::shared_ptr<Node>> innerNodes;
+
+        for (int i = 1; i < path.size() - 1; i++)
+        {
+            innerNodes.push_back(nodeIdToNode_[path[i]]);
+
+            newGraph->addEdge(std::move(std::make_shared<Edge>(
+                nodeIdToNode_[path[i]],
+                nodeIdToNode_[path[i + 1]],
+                std::vector<std::shared_ptr<Action>> {std::make_shared<Action>()})));
+        }
+
+        newGraph->addEdge(
+            std::move(std::make_shared<Edge>(nodeIdToNode_[firstNode], nodeIdToNode_[lastNode], actions, innerNodes)));
+    }
+
+    newGraph->initialize();
+
+    return newGraph;
 }
 
-
-std::vector<std::string> Graph::getNodeNames()
+void Graph::initialize()
 {
     std::set<std::string> nodes;
 
@@ -299,5 +327,91 @@ std::vector<std::string> Graph::getNodeNames()
         nodes.insert(edge->toName());
     }
 
-    return {nodes.begin(), nodes.end()};
+    int numberOfNodes = nodes.size();
+
+    outgoingEdgesFromNode_.resize(numberOfNodes);
+
+    nodeNames_.insert(nodeNames_.end(), nodes.begin(), nodes.end());
+
+    for (auto &node : nodes)
+    {
+        nodeStringToInt_[node] = nodeStringToInt_.size();
+    }
+
+    for (auto &&edge : edges_)
+    {
+        if (nodes.find(edge->fromName()) != nodes.end())
+        {
+            nodes.erase(edge->fromName());
+            nodeIdToNode_[nodeStringToInt_[edge->fromName()]] = edge->getLeftNode();
+        }
+
+        if (nodes.find(edge->toName()) != nodes.end())
+        {
+            nodes.erase(edge->toName());
+            nodeIdToNode_[nodeStringToInt_[edge->toName()]] = edge->getRightNode();
+        }
+    }
+
+    int shift = nodeStringToInt_.size();
+
+    std::map<std::pair<std::string, std::string>, int> countRepetition;
+
+    for (auto &&edge : edges_)
+    {
+        std::string nodeFrom = edge->fromName();
+        std::string nodeTo = edge->toName();
+
+        if (countRepetition.find(std::make_pair(nodeFrom, nodeTo)) == countRepetition.end())
+        {
+            countRepetition[std::make_pair(nodeFrom, nodeTo)] = 0;
+        }
+        else
+        {
+            countRepetition[std::make_pair(nodeFrom, nodeTo)]++;
+        }
+
+        int cnt = countRepetition[std::make_pair(nodeFrom, nodeTo)];
+        int val = edgeStringToInt_.size() + shift;
+
+        outgoingEdgesFromNode_[nodeStringToInt_[nodeFrom]].push_back(make_pair(edge, cnt));
+        edgeStringToInt_[std::make_tuple(nodeFrom, nodeTo, cnt)] = val;
+        edgeIdToEdge_[val] = edge;
+
+        edgeNames_.push_back(std::make_tuple(nodeFrom, nodeTo, cnt));
+    }
+
+    next_.resize(numberOfNodes);
+    numberOfIncomingEdges_.resize(numberOfNodes, 0);
+
+    for (auto &&edge : edges_)
+    {
+        next_[nodeStringToInt_[edge->fromName()]].push_back(nodeStringToInt_[edge->toName()]);
+        numberOfIncomingEdges_[nodeStringToInt_[edge->toName()]]++;
+    }
+}
+
+int Graph::getNumberOfOutgoingEdges(const std::string &node)
+{
+    return next_[nodeStringToInt_[node]].size();
+}
+
+int Graph::getNumberOfIncomingEdges(const std::string &node)
+{
+    return numberOfIncomingEdges_[nodeStringToInt_[node]];
+}
+
+int Graph::getNodeId(std::string name)
+{
+    return nodeStringToInt_[name];
+}
+
+int Graph::getEdgeId(std::string from, std::string to, int id)
+{
+    return edgeStringToInt_[std::tuple(from, to, id)];
+}
+
+std::shared_ptr<Edge> Graph::getEdge(std::string from, std::string to, int id)
+{
+    return edgeIdToEdge_[edgeStringToInt_[std::make_tuple(from, to, id)]];
 }

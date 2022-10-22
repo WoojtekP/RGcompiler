@@ -102,12 +102,17 @@ bool ActionSkip::getNegated()
     return false;
 }
 
-Action::~Action() {}
-
 Action::Action(const nlohmann::json& t)
 {
     this->parse(t);
 }
+
+Action::Action()
+{
+    action_ = std::make_unique<ActionSkip>();
+}
+
+Action::~Action() {}
 
 void Action::parse(const nlohmann::json& t)
 {

@@ -26,8 +26,11 @@ void Printer::initializeHeaderFile(bool debug)
     {
         headerFile_ << "#include <iostream>" << std::endl;
     }
+
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
+    headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
+
     headerFile_ << std::endl;
     headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
     headerFile_ << std::endl;
@@ -173,7 +176,7 @@ void Printer::printMoveRepresentationDeclaration()
     std::string obj = R"(
 class GameState;
 
-typedef std::vector<int> move_representation;
+typedef boost::container::static_vector<int, 20> move_representation;
 typedef void(GameState::*funcPtr)();
 
 struct Move

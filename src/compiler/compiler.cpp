@@ -137,13 +137,13 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     auto nameToFunctionType = std::make_shared<CustomType>("std::map<std::string, funcPtr>");
     program_.addVariableDeclaration(std::make_unique<Variable>("nameToFunction", std::move(nameToFunctionType)));
 
-    auto allMovesType = std::make_shared<CustomType>("std::vector<std::vector<int>>");
+    auto allMovesType = std::make_shared<CustomType>("std::vector<move_representation>");
     program_.addVariableDeclaration(std::make_unique<Variable>("allMoves", std::move(allMovesType)));
 
-    auto currentMovesType = std::make_shared<CustomType>("std::vector<int>");
+    auto currentMovesType = std::make_shared<CustomType>("move_representation");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
 
-    auto currentPatternsType = std::make_shared<CustomType>("std::vector<int>");
+    auto currentPatternsType = std::make_shared<CustomType>("move_representation");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
     std::string initialState = std::to_string(graph->getNodeId("begin"));
@@ -673,7 +673,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
-        R"(const std::vector<int> &v = m.mr;
+        R"(const move_representation &v = m.mr;
 
     for (int edge : v)
     {

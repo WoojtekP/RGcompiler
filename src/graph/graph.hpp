@@ -88,7 +88,7 @@ public:
     void initialize();
     void addEdge(std::shared_ptr<Edge> &&edge);
     std::vector<std::string> getOutgoingNodesFrom(std::string from);
-    std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(const std::string &name);
+    std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(const std::string &name, bool checkPlayerChange = false);
     const std::vector<std::string> &getNodeNames();
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();

@@ -176,7 +176,7 @@ void Printer::printMoveRepresentationDeclaration()
     std::string obj = R"(
 class GameState;
 
-typedef boost::container::static_vector<int, 20> move_representation;
+typedef boost::container::static_vector<int, 100> move_representation;
 typedef void(GameState::*funcPtr)();
 
 struct Move

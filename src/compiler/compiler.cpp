@@ -1,5 +1,5 @@
 #include <functional>
-
+#include <iostream>
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
@@ -574,7 +574,7 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
         if (optConditionsUnambigousPaths_)
         {
-            const auto path = graph->getUnambiguousPathFromNode(stateTo);
+            const auto path = graph->getUnambiguousPathFromNode(stateTo, !optConditionsSimplePaths_);
 
             if (path.size())
             {

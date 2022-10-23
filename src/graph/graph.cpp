@@ -248,7 +248,7 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
     return outgingNodes;
 }
 
-std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPathFromNode(const std::string &name)
+std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPathFromNode(const std::string &name, bool checkPlayerChange)
 {
     std::string node = name;
     std::vector<std::tuple<std::string, std::string, int>> path;
@@ -256,7 +256,18 @@ std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPath
     while (getNumberOfOutgoingEdges(node) == 1)
     {
         const auto &[edge, edgeId] = getOutgoingEdgesFrom(node).back();
+
         path.push_back(std::make_tuple(edge->fromName(), edge->toName(), edgeId));
+        if (checkPlayerChange)
+        {
+            for (const auto & action : edge->getActions())
+            {
+                if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+                {
+                    return path;
+                }
+            }
+        }
         node = edge->toName();
     }
 

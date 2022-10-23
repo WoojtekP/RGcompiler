@@ -243,6 +243,21 @@ std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from)
     return outgingNodes;
 }
 
+std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPathFromNode(const std::string &name)
+{
+    std::string node = name;
+    std::vector<std::tuple<std::string, std::string, int>> path;
+
+    while (getNumberOfOutgoingEdges(node) == 1)
+    {
+        const auto &[edge, edgeId] = getOutgoingEdgesFrom(node).back();
+        path.push_back(std::make_tuple(edge->fromName(), edge->toName(), edgeId));
+        node = edge->toName();
+    }
+
+    return path;
+}
+
 void Graph::traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths)
 {
     path.push_back(node);

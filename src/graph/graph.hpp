@@ -1,4 +1,5 @@
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -77,7 +78,6 @@ class Graph
     std::vector<std::vector<int>> next_;
 
     void traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths);
-    int getNumberOfOutgoingEdges(const std::string &node);
     int getNumberOfIncomingEdges(const std::string &node);
     std::vector<std::string> getTransitions(std::string from);
 
@@ -86,6 +86,7 @@ public:
     void initialize();
     void addEdge(std::shared_ptr<Edge> &&edge);
     std::vector<std::string> getOutgoingNodesFrom(std::string from);
+    std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(const std::string &name);
     const std::vector<std::string> &getNodeNames();
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
@@ -94,5 +95,6 @@ public:
     std::shared_ptr<Graph> getGraphWithOptimizedPaths();
     int getEdgeId(std::string from, std::string to, int id);
     int getNodeId(std::string name);
+    int getNumberOfOutgoingEdges(const std::string &node);
     std::shared_ptr<Edge> getEdge(std::string from, std::string to, int id);
 };

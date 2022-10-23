@@ -39,7 +39,8 @@ Compiler::Compiler(Parser& parser, const Options& options)
 : parser_(parser), debugFlag_(options.debug),
   optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3),
   optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3),
-  optConditionsSimplePaths_((options.optConditions == 4 || options.optConditions == 3)),
+  optConditionsSimplePaths_((options.optConditions == 4 || options.optConditions == 6)),
+  optConditionsUnambigousPaths_((options.optConditions == 5 || options.optConditions == 6)),
   temporaryVariableNamePrefix_("old")
 {
     initializeGraph();
@@ -304,8 +305,15 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         const auto& actions = graph->getActions(stateFrom, stateTo, edgeId);
         std::vector<std::shared_ptr<Action>> assignmentActions;
 
-        function->addInstruction(std::make_unique<CustomInstruction>(
-            "currentMoves.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
+        bool pushed = false;
+
+        if (!optConditionsUnambigousPaths_ || graph->getNumberOfOutgoingEdges(stateFrom) > 1 ||
+            graph->getNodeId(stateFrom) == graph->getNodeId("begin"))
+        {
+            function->addInstruction(std::make_unique<CustomInstruction>(
+                "currentMoves.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
+            pushed = true;
+        }
 
         bool playerChanged = false;
 
@@ -316,7 +324,11 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 if (action->getLeftSide() == "player")
                 {
                     function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
-                    function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+
+                    if (pushed)
+                    {
+                        function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                    }
                     restoreAssignments<Function>(function, assignmentActions);
                     function->addInstruction(std::make_unique<ReturnInstruction>());
                     program_.addFunction(std::move(function));
@@ -336,7 +348,10 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         action->getLeftSide(), action->getRightSide(), !action->getNegated()));
-                ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                if (pushed)
+                {
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                }
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
@@ -352,7 +367,10 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                         "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
                         action->getNegated() ? "true" : "false"));
                 ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
-                ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                if (pushed)
+                {
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                }
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
@@ -372,7 +390,10 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 
         restoreAssignments<Function>(function, assignmentActions);
 
-        function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+        if (pushed)
+        {
+            function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+        }
 
         program_.addFunction(std::move(function));
     }
@@ -504,6 +525,40 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
     }
 }
 
+void Compiler::generateApplyPathsFunctions(const std::shared_ptr<Graph>& graph)
+{
+    const auto& edges = graph->getEdgeNames();
+
+    for (const auto& [nodeFrom, nodeTo, edgeId] : edges)
+    {
+        std::string prefix = "apply_path_";
+        auto function = std::make_unique<Function>(
+            prefix + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId)), "void", false);
+
+        if (debugFlag_)
+        {
+            function->addInstruction(
+                debugInstruction(prefix + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId))));
+        }
+
+        function->addInstruction(std::make_unique<CustomInstruction>(
+            "apply_edge_" + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId)) + "()"));
+
+        if (optConditionsUnambigousPaths_)
+        {
+            const auto& path = graph->getUnambiguousPathFromNode(nodeTo);
+
+            for (const auto& [u, v, id] : path)
+            {
+                function->addInstruction(std::make_unique<CustomInstruction>(
+                    "apply_edge_" + std::to_string(graph->getEdgeId(u, v, id)) + "()"));
+            }
+        }
+
+        program_.addFunction(std::move(function));
+    }
+}
+
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 {
     auto function = std::make_unique<Function>("getFromStateForEdge", "int", false);
@@ -515,9 +570,20 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
     for (const auto& [stateFrom, stateTo, edgeId] : edges)
     {
+        std::string id = std::to_string(graph->getNodeId(stateTo));
+
+        if (optConditionsUnambigousPaths_)
+        {
+            const auto path = graph->getUnambiguousPathFromNode(stateTo);
+
+            if (path.size())
+            {
+                id = std::to_string(graph->getNodeId(std::get<1>(path.back())));
+            }
+        }
+
         sw->addCaseInstruction(
-            graph->getEdgeId(stateFrom, stateTo, edgeId),
-            std::move(std::make_unique<ReturnInstruction>(std::to_string(graph->getNodeId(stateTo)))));
+            graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(std::make_unique<ReturnInstruction>(id)));
     }
 
     function->addInstruction(std::move(sw));
@@ -538,7 +604,7 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
     {
         auto block = std::make_unique<BlockInstruction>();
         block->addInstruction(std::make_unique<CustomInstruction>(
-            "apply_edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));
+            "apply_path_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));
         block->addInstruction(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(block));
@@ -623,6 +689,7 @@ void Compiler::generateFunctions()
     // TODO this should be changed after the proper implementation of the Function class comes out
 
     generateApplyEdgeFunctions(graph_);
+    generateApplyPathsFunctions(graph_);
 
     generateVoidStateFunctions(graph_);
     generateBoolStateFunctions(graph_);

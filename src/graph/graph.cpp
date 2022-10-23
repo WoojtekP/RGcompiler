@@ -208,6 +208,11 @@ const std::vector<std::tuple<std::string, std::string, int>> &Graph::getEdgeName
     return edgeNames_;
 }
 
+const std::set<std::pair<std::shared_ptr<Edge>, int>> &Graph::getImportantEdges()
+{
+    return importantEdges_;
+}
+
 const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getOutgoingEdgesFrom(std::string from)
 {
     return outgoingEdgesFromNode_[nodeStringToInt_[from]];
@@ -403,6 +408,25 @@ void Graph::initialize()
     {
         next_[nodeStringToInt_[edge->fromName()]].push_back(nodeStringToInt_[edge->toName()]);
         numberOfIncomingEdges_[nodeStringToInt_[edge->toName()]]++;
+    }
+
+    for (auto& state : getNodeNames())
+    {
+        for (const auto &[edge, id] : getOutgoingEdgesFrom(state))
+        {
+            for (const auto& action : edge->getActions())
+            {
+
+                if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+                {
+                    if (importantNodes_.find(edge->toName()) == importantNodes_.end())
+                    {
+                        importantEdges_.insert(std::make_pair(edge, id));
+                        importantNodes_.insert(edge->toName());
+                    }
+                }
+            }
+        }
     }
 }
 

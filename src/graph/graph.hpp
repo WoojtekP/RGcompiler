@@ -74,6 +74,8 @@ class Graph
     std::map<std::tuple<std::string, std::string, int>, int> edgeStringToInt_;
     std::map<int, std::shared_ptr<Edge>> edgeIdToEdge_;
     std::map<int, std::shared_ptr<Node>> nodeIdToNode_;
+    std::set<std::pair<std::shared_ptr<Edge>, int>> importantEdges_;
+    std::set<std::string> importantNodes_;
     std::vector<std::shared_ptr<Edge>> edges_;
     std::vector<std::vector<int>> next_;
 
@@ -91,6 +93,7 @@ public:
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
     const std::vector<std::shared_ptr<Action>> &getActions(std::string a, std::string b, int id);
+    const std::set<std::pair<std::shared_ptr<Edge>, int>> &getImportantEdges();
     std::string toString();
     std::shared_ptr<Graph> getGraphWithOptimizedPaths();
     int getEdgeId(std::string from, std::string to, int id);

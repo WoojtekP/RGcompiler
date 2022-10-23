@@ -621,15 +621,22 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
-    for (auto& state : graph->getNodeNames())
+    for (const auto &[edge, id] : graph->getImportantEdges())
     {
         auto block = std::make_unique<BlockInstruction>();
         block->addInstruction(
-            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(state)) + "()"));
+            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(edge->toName())) + "()"));
         block->addInstruction(std::make_unique<ReturnInstruction>());
 
-        sw->addCaseInstruction(graph->getNodeId(state), std::move(block));
+        sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
     }
+
+    auto block = std::make_unique<BlockInstruction>();
+    block->addInstruction(
+        std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId("begin")) + "()"));
+    block->addInstruction(std::make_unique<ReturnInstruction>());
+
+    sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
 
     function->addInstruction(std::move(sw));
     program_.addFunction(std::move(function));

@@ -356,6 +356,11 @@ void Graph::initialize()
     {
         nodes.insert(edge->fromName());
         nodes.insert(edge->toName());
+
+        for (const auto& innerNode : edge->getInnerNodes())
+        {
+            nodes.insert(innerNode->getName());
+        }
     }
 
     int numberOfNodes = nodes.size();

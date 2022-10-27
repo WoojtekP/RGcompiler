@@ -134,15 +134,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
-    auto nameToFunctionType = std::make_shared<CustomType>("std::map<std::string, funcPtr>");
-    program_.addVariableDeclaration(std::make_unique<Variable>("nameToFunction", std::move(nameToFunctionType)));
-
-    auto allMovesType = std::make_shared<CustomType>("std::vector<move_representation>");
-    program_.addVariableDeclaration(std::make_unique<Variable>("allMoves", std::move(allMovesType)));
-
-    auto currentMovesType = std::make_shared<CustomType>("move_representation");
-    program_.addVariableDeclaration(std::make_unique<Variable>("currentMoves", std::move(currentMovesType)));
-
     auto currentPatternsType = std::make_shared<CustomType>("move_representation");
     program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
@@ -182,6 +173,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
         std::string functionName = prefix + std::to_string(graph->getNodeId(state));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
+
         if (debugFlag_)
         {
             function->addInstruction(debugInstruction(prefix + state));
@@ -196,7 +190,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
             for (auto [outgoingEdge, id] : graph->getOutgoingEdgesFrom(state))
             {
                 function->addInstruction(std::make_unique<CustomInstruction>(
-                    "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
+                    "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "(moves, mr)"));
             }
         }
         program_.addFunction(std::move(function));
@@ -226,16 +220,16 @@ void Compiler::generateVoidStateOptimizedFunction(
             const std::string sizeVarName = "size_before_" + outgoingEdge->toName();
             const std::string shouldCheckVarName = "should_check_" + complementaryEdge->toName();
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>(sizeVarName, "allMoves.size()", "const auto"));
+                std::make_unique<AssignmentInstruction>(sizeVarName, "moves.size()", "const auto"));
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
+                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "(moves, mr)"));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                shouldCheckVarName, "(" + sizeVarName + "==allMoves.size())", "const auto"));
+                shouldCheckVarName, "(" + sizeVarName + "==moves.size())", "const auto"));
         }
         else
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
+                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "(moves, mr)"));
         }
     }
 }
@@ -296,6 +290,8 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         std::string prefix = "edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
 
         if (debugFlag_)
         {
@@ -311,7 +307,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             graph->getNodeId(stateFrom) == graph->getNodeId("begin"))
         {
             function->addInstruction(std::make_unique<CustomInstruction>(
-                "currentMoves.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
+                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
             pushed = true;
         }
 
@@ -323,11 +319,11 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             {
                 if (action->getLeftSide() == "player")
                 {
-                    function->addInstruction(std::make_unique<CustomInstruction>("allMoves.push_back(currentMoves)"));
+                    function->addInstruction(std::make_unique<CustomInstruction>("moves.push_back(mr)"));
 
                     if (pushed)
                     {
-                        function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                        function->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
                     }
                     restoreAssignments<Function>(function, assignmentActions);
                     function->addInstruction(std::make_unique<ReturnInstruction>());
@@ -350,7 +346,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                         action->getLeftSide(), action->getRightSide(), !action->getNegated()));
                 if (pushed)
                 {
-                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
                 }
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
@@ -369,7 +365,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
                 if (pushed)
                 {
-                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
                 }
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
@@ -386,13 +382,13 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         }
 
         function->addInstruction(
-            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(stateTo)) + "()"));
+            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(stateTo)) + "(moves, mr)"));
 
         restoreAssignments<Function>(function, assignmentActions);
 
         if (pushed)
         {
-            function->addInstruction(std::make_unique<CustomInstruction>("currentMoves.pop_back()"));
+            function->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
         }
 
         program_.addFunction(std::move(function));
@@ -618,6 +614,8 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
 {
     auto function = std::make_unique<Function>("runState", "void", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
@@ -625,7 +623,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
     {
         auto block = std::make_unique<BlockInstruction>();
         block->addInstruction(
-            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(edge->toName())) + "()"));
+            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(edge->toName())) + "(moves, mr)"));
         block->addInstruction(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
@@ -633,7 +631,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
 
     auto block = std::make_unique<BlockInstruction>();
     block->addInstruction(
-        std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId("begin")) + "()"));
+        std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId("begin")) + "(moves, mr)"));
     block->addInstruction(std::make_unique<ReturnInstruction>());
 
     sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
@@ -665,10 +663,11 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        R"(allMoves.clear();
+        R"(
     moves.clear();
-    runState(currentState);
-    moves.assign(allMoves.begin(), allMoves.end()))"));
+    move_representation mr;
+    runState(currentState, moves, mr);
+    )"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));

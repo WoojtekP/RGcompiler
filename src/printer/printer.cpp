@@ -177,7 +177,6 @@ void Printer::printMoveRepresentationDeclaration()
 class GameState;
 
 typedef boost::container::static_vector<int, 100> move_representation;
-typedef void(GameState::*funcPtr)();
 
 struct Move
 {

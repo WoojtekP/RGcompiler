@@ -247,9 +247,14 @@ const std::vector<std::shared_ptr<Action>> &Graph::getActions(std::string a, std
     return edgeIdToEdge_[edgeStringToInt_[std::make_tuple(a, b, id)]]->getActions();
 }
 
-const std::vector<std::string> &Graph::getNodeNames()
+const std::vector<std::string> &Graph::getAllNodeNames()
 {
-    return nodeNames_;
+    return allNodeNames_;
+}
+
+const std::vector<std::string> &Graph::getMainNodeNames()
+{
+    return mainNodeNames_;
 }
 
 const std::vector<std::shared_ptr<Node>> &Edge::getInnerNodes() const
@@ -344,7 +349,7 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
     std::vector<std::vector<int>> paths;
     std::vector<bool> visited(nodeIdToNode_.size(), false);
 
-    for (const auto &name : nodeNames_)
+    for (const auto &name : getAllNodeNames())
     {
         int u = nodeStringToInt_[name];
 
@@ -373,7 +378,7 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
         }
     }
 
-    for (const auto &name : nodeNames_)
+    for (const auto &name : getAllNodeNames())
     {
         int u = nodeStringToInt_[name];
 
@@ -426,11 +431,14 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
 void Graph::initialize()
 {
     std::set<std::string> nodes;
+    std::set<std::string> mainNodes;
 
     for (auto &&edge : edges_)
     {
         nodes.insert(edge->fromName());
         nodes.insert(edge->toName());
+        mainNodes.insert(edge->fromName());
+        mainNodes.insert(edge->toName());
 
         for (const auto &innerNode : edge->getInnerNodes())
         {
@@ -442,7 +450,8 @@ void Graph::initialize()
 
     outgoingEdgesFromNode_.resize(numberOfNodes);
 
-    nodeNames_.insert(nodeNames_.end(), nodes.begin(), nodes.end());
+    allNodeNames_.insert(allNodeNames_.end(), nodes.begin(), nodes.end());
+    mainNodeNames_.insert(mainNodeNames_.end(), mainNodes.begin(), mainNodes.end());
 
     for (auto &node : nodes)
     {
@@ -501,7 +510,7 @@ void Graph::initialize()
         numberOfIncomingEdges_[nodeStringToInt_[edge->toName()]]++;
     }
 
-    for (auto &state : getNodeNames())
+    for (auto &state : getMainNodeNames())
     {
         for (const auto &[edge, id] : getOutgoingEdgesFrom(state))
         {

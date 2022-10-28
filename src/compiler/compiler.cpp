@@ -180,9 +180,7 @@ void Compiler::restoreAssignments(const std::unique_ptr<T>& function, std::vecto
 
 void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
 {
-    std::vector<std::string> states = graph->getNodeNames();
-
-    for (auto& state : states)
+    for (auto& state : graph->getMainNodeNames())
     {
         std::string prefix = "state_";
         std::string functionName = prefix + std::to_string(graph->getNodeId(state));
@@ -252,7 +250,7 @@ void Compiler::generateVoidStateOptimizedFunction(
 void Compiler::generateBoolStateFunctions(
     const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph)
 {
-    for (auto& state : graph->getNodeNames())
+    for (auto& state : graph->getMainNodeNames())
     {
         std::string prefix =
             "is_legal_" + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";

@@ -68,7 +68,8 @@ public:
 class Graph
 {
     std::vector<int> numberOfIncomingEdges_;
-    std::vector<std::string> nodeNames_;
+    std::vector<std::string> allNodeNames_;
+    std::vector<std::string> mainNodeNames_;
     std::vector<std::vector<std::pair<std::shared_ptr<Edge>, int>>> outgoingEdgesFromNode_;
     std::vector<std::tuple<std::string, std::string, int>> edgeNames_;
     std::map<std::string, int> nodeStringToInt_;
@@ -93,7 +94,8 @@ public:
     std::vector<std::string> getOutgoingNodesFrom(std::string from);
     std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(
         const std::string &name, bool checkPlayerChange = false);
-    const std::vector<std::string> &getNodeNames();
+    const std::vector<std::string> &getAllNodeNames();
+    const std::vector<std::string> &getMainNodeNames();
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
     const std::vector<std::shared_ptr<Action>> &getActions(std::string a, std::string b, int id);

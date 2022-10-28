@@ -52,6 +52,7 @@ public:
         const std::vector<std::shared_ptr<Action>> &actions,
         const std::vector<std::shared_ptr<Node>> &innerNodes);
     ~Edge();
+    bool operator==(const Edge &edge) const;
     std::string toString() const;
     std::string fromName() const;
     std::string toName() const;
@@ -60,7 +61,7 @@ public:
     std::shared_ptr<Node> getLeftNode() const;
     std::shared_ptr<Node> getRightNode() const;
     bool isComplementaryTo(const Edge &rhs) const;
-    const std::vector<std::shared_ptr<Node>> &getInnerNodes();
+    const std::vector<std::shared_ptr<Node>> &getInnerNodes() const;
     const std::vector<std::shared_ptr<Action>> &getActions() const;
 };
 
@@ -87,8 +88,10 @@ public:
     ~Graph();
     void initialize();
     void addEdge(std::shared_ptr<Edge> &&edge);
+    void addEdge(const std::shared_ptr<Edge> &edge);
     std::vector<std::string> getOutgoingNodesFrom(std::string from);
-    std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(const std::string &name, bool checkPlayerChange = false);
+    std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(
+        const std::string &name, bool checkPlayerChange = false);
     const std::vector<std::string> &getNodeNames();
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
@@ -100,4 +103,12 @@ public:
     int getNodeId(std::string name);
     int getNumberOfOutgoingEdges(const std::string &node);
     std::shared_ptr<Edge> getEdge(std::string from, std::string to, int id);
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns();
+    std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to);
+    bool generatePathFromNodeToNode(
+        std::string node,
+        std::string finalNode,
+        std::vector<std::shared_ptr<Edge>> &edges,
+        std::vector<bool> &visited,
+        std::vector<bool> &onPathToFinalNode);
 };

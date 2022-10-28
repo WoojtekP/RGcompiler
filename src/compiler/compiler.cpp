@@ -1,5 +1,6 @@
 #include <functional>
 #include <iostream>
+
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
@@ -68,9 +69,21 @@ void Compiler::initializeGraph()
 
     graph_->initialize();
 
+    patternGraphs_ = graph_->generateGraphForPatterns();
+
     if (optConditionsSimplePaths_)
     {
         graph_ = graph_->getGraphWithOptimizedPaths();
+
+        for (size_t i = 0; i < patternGraphs_.size(); i++)
+        {
+            auto& graph = std::get<2>(patternGraphs_[i]);
+
+            graph->initialize();
+
+            patternGraphs_[i] = std::make_tuple(
+                std::get<0>(patternGraphs_[i]), std::get<1>(patternGraphs_[i]), graph->getGraphWithOptimizedPaths());
+        }
     }
 }
 
@@ -133,9 +146,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         const std::string identifier = variable["identifier"].get<std::string>();
         program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
-
-    auto currentPatternsType = std::make_shared<CustomType>("move_representation");
-    program_.addVariableDeclaration(std::make_unique<Variable>("currentPatterns", std::move(currentPatternsType)));
 
     std::string initialState = std::to_string(graph->getNodeId("begin"));
 
@@ -234,14 +244,14 @@ void Compiler::generateVoidStateOptimizedFunction(
     }
 }
 
-void Compiler::generateBoolStateFunctions(const std::shared_ptr<Graph>& graph)
+void Compiler::generateBoolStateFunctions(
+    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph)
 {
-    std::vector<std::string> states = graph->getNodeNames();
-
-    for (auto& state : states)
+    for (auto& state : graph->getNodeNames())
     {
-        std::string prefix = "is_legal_";
-        std::string functionName = prefix + std::to_string(graph->getNodeId(state));
+        std::string prefix =
+            "is_legal_" + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
+        std::string functionName = prefix + std::to_string(graph_->getNodeId(state));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
         if (debugFlag_)
@@ -257,19 +267,12 @@ void Compiler::generateBoolStateFunctions(const std::shared_ptr<Graph>& graph)
         }
         else
         {
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "currentPatterns.back()", std::to_string(graph->getNodeId(state))));
-
-            ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
-
-            function->addInstruction(std::move(ifInstruction));
-
             for (auto& [outgoingEdge, id] : outgoingEdges)
             {
-                ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()",
-                    "true"));
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        prefix + "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()",
+                        "true"));
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
                 function->addInstruction(std::move(ifInstruction));
             }
@@ -283,9 +286,7 @@ void Compiler::generateBoolStateFunctions(const std::shared_ptr<Graph>& graph)
 
 void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 {
-    const auto& edges = graph->getEdgeNames();
-
-    for (const auto& [stateFrom, stateTo, edgeId] : edges)
+    for (const auto& [stateFrom, stateTo, edgeId] : graph->getEdgeNames())
     {
         std::string prefix = "edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId));
@@ -356,13 +357,13 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             }
             else if (action->getType() == ActionType::Reachability)
             {
-                function->addInstruction(std::make_unique<CustomInstruction>(
-                    "currentPatterns.push_back(" + std::to_string(graph->getNodeId(action->getRightSide())) + ")"));
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
+                        "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "_" +
+                            std::to_string(graph->getNodeId(action->getRightSide())) + "_" +
+                            std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
                         action->getNegated() ? "true" : "false"));
-                ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
+
                 if (pushed)
                 {
                     ifInstruction->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
@@ -372,7 +373,6 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
                 function->addInstruction(std::move(ifInstruction));
-                function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             }
         }
 
@@ -395,7 +395,8 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
     }
 }
 
-void Compiler::generateBoolEdgeFunctions(const std::shared_ptr<Graph>& graph)
+void Compiler::generateBoolEdgeFunctions(
+    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph)
 {
     const auto& edges = graph->getEdgeNames();
 
@@ -404,13 +405,12 @@ void Compiler::generateBoolEdgeFunctions(const std::shared_ptr<Graph>& graph)
         const auto& actions = graph->getActions(stateFrom, stateTo, edgeId);
         std::vector<std::shared_ptr<Action>> assignmentActions;
 
-        std::string prefix = "is_legal_edge_";
-        std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId));
+        std::string prefix =
+            "is_legal_" + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
+        std::string functionName = prefix + "edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
         const auto& innerNodes = graph->getEdge(stateFrom, stateTo, edgeId)->getInnerNodes();
-
-        int numberOfActions = 0;
 
         if (debugFlag_)
         {
@@ -442,31 +442,18 @@ void Compiler::generateBoolEdgeFunctions(const std::shared_ptr<Graph>& graph)
             }
             else if (action->getType() == ActionType::Reachability)
             {
-                function->addInstruction(std::make_unique<CustomInstruction>(
-                    "currentPatterns.push_back(" + std::to_string(graph->getNodeId(action->getRightSide())) + ")"));
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
+                        "is_legal_" + std::to_string(graph_->getNodeId(action->getLeftSide())) + "_" +
+                            std::to_string(graph_->getNodeId(action->getRightSide())) + "_" +
+                            std::to_string(graph_->getNodeId(action->getLeftSide())) + "()",
                         action->getNegated() ? "true" : "false"));
-                ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
                 function->addInstruction(std::move(ifInstruction));
-                function->addInstruction(std::make_unique<CustomInstruction>("currentPatterns.pop_back()"));
             }
-            if (numberOfActions > 0 && numberOfActions < actions.size() - 1)
-            {
-                std::unique_ptr<IfInstruction> ifInstruction =
-                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "currentPatterns.back()",
-                        std::to_string(graph->getNodeId(innerNodes[numberOfActions - 1]->getName()))));
-                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
-                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
-                function->addInstruction(std::move(ifInstruction));
-            }
-            numberOfActions++;
         }
 
         bool outNodesExist = !graph->getOutgoingNodesFrom(stateTo).empty();
@@ -474,7 +461,7 @@ void Compiler::generateBoolEdgeFunctions(const std::shared_ptr<Graph>& graph)
         if (outNodesExist)
         {
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                "tmp", "is_legal_" + std::to_string(graph->getNodeId(stateTo)) + "()", "bool"));
+                "tmp", prefix + std::to_string(graph_->getNodeId(stateTo)) + "()", "bool"));
         }
 
         restoreAssignments<Function>(function, assignmentActions);
@@ -619,11 +606,11 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
-    for (const auto &[edge, id] : graph->getImportantEdges())
+    for (const auto& [edge, id] : graph->getImportantEdges())
     {
         auto block = std::make_unique<BlockInstruction>();
-        block->addInstruction(
-            std::make_unique<CustomInstruction>("state_" + std::to_string(graph->getNodeId(edge->toName())) + "(moves, mr)"));
+        block->addInstruction(std::make_unique<CustomInstruction>(
+            "state_" + std::to_string(graph->getNodeId(edge->toName())) + "(moves, mr)"));
         block->addInstruction(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
@@ -698,9 +685,17 @@ void Compiler::generateFunctions()
     generateApplyPathsFunctions(graph_);
 
     generateVoidStateFunctions(graph_);
-    generateBoolStateFunctions(graph_);
 
-    generateBoolEdgeFunctions(graph_);
+    for (const auto& [from, to, graph] : patternGraphs_)
+    {
+        generateBoolStateFunctions(from, to, graph);
+    }
+
+    for (const auto& [from, to, graph] : patternGraphs_)
+    {
+        generateBoolEdgeFunctions(from, to, graph);
+    }
+
     generateVoidEdgeFunctions(graph_);
 
     generateSpecialFunctions(graph_);

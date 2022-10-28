@@ -24,9 +24,10 @@ private:
     void generateFunctions();
     void generateVariables(const std::shared_ptr<Graph> &graph);
     void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph);
-    void generateBoolStateFunctions(const std::shared_ptr<Graph> &graph);
+    void generateBoolStateFunctions(
+        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
     void generateVoidEdgeFunctions(const std::shared_ptr<Graph> &graph);
-    void generateBoolEdgeFunctions(const std::shared_ptr<Graph> &graph);
+    void generateBoolEdgeFunctions(const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
     void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateApplyPathsFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
@@ -46,6 +47,7 @@ private:
 
     Parser &parser_;
     std::shared_ptr<Graph> graph_;
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;

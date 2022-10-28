@@ -486,9 +486,7 @@ void Compiler::generateBoolEdgeFunctions(
 
 void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
 {
-    const auto& edges = graph->getEdgeNames();
-
-    for (const auto& [stateFrom, stateTo, edgeId] : edges)
+    for (const auto& [stateFrom, stateTo, edgeId] : graph->getEdgeNames())
     {
         std::string prefix = "apply_edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId));
@@ -509,46 +507,17 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
             }
         }
 
-        program_.addFunction(std::move(function));
-    }
-}
-
-void Compiler::generateApplyPathsFunctions(const std::shared_ptr<Graph>& graph)
-{
-    const auto& edges = graph->getEdgeNames();
-
-    for (const auto& [nodeFrom, nodeTo, edgeId] : edges)
-    {
-        std::string prefix = "apply_path_";
-        auto function = std::make_unique<Function>(
-            prefix + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId)), "void", false);
-
-        if (debugFlag_)
+        if (graph->getNumberOfOutgoingEdges(stateTo) == 1)
         {
+            const auto &[edge, id] = graph->getOutgoingEdgesFrom(stateTo).back();
             function->addInstruction(
-                debugInstruction(prefix + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId))));
-        }
-
-        function->addInstruction(std::make_unique<CustomInstruction>(
-            "apply_edge_" + std::to_string(graph->getEdgeId(nodeFrom, nodeTo, edgeId)) + "()"));
-
-        if (optConditionsUnambigousPaths_)
-        {
-            if (!graph->haveActionChangePlayer(graph->getEdgeId(nodeFrom, nodeTo, edgeId)))
-            {
-                const auto& path = graph->getUnambiguousPathFromNode(nodeTo, true);
-
-                for (const auto& [u, v, id] : path)
-                {
-                    function->addInstruction(std::make_unique<CustomInstruction>(
-                        "apply_edge_" + std::to_string(graph->getEdgeId(u, v, id)) + "()"));
-                }
-            }
+                std::make_unique<CustomInstruction>(prefix + std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), id)) + "()"));
         }
 
         program_.addFunction(std::move(function));
     }
 }
+
 
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 {
@@ -595,7 +564,7 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
     {
         auto block = std::make_unique<BlockInstruction>();
         block->addInstruction(std::make_unique<CustomInstruction>(
-            "apply_path_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));
+            "apply_edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));
         block->addInstruction(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(block));
@@ -658,11 +627,9 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        R"(
-    moves.clear();
+        R"(moves.clear();
     move_representation mr;
-    runState(currentState, moves, mr);
-    )"));
+    runState(currentState, moves, mr))"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
@@ -690,7 +657,6 @@ void Compiler::generateFunctions()
     // TODO this should be changed after the proper implementation of the Function class comes out
 
     generateApplyEdgeFunctions(graph_);
-    generateApplyPathsFunctions(graph_);
     generateVoidStateFunctions(graph_);
 
     for (const auto& [from, to, graph] : patternGraphs_)

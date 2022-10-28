@@ -29,7 +29,6 @@ private:
     void generateVoidEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateBoolEdgeFunctions(const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
     void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
-    void generateApplyPathsFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph);

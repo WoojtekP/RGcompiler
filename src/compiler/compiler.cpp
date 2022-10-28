@@ -71,6 +71,11 @@ void Compiler::initializeGraph()
 
     patternGraphs_ = graph_->generateGraphForPatterns();
 
+    for (const auto& [from, to, graph] : patternGraphs_)
+    {
+        graph->initialize();
+    }
+
     if (optConditionsSimplePaths_)
     {
         graph_ = graph_->getGraphWithOptimizedPaths();
@@ -79,12 +84,12 @@ void Compiler::initializeGraph()
         {
             auto& graph = std::get<2>(patternGraphs_[i]);
 
-            graph->initialize();
-
             patternGraphs_[i] = std::make_tuple(
                 std::get<0>(patternGraphs_[i]), std::get<1>(patternGraphs_[i]), graph->getGraphWithOptimizedPaths());
         }
     }
+
+    graph_->toString();
 }
 
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
@@ -529,12 +534,15 @@ void Compiler::generateApplyPathsFunctions(const std::shared_ptr<Graph>& graph)
 
         if (optConditionsUnambigousPaths_)
         {
-            const auto& path = graph->getUnambiguousPathFromNode(nodeTo);
-
-            for (const auto& [u, v, id] : path)
+            if (!graph->haveActionChangePlayer(graph->getEdgeId(nodeFrom, nodeTo, edgeId)))
             {
-                function->addInstruction(std::make_unique<CustomInstruction>(
-                    "apply_edge_" + std::to_string(graph->getEdgeId(u, v, id)) + "()"));
+                const auto& path = graph->getUnambiguousPathFromNode(nodeTo, true);
+
+                for (const auto& [u, v, id] : path)
+                {
+                    function->addInstruction(std::make_unique<CustomInstruction>(
+                        "apply_edge_" + std::to_string(graph->getEdgeId(u, v, id)) + "()"));
+                }
             }
         }
 
@@ -557,7 +565,7 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
         if (optConditionsUnambigousPaths_)
         {
-            const auto path = graph->getUnambiguousPathFromNode(stateTo, !optConditionsSimplePaths_);
+            const auto path = graph->getUnambiguousPathFromNode(stateTo, true);
 
             if (path.size())
             {
@@ -683,7 +691,6 @@ void Compiler::generateFunctions()
 
     generateApplyEdgeFunctions(graph_);
     generateApplyPathsFunctions(graph_);
-
     generateVoidStateFunctions(graph_);
 
     for (const auto& [from, to, graph] : patternGraphs_)

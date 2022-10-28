@@ -293,27 +293,56 @@ std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPath
                 }
             }
         }
+
+        if (node == edge->toName())
+        {
+            break;
+        }
+
         node = edge->toName();
     }
 
     return path;
 }
 
-void Graph::traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths)
+void Graph::traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited)
 {
+    const auto &action =
+        getEdge(nodeIdToNode_[path.back()]->getName(), nodeIdToNode_[node]->getName(), 0)->getActions().back();
     path.push_back(node);
+
+    if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+    {
+        return;
+    }
 
     if (next_[node].size() != 1 || getNumberOfIncomingEdges(nodeIdToNode_[node]->getName()) != 1)
     {
         return;
     }
 
-    traverse(next_[node].front(), path, paths);
+    visited[node] = true;
+    traverse(next_[node].front(), path, paths, visited);
+}
+
+void Graph::traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited)
+{
+    path.push_back(node);
+
+    if (visited[node])
+    {
+        return;
+    }
+
+    visited[node] = true;
+
+    traverseCycle(next_[node].back(), path, visited);
 }
 
 std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
 {
     std::vector<std::vector<int>> paths;
+    std::vector<bool> visited(nodeIdToNode_.size(), false);
 
     for (const auto &name : nodeNames_)
     {
@@ -321,14 +350,40 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths()
 
         if (getNumberOfIncomingEdges(name) != 1 || next_[u].size() != 1)
         {
+            visited[u] = true;
             for (int v : next_[u])
             {
                 std::vector<int> path {u};
 
-                traverse(v, path, paths);
+                traverse(v, path, paths, visited);
 
                 paths.push_back(path);
+
+                while (getNumberOfIncomingEdges(nodeIdToNode_[path.back()]->getName()) == 1 &&
+                       next_[path.back()].size() == 1)
+                {
+                    visited[path.back()] = true;
+                    int node = path.back();
+                    path.clear();
+                    path.push_back(node);
+                    traverse(next_[node].back(), path, paths, visited);
+                    paths.push_back(path);
+                }
             }
+        }
+    }
+
+    for (const auto &name : nodeNames_)
+    {
+        int u = nodeStringToInt_[name];
+
+        if (!visited[u])
+        {
+            std::vector<int> path;
+
+            traverseCycle(u, path, visited);
+
+            paths.push_back(path);
         }
     }
 
@@ -488,6 +543,18 @@ int Graph::getEdgeId(std::string from, std::string to, int id)
 std::shared_ptr<Edge> Graph::getEdge(std::string from, std::string to, int id)
 {
     return edgeIdToEdge_[edgeStringToInt_[std::make_tuple(from, to, id)]];
+}
+
+bool Graph::haveActionChangePlayer(int id)
+{
+    const auto &action = edgeIdToEdge_[id]->getActions().back();
+
+    if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+    {
+        return true;
+    }
+
+    return false;
 }
 
 bool Graph::generatePathFromNodeToNode(

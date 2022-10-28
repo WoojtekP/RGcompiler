@@ -80,7 +80,8 @@ class Graph
     std::vector<std::shared_ptr<Edge>> edges_;
     std::vector<std::vector<int>> next_;
 
-    void traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths);
+    void traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited);
+    void traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited);
     int getNumberOfIncomingEdges(const std::string &node);
     std::vector<std::string> getTransitions(std::string from);
 
@@ -111,4 +112,6 @@ public:
         std::vector<std::shared_ptr<Edge>> &edges,
         std::vector<bool> &visited,
         std::vector<bool> &onPathToFinalNode);
+
+    bool haveActionChangePlayer(int id);
 };

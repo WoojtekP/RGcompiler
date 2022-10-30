@@ -83,7 +83,6 @@ class Graph
 
     void traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited);
     void traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited);
-    int getNumberOfIncomingEdges(const std::string &node);
     std::vector<std::string> getTransitions(std::string from);
 
 public:
@@ -105,6 +104,7 @@ public:
     int getEdgeId(std::string from, std::string to, int id);
     int getNodeId(std::string name);
     int getNumberOfOutgoingEdges(const std::string &node);
+    int getNumberOfIncomingEdges(const std::string &node);
     std::shared_ptr<Edge> getEdge(std::string from, std::string to, int id);
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns();
     std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to);
@@ -116,4 +116,25 @@ public:
         std::vector<bool> &onPathToFinalNode);
 
     bool haveActionChangePlayer(int id);
+
+    std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name)
+    {
+        std::string stateFrom = name;
+        std::string stateTo;
+
+        while (next_[nodeStringToInt_[stateFrom]].size() == 1)
+        {
+            stateTo = nodeIdToNode_[next_[nodeStringToInt_[stateFrom]].back()]->getName();
+            for (const auto &action : getActions(stateFrom, stateTo, 0))
+            {
+                if (action->getType() == ActionType::Assignment)
+                {
+                    return std::make_pair(edgeIdToEdge_[edgeStringToInt_[std::make_tuple(stateFrom, stateTo, 0)]], 0);
+                }
+            }
+            stateFrom = stateTo;
+        }
+
+        return std::make_pair(nullptr, -1);
+    }
 };

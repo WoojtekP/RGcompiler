@@ -507,24 +507,27 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
             }
         }
 
-        if (optConditionsUnambigousPaths_ && !emptyFunction)
+        if (!emptyFunction)
         {
-            if (graph->getNumberOfOutgoingEdges(stateTo) == 1)
+            if (optConditionsUnambigousPaths_)
             {
-                const auto& [edge, id] = graph->getUnambiguousNotEmptyEdge(stateTo);
-
-                if (id == -1)
+                if (graph->getNumberOfOutgoingEdges(stateTo) == 1)
                 {
-                    program_.addFunction(std::move(function));
-                    continue;
+                    const auto& [edge, id] = graph->getUnambiguousNotEmptyEdge(stateTo);
+
+                    if (id == -1)
+                    {
+                        program_.addFunction(std::move(function));
+                        continue;
+                    }
+
+                    function->addInstruction(std::make_unique<CustomInstruction>(
+                        prefix + std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), id)) + "()"));
                 }
-
-                function->addInstruction(std::make_unique<CustomInstruction>(
-                    prefix + std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), id)) + "()"));
             }
-        }
 
-        program_.addFunction(std::move(function));
+            program_.addFunction(std::move(function));
+        }
     }
 }
 
@@ -622,6 +625,23 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
         }
         else
         {
+
+            bool emptyFunction = true;
+
+            for (const auto& action : graph->getActions(stateFrom, stateTo, edgeId))
+            {
+                if (action->getType() == ActionType::Assignment)
+                {
+                    emptyFunction = false;
+                    break;
+                }
+            }
+
+            if (emptyFunction)
+            {
+                continue;
+            }
+
             auto block = std::make_unique<BlockInstruction>();
             block->addInstruction(std::make_unique<CustomInstruction>(
                 "apply_edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));

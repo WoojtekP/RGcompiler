@@ -306,15 +306,6 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         std::vector<std::shared_ptr<Action>> assignmentActions;
 
         bool pushed = false;
-
-        if (!optConditionsUnambigousPaths_ || graph->getNumberOfOutgoingEdges(stateFrom) > 1 ||
-            graph->getNodeId(stateFrom) == graph->getNodeId("begin"))
-        {
-            function->addInstruction(std::make_unique<CustomInstruction>(
-                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
-            pushed = true;
-        }
-
         bool playerChanged = false;
 
         for (const auto& action : actions)
@@ -323,6 +314,14 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             {
                 if (action->getLeftSide() == "player")
                 {
+                    if (!optConditionsUnambigousPaths_ || graph->getNumberOfOutgoingEdges(stateFrom) > 1 ||
+                        graph->getNodeId(stateFrom) == graph->getNodeId("begin"))
+                    {
+                        function->addInstruction(std::make_unique<CustomInstruction>(
+                            "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
+                        pushed = true;
+                    }
+
                     function->addInstruction(std::make_unique<CustomInstruction>("moves.push_back(mr)"));
 
                     if (pushed)
@@ -348,11 +347,6 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         action->getLeftSide(), action->getRightSide(), !action->getNegated()));
-                if (pushed)
-                {
-                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
-                }
-
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
@@ -366,12 +360,6 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                             std::to_string(graph->getNodeId(action->getRightSide())) + "_" +
                             std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
                         action->getNegated() ? "true" : "false"));
-
-                if (pushed)
-                {
-                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
-                }
-
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
@@ -382,6 +370,14 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         if (playerChanged)
         {
             continue;
+        }
+
+        if (!optConditionsUnambigousPaths_ || graph->getNumberOfOutgoingEdges(stateFrom) > 1 ||
+            graph->getNodeId(stateFrom) == graph->getNodeId("begin"))
+        {
+            function->addInstruction(std::make_unique<CustomInstruction>(
+                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + ")"));
+            pushed = true;
         }
 
         function->addInstruction(

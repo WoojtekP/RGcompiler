@@ -547,11 +547,20 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
                 continue;
             }
 
-            const auto path = graph->getUnambiguousPathFromNode(stateTo, true);
+            const auto& action = graph->getEdge(stateFrom, stateTo, edgeId)->getActions().back();
 
-            if (path.size())
+            if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
             {
-                id = std::to_string(graph->getNodeId(std::get<1>(path.back())));
+                id = std::to_string(graph->getNodeId(stateTo));
+            }
+            else
+            {
+                const auto path = graph->getUnambiguousPathFromNode(stateTo, true);
+
+                if (path.size())
+                {
+                    id = std::to_string(graph->getNodeId(std::get<1>(path.back())));
+                }
             }
         }
 

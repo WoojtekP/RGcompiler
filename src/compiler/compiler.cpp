@@ -222,7 +222,7 @@ void Compiler::generateVoidStateOptimizedFunction(
         {
             const std::string shouldCheckVarName = "should_check_" + outgoingEdge->toName();
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(shouldCheckVarName, "true"));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, shouldCheckVarName));
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>(
                 "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
             function->addInstruction(std::move(ifInstruction));
@@ -274,8 +274,8 @@ void Compiler::generateBoolStateFunctions(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        prefix + "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()",
-                        "true"));
+                        false,
+                        prefix + "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
                 function->addInstruction(std::move(ifInstruction));
             }
@@ -346,7 +346,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        action->getLeftSide(), action->getRightSide(), !action->getNegated()));
+                        !action->getNegated(), action->getLeftSide(), action->getRightSide()));
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
@@ -356,10 +356,10 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        action->getNegated() ? false : true,
                         "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "_" +
                             std::to_string(graph->getNodeId(action->getRightSide())) + "_" +
-                            std::to_string(graph->getNodeId(action->getLeftSide())) + "()",
-                        action->getNegated() ? "true" : "false"));
+                            std::to_string(graph->getNodeId(action->getLeftSide())) + "()"));
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
@@ -432,7 +432,7 @@ void Compiler::generateBoolEdgeFunctions(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        action->getLeftSide(), action->getRightSide(), !action->getNegated()));
+                        !action->getNegated(), action->getLeftSide(), action->getRightSide()));
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
@@ -443,10 +443,10 @@ void Compiler::generateBoolEdgeFunctions(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        action->getNegated() ? false : true,
                         "is_legal_" + std::to_string(graph_->getNodeId(action->getLeftSide())) + "_" +
                             std::to_string(graph_->getNodeId(action->getRightSide())) + "_" +
-                            std::to_string(graph_->getNodeId(action->getLeftSide())) + "()",
-                        action->getNegated() ? "true" : "false"));
+                            std::to_string(graph_->getNodeId(action->getLeftSide())) + "()"));
 
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
 
@@ -630,7 +630,6 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
         }
         else
         {
-
             bool emptyFunction = true;
 
             for (const auto& action : graph->getActions(stateFrom, stateTo, edgeId))

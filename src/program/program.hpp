@@ -2,10 +2,9 @@
 
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-
 
 using TypeToSymbolToValueMap = std::map<std::string, std::map<std::string, int>>;
 
@@ -60,7 +59,7 @@ struct IValue
 {
     IValue() = default;
     virtual ~IValue() = default;
-    virtual std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const = 0;
+    virtual std::string toString(const std::shared_ptr<IType> &, const TypeToSymbolToValueMap &) const = 0;
 };
 
 struct SingleValue : public IValue
@@ -68,7 +67,7 @@ struct SingleValue : public IValue
     SingleValue() = default;
     SingleValue(const std::string &sym) : symbol(sym) {}
     ~SingleValue() = default;
-    std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const override;
+    std::string toString(const std::shared_ptr<IType> &, const TypeToSymbolToValueMap &) const override;
 
     std::string symbol;
 };
@@ -80,7 +79,7 @@ struct MapValue : public IValue
     : idToValueMap(std::move(idToValue)), defaultValue(std::move(defaultVal))
     {}
     ~MapValue() = default;
-    std::string toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const override;
+    std::string toString(const std::shared_ptr<IType> &, const TypeToSymbolToValueMap &) const override;
 
     std::map<std::string, std::unique_ptr<IValue>> idToValueMap;
     std::unique_ptr<IValue> defaultValue;
@@ -185,10 +184,11 @@ class ComparisonInstruction : public IInstruction
     std::string left_;
     std::string right_;
     bool negated_;
+    bool onlyLeftSide_;
 
 public:
-    ComparisonInstruction(const std::string &left, const std::string &right);
-    ComparisonInstruction(const std::string &left, const std::string &right, bool negated);
+    ComparisonInstruction(bool negated, const std::string &left);
+    ComparisonInstruction(bool negated, const std::string &left, const std::string &right);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
@@ -281,7 +281,7 @@ public:
     void addFunction(std::unique_ptr<Function> &&function);
 
     const std::vector<std::shared_ptr<IType>> &getTypes() const;
-    std::shared_ptr<IType> findType(const std::string& identifier) const;
+    std::shared_ptr<IType> findType(const std::string &identifier) const;
     const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
     const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
     const std::vector<std::unique_ptr<Function>> &getFunctions() const;

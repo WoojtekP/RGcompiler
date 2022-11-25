@@ -33,8 +33,6 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
 
     headerFile_ << std::endl;
-    headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
-    headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;
     headerFile_ << "template<class T, std::size_t N>" << std::endl;
     headerFile_ << "using Arr = std::array<T, N>;" << std::endl;

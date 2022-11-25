@@ -61,7 +61,7 @@ std::string MapValue::toString(const std::shared_ptr<IType>& t, const TypeToSymb
             const int pos = symbolToValueMap.at(id);
             values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
         }
-        std::string result = "std::array{";
+        std::string result = functionType->toString() + "{";
         for (const auto& value : values)
         {
             result += value + ",";

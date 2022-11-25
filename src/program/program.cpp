@@ -26,7 +26,7 @@ std::string FunctionType::toString() const
 
 std::string FunctionType::definitionToString() const
 {
-    return "std::array<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
+    return "Arr<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
 }
 
 std::string CustomType::toString() const

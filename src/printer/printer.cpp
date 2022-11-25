@@ -103,7 +103,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
         const std::string constType = constant->valueType->toString();
         const std::string constValue = constant->value->toString(constant->valueType, parser_.getTypeToSymbolToValueMap());
         const std::string constName = constant->identifier;
-        headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
+        headerFile_ << "constexpr " << constType << " " << constName << " = " << constValue << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }

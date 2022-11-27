@@ -27,14 +27,16 @@ void Printer::initializeHeaderFile(bool debug)
         headerFile_ << "#include <iostream>" << std::endl;
     }
 
-    headerFile_ << "#include <vector>" << std::endl;
+    headerFile_ << "#include <array>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
+    headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
 
     headerFile_ << std::endl;
-    headerFile_ << "#include \"defaultMap.hpp\"" << std::endl;
-    headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;
+    headerFile_ << "template<class T, std::size_t N>" << std::endl;
+    headerFile_ << "using Arr = std::array<T, N>;" << std::endl;
+    headerFile_ << std::endl;
 }
 
 void Printer::initializeSourceFile()
@@ -103,7 +105,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
         const std::string constType = constant->valueType->toString();
         const std::string constValue = constant->value->toString(constant->valueType, parser_.getTypeToSymbolToValueMap());
         const std::string constName = constant->identifier;
-        headerFile_ << "const " << constType << " " << constName << " = " << constValue << ";" << std::endl;
+        headerFile_ << "constexpr " << constType << " " << constName << " = " << constValue << ";" << std::endl;
     }
     headerFile_ << std::endl;
 }

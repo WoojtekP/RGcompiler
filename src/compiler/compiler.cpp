@@ -229,7 +229,7 @@ void Compiler::generateVoidStateOptimizedFunction(
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, shouldCheckVarName));
             ifInstruction->addInstruction(std::make_unique<CustomInstruction>(
-                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "()"));
+                "edge_" + std::to_string(graph->getEdgeId(state, outgoingEdge->toName(), id)) + "(moves, mr)"));
             function->addInstruction(std::move(ifInstruction));
         }
         else if (const auto complementaryEdge = findComplementaryEdge(outgoingEdge, outgoingEdges))

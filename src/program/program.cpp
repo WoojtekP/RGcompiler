@@ -25,7 +25,7 @@ std::string FunctionType::toString() const
 
 std::string FunctionType::definitionToString() const
 {
-    return "std::array<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
+    return "Arr<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
 }
 
 std::string CustomType::toString() const
@@ -62,8 +62,8 @@ std::string MapValue::toString(
             const int pos = symbolToValueMap.at(id);
             values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
         }
-        std::string result = "std::array{";
-        for (const auto &value : values)
+        std::string result = functionType->toString() + "{";
+        for (const auto& value : values)
         {
             result += value + ",";
         }

@@ -69,9 +69,16 @@ void Compiler::initializeGraph()
 
     graph_->initialize();
 
-    patternGraphs_ = graph_->generateGraphForPatterns();
+    patternReachabilityGraphs_ = graph_->generateGraphForPatterns(ActionType::Reachability);
+    patternAnyGraphs_ = graph_->generateGraphForPatterns(ActionType::PatternAny);
 
-    for (const auto& [from, to, graph] : patternGraphs_)
+    initializePatternGraphs(patternReachabilityGraphs_);
+}
+
+void Compiler::initializePatternGraphs(
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns)
+{
+    for (const auto& [from, to, graph] : patterns)
     {
         graph->initialize();
     }
@@ -80,16 +87,14 @@ void Compiler::initializeGraph()
     {
         graph_ = graph_->getGraphWithOptimizedPaths();
 
-        for (size_t i = 0; i < patternGraphs_.size(); i++)
+        for (size_t i = 0; i < patterns.size(); i++)
         {
-            auto& graph = std::get<2>(patternGraphs_[i]);
+            auto& graph = std::get<2>(patterns[i]);
 
-            patternGraphs_[i] = std::make_tuple(
-                std::get<0>(patternGraphs_[i]), std::get<1>(patternGraphs_[i]), graph->getGraphWithOptimizedPaths());
+            patterns[i] = std::make_tuple(
+                std::get<0>(patterns[i]), std::get<1>(patterns[i]), graph->getGraphWithOptimizedPaths());
         }
     }
-
-    graph_->toString();
 }
 
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
@@ -395,7 +400,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 }
 
 void Compiler::generateBoolEdgeFunctions(
-    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph)
+    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph, bool doRestore)
 {
     const auto& edges = graph->getEdgeNames();
 
@@ -461,16 +466,27 @@ void Compiler::generateBoolEdgeFunctions(
         {
             function->addInstruction(std::make_unique<AssignmentInstruction>(
                 "tmp", prefix + std::to_string(graph_->getNodeId(stateTo)) + "()", "bool"));
-        }
 
-        restoreAssignments<Function>(function, assignmentActions);
+            if (!doRestore)
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, "tmp"));
 
-        if (outNodesExist)
-        {
+                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
+                function->addInstruction(std::move(ifInstruction));
+            }
+
+            restoreAssignments<Function>(function, assignmentActions);
+
             function->addInstruction(std::make_unique<ReturnInstruction>("tmp"));
         }
         else
         {
+            if (doRestore)
+            {
+                restoreAssignments<Function>(function, assignmentActions);
+            }
+
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
 
@@ -736,23 +752,37 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     program_.addFunction(std::move(applyMoveFunction));
 }
 
-void Compiler::generateFunctions()
+void Compiler::generatePatternFunctions(
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool doRestore)
 {
-    // TODO node names should be represended by numbers not strings
-    // TODO this should be changed after the proper implementation of the Function class comes out
-
-    generateApplyEdgeFunctions(graph_);
-    generateVoidStateFunctions(graph_);
-
-    for (const auto& [from, to, graph] : patternGraphs_)
+    for (const auto& [from, to, graph] : patterns)
     {
         generateBoolStateFunctions(from, to, graph);
     }
 
-    for (const auto& [from, to, graph] : patternGraphs_)
+    for (const auto& [from, to, graph] : patterns)
     {
-        generateBoolEdgeFunctions(from, to, graph);
+        generateBoolEdgeFunctions(from, to, graph, doRestore);
     }
+}
+
+void Compiler::generatePatternReachabilityFunctions()
+{
+    generatePatternFunctions(patternReachabilityGraphs_);
+}
+
+void Compiler::generatePatternAnyFunctions()
+{
+    generatePatternFunctions(patternAnyGraphs_, false);
+}
+
+void Compiler::generateFunctions()
+{
+    generateApplyEdgeFunctions(graph_);
+    generateVoidStateFunctions(graph_);
+
+    generatePatternReachabilityFunctions();
+    generatePatternAnyFunctions();
 
     generateVoidEdgeFunctions(graph_);
 

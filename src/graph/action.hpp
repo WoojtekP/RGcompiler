@@ -12,6 +12,7 @@ enum class ActionType
     Reachability,
     Comparison,
     Skip,
+    PatternAny,
     Pattern
 };
 
@@ -73,6 +74,13 @@ class ActionPattern : public ActionBase
 {
 public:
     ActionPattern();
+    std::string toString() override;
+};
+
+class ActionPatternAny : public ActionBase
+{
+public:
+    ActionPatternAny();
     std::string toString() override;
 };
 

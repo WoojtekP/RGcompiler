@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 
 #include <nlohmann/json.hpp>
@@ -205,23 +206,12 @@ std::string Graph::toString()
 
     for (auto &&edge : edges_)
     {
-        std::vector<std::string> transitions = getTransitions(edge->toName());
-
-        std::string functionName = edge->fullName();
-        std::string functionAction = edge->actionToString();
-        std::string functionBody;
-
-        functionBody += "    " + functionAction + "\n";
-
-        for (std::string &name : transitions)
+        std::cout << edge->fromName() << "--\"";
+        for (const auto &action : edge->getActions())
         {
-            functionBody += "    " + name + "();\n";
+            std::cout << action->toString() << "<br/>";
         }
-
-        graph += "void " + functionName + "()\n";
-        graph += "{\n";
-        graph += functionBody;
-        graph += "}\n\n";
+        std::cout << "\"-->" << edge->toName() << "\n";
     }
 
     return graph;
@@ -628,7 +618,8 @@ std::shared_ptr<Graph> Graph::generateGraphForPattern(std::string from, std::str
     return graph;
 }
 
-std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Graph::generateGraphForPatterns()
+std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Graph::generateGraphForPatterns(
+    ActionType actionType)
 {
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternGraphs;
 
@@ -638,7 +629,7 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Graph:
     {
         const auto &action = edge->getActions().front();
 
-        if (action->getType() == ActionType::Reachability &&
+        if (action->getType() == actionType &&
             patterns.find(std::make_pair(action->getLeftSide(), action->getRightSide())) == patterns.end())
         {
             patterns.insert(std::make_pair(action->getLeftSide(), action->getRightSide()));

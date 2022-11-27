@@ -106,7 +106,8 @@ public:
     int getNumberOfOutgoingEdges(const std::string &node);
     int getNumberOfIncomingEdges(const std::string &node);
     std::shared_ptr<Edge> getEdge(std::string from, std::string to, int id);
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns();
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns(
+        ActionType actionType);
     std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to);
     bool generatePathFromNodeToNode(
         std::string node,

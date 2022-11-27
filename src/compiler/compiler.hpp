@@ -27,7 +27,8 @@ private:
     void generateBoolStateFunctions(
         const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
     void generateVoidEdgeFunctions(const std::shared_ptr<Graph> &graph);
-    void generateBoolEdgeFunctions(const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
+    void generateBoolEdgeFunctions(
+        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, bool doRestore);
     void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
@@ -35,6 +36,11 @@ private:
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
     void generateVoidStateOptimizedFunction(
         const std::string &state, const std::unique_ptr<Function> &function, const std::shared_ptr<Graph> &graph);
+    void generatePatternFunctions(
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool doRestore = true);
+    void generatePatternReachabilityFunctions();
+    void generatePatternAnyFunctions();
+    void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns);
     template<typename T>
     void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<Action>> assignments);
     std::string getStateIntId(std::string name);
@@ -46,7 +52,8 @@ private:
 
     Parser &parser_;
     std::shared_ptr<Graph> graph_;
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternGraphs_;
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;

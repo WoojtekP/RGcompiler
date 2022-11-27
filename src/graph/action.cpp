@@ -68,6 +68,13 @@ std::string ActionPattern::toString()
     return "";
 }
 
+ActionPatternAny::ActionPatternAny() : ActionBase(ActionType::PatternAny) {}
+
+std::string ActionPatternAny::toString()
+{
+    return "any " + left_->toString() + " -> " + right_->toString();
+}
+
 ActionReachability::ActionReachability(bool negated) : ActionBase(ActionType::Reachability, negated) {}
 
 std::string ActionReachability::toString()

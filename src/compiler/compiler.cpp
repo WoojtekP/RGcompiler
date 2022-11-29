@@ -72,6 +72,11 @@ void Compiler::initializeGraph()
     patternReachabilityGraphs_ = graph_->generateGraphForPatterns(ActionType::Reachability);
     patternAnyGraphs_ = graph_->generateGraphForPatterns(ActionType::PatternAny);
 
+    if (optConditionsSimplePaths_)
+    {
+        graph_ = graph_->getGraphWithOptimizedPaths();
+    }
+
     initializePatternGraphs(patternReachabilityGraphs_);
 }
 
@@ -85,8 +90,6 @@ void Compiler::initializePatternGraphs(
 
     if (optConditionsSimplePaths_)
     {
-        graph_ = graph_->getGraphWithOptimizedPaths();
-
         for (size_t i = 0; i < patterns.size(); i++)
         {
             auto& graph = std::get<2>(patterns[i]);

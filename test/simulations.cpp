@@ -66,9 +66,7 @@ int main(int argc, char** argv) {
   std::cout << std::fixed;
   #if TEST
     std::cout.precision(2);
-    std::cout << minDepth;
-    std::cout << " " << static_cast<long double>(numStates) / static_cast<long double>(numSimulations);
-    std::cout << " " << maxDepth;
+    std::cout << static_cast<long double>(numStates) / static_cast<long double>(numSimulations);
     for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
     std::cout << std::endl;
   #else

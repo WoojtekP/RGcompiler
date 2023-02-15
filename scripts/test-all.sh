@@ -4,32 +4,27 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/..
 . ./scripts/config.sh
 
-function runPerft() {
-testparam=$1
-g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft
+function runCompilation() {
+./scripts/compile.sh ${game} > /dev/null &&
+g++ -c ${BUILD_TEST_DIR}/reasoner.cpp -o ${BUILD_TEST_DIR}/reasoner.o -I${BUILD_TEST_DIR} ${GCC_FLAGS} &&
+g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsims &&
+g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft &&
 exitCode=$?
 if [ "${exitCode}" -ne 0 ]; then
   elapsedTime=0
-  result="Compilation error"
-else
-  startTime=$(date +%s.%3N)
-  result=$(${BUILD_TEST_DIR}/testperft ${testparam})
-  exitCode=$?
-  endTime=$(date +%s.%3N)
-  elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
-  if [ "${exitCode}" -ne 0 ]; then
-    result="[exitCode=${exitCode}] ${result}"
-  fi
+  result="compilation error"
+  return 1
 fi
+return 0
 }
 function runSims() {
 testparam=$1
-g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsims
-exitCode=$?
-if [ "${exitCode}" -ne 0 ]; then
-  elapsedTime=0
-  result="Compilation error"
-else
+#g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsims
+# exitCode=$?
+# if [ "${exitCode}" -ne 0 ]; then
+#   elapsedTime=0
+#   result="Compilation error"
+# else
   startTime=$(date +%s.%3N)
   result=$(${BUILD_TEST_DIR}/testsims ${testparam})
   exitCode=$?
@@ -38,7 +33,25 @@ else
   if [ "${exitCode}" -ne 0 ]; then
     result="[exitCode=${exitCode}] ${result}"
   fi
-fi
+#fi
+}
+function runPerft() {
+testparam=$1
+#g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft
+# exitCode=$?
+# if [ "${exitCode}" -ne 0 ]; then
+#   elapsedTime=0
+#   result="Compilation error"
+# else
+  startTime=$(date +%s.%3N)
+  result=$(${BUILD_TEST_DIR}/testperft ${testparam})
+  exitCode=$?
+  endTime=$(date +%s.%3N)
+  elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
+  if [ "${exitCode}" -ne 0 ]; then
+    result="[exitCode=${exitCode}] ${result}"
+  fi
+#fi
 }
 function verifySimsResult() {
 TOLERANCE=0.1
@@ -107,7 +120,8 @@ for game in "${allGames[@]}"; do
   simulData=(${simulData[@]:1})
 
   startTime=$(date +%s.%3N)
-  ./scripts/compile.sh ${game} > /dev/null
+  #./scripts/compile.sh ${game} > /dev/null
+  runCompilation
   endTime=$(date +%s.%3N)
   elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
   echo "${game} compilation time ${elapsedTime} s"

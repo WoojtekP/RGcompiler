@@ -18,7 +18,7 @@ void exitError(const std::string msg) {std::cout << msg << std::endl; exit(2);}
 void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves[depth]);
-    if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves");
+    if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
     state.applyMove(moves[depth][0]);
   }
 }

@@ -7,7 +7,7 @@ cd ${DIR}/..
 function runCompilation() {
 ./scripts/compile.sh ${game} > /dev/null &&
 g++ -c ${BUILD_TEST_DIR}/reasoner.cpp -o ${BUILD_TEST_DIR}/reasoner.o -I${BUILD_TEST_DIR} ${GCC_FLAGS} &&
-g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsims &&
+g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsimul &&
 g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft &&
 exitCode=$?
 if [ "${exitCode}" -ne 0 ]; then
@@ -19,39 +19,25 @@ return 0
 }
 function runSims() {
 testparam=$1
-#g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsims
-# exitCode=$?
-# if [ "${exitCode}" -ne 0 ]; then
-#   elapsedTime=0
-#   result="Compilation error"
-# else
-  startTime=$(date +%s.%3N)
-  result=$(${BUILD_TEST_DIR}/testsims ${testparam})
-  exitCode=$?
-  endTime=$(date +%s.%3N)
-  elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
-  if [ "${exitCode}" -ne 0 ]; then
-    result="[exitCode=${exitCode}] ${result}"
-  fi
-#fi
+startTime=$(date +%s.%3N)
+result=$(${BUILD_TEST_DIR}/testsimul ${testparam})
+exitCode=$?
+endTime=$(date +%s.%3N)
+elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
+if [ "${exitCode}" -ne 0 ]; then
+  result="[exitCode=${exitCode}] ${result}"
+fi
 }
 function runPerft() {
 testparam=$1
-#g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.cpp -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft
-# exitCode=$?
-# if [ "${exitCode}" -ne 0 ]; then
-#   elapsedTime=0
-#   result="Compilation error"
-# else
-  startTime=$(date +%s.%3N)
-  result=$(${BUILD_TEST_DIR}/testperft ${testparam})
-  exitCode=$?
-  endTime=$(date +%s.%3N)
-  elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
-  if [ "${exitCode}" -ne 0 ]; then
-    result="[exitCode=${exitCode}] ${result}"
-  fi
-#fi
+startTime=$(date +%s.%3N)
+result=$(${BUILD_TEST_DIR}/testperft ${testparam})
+exitCode=$?
+endTime=$(date +%s.%3N)
+elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
+if [ "${exitCode}" -ne 0 ]; then
+  result="[exitCode=${exitCode}] ${result}"
+fi
 }
 function verifySimsResult() {
 TOLERANCE=0.1
@@ -67,8 +53,6 @@ for (( i=0; i<${length}; ++i )); do
 done
 return 0
 }
-
-WIDTH=70
 
 declare -A simulTests
 declare -A perftTests
@@ -113,6 +97,8 @@ fi
 
 totalStartTime=$(date +%s.%3N)
 
+WIDTH_PERFT=70
+sumRuntime=0
 for game in "${allGames[@]}"; do
   simulData=(${simulTests[$game]})
   perftData=(${perftTests[$game]})
@@ -134,26 +120,28 @@ for game in "${allGames[@]}"; do
   else
     infoRes="${GREEN}OK${RESET} Expected ${CYAN}${simulData[@]}${RESET}, got ${CYAN}${result[@]}${RESET}"
   fi
-  info=`printf "%s runtime %9s" "${infoHead}${infoRes}" "${elapsedTime} s"`
+  info=`printf "%s   time %s" "${infoHead}${infoRes}" "${elapsedTime} s"`
   echo -e "${info}"
+  sumRuntime=`echo "$sumRuntime + $elapsedTime" | bc`
 
   for (( depth=0; depth<${#perftData[@]}; ++depth )); do
     expected=${perftData[depth]}
-
     runPerft ${depth}
-
     infoHead="${game} d=${depth}: "
     if [ "${result}" != "${expected}" ]; then
       infoRes="${RED}ERROR${RESET} Expected ${CYAN}${expected}${RESET} but got ${CYAN}${result}${RESET}"
+      info=`printf "%s time %s" "${infoHead}${infoRes}" "${elapsedTime} s"`
     else
       infoRes="${GREEN}OK${RESET} ${CYAN}${result}${RESET}${CYAN}${RESET}"
+      info=`printf "%-${WIDTH_PERFT}s time %9s" "${infoHead}${infoRes}" "${elapsedTime} s"`
     fi
-    info=`printf "%-${WIDTH}s runtime %9s" "${infoHead}${infoRes}" "${elapsedTime} s"`
     echo -e "${info}"
+    sumRuntime=`echo "$sumRuntime + $elapsedTime" | bc`
   done
+
   echo
 done
 
 totalEndTime=$(date +%s.%3N)
 elapsedTime=$(echo "scale=3; ${totalEndTime} - ${totalStartTime}" | bc)
-echo "Finished in ${elapsedTime} s"
+echo "Finished in ${elapsedTime} s   Total runtime ${sumRuntime} s"

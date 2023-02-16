@@ -4,6 +4,22 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd ${DIR}/..
 . ./scripts/config.sh
 
+function runTranslation() {
+startTime=$(date +%s.%3N)
+./scripts/compile.sh ${game} > /dev/null 2>&1
+exitCode=$?
+endTime=$(date +%s.%3N)
+elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc | sed -r 's/^(-?)\./\10./')
+}
+function runGCC() {
+startTime=$(date +%s.%3N)
+g++ -c ${BUILD_TEST_DIR}/reasoner.cpp -o ${BUILD_TEST_DIR}/reasoner.o -I${BUILD_TEST_DIR} ${GCC_FLAGS} &&
+g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testsimul &&
+g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft &&
+exitCode=$?
+endTime=$(date +%s.%3N)
+elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc | sed -r 's/^(-?)\./\10./')
+}
 function runCompilation() {
 ./scripts/compile.sh ${game} > /dev/null &&
 g++ -c ${BUILD_TEST_DIR}/reasoner.cpp -o ${BUILD_TEST_DIR}/reasoner.o -I${BUILD_TEST_DIR} ${GCC_FLAGS} &&
@@ -11,7 +27,6 @@ g++ test/simulations.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DI
 g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.o -DTEST=1 -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/testperft &&
 exitCode=$?
 if [ "${exitCode}" -ne 0 ]; then
-  elapsedTime=0
   result="compilation error"
   return 1
 fi
@@ -25,7 +40,7 @@ exitCode=$?
 endTime=$(date +%s.%3N)
 elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
 if [ "${exitCode}" -ne 0 ]; then
-  result="[exitCode=${exitCode}] ${result}"
+  result="(exitCode=${exitCode}) ${result}"
 fi
 }
 function runPerft() {
@@ -36,7 +51,7 @@ exitCode=$?
 endTime=$(date +%s.%3N)
 elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
 if [ "${exitCode}" -ne 0 ]; then
-  result="[exitCode=${exitCode}] ${result}"
+  result="(exitCode=${exitCode}) ${result}"
 fi
 }
 function verifySimsResult() {
@@ -97,20 +112,39 @@ fi
 
 totalStartTime=$(date +%s.%3N)
 
-WIDTH_PERFT=70
 sumRuntime=0
+WIDTH=70
 for game in "${allGames[@]}"; do
   simulData=(${simulTests[$game]})
   perftData=(${perftTests[$game]})
   simCount=${simulData[0]}
   simulData=(${simulData[@]:1})
 
-  startTime=$(date +%s.%3N)
-  #./scripts/compile.sh ${game} > /dev/null
-  runCompilation
-  endTime=$(date +%s.%3N)
-  elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
-  echo "${game} compilation time ${elapsedTime} s"
+#   startTime=$(date +%s.%3N)
+#   runCompilation
+#   endTime=$(date +%s.%3N)
+#   elapsedTime=$(echo "scale=3; $endTime - $startTime" | bc)
+#   echo "${game} compilation time ${elapsedTime} s"
+
+  runTranslation
+  if [[ ${exitCode} != 0 ]]; then
+    info=`printf "%-${WIDTH}s time %9s" "$game translation: ${RED}ERROR${RESET} (exitcode=${exitCode})" "${elapsedTime} s"`
+    echo -e "${info}\n"
+    ((errorCount=errorCount+1))
+    continue
+  fi
+  info=`printf "%-${WIDTH}s time %9s" "$game translation: ${GREEN}OK${RESET}${CYAN}${RESET}${CYAN}${RESET}" "${elapsedTime} s"`
+  echo -e "${info}"
+
+  runGCC
+  if [[ ${exitCode} != 0 ]]; then
+    info=`printf "%-${WIDTH}s time %9s" "$game g++: ${RED}ERROR${RESET} (exitcode=${exitCode})" "${elapsedTime} s"`
+    echo -e "${info}\n"
+    ((errorCount=errorCount+1))
+    continue
+  fi
+  info=`printf "%-${WIDTH}s time %9s" "$game g++: ${GREEN}OK${RESET}${CYAN}${RESET}${CYAN}${RESET}" "${elapsedTime} s"`
+  echo -e "${info}"
 
   runSims ${simCount}
   infoHead="${game} sims=${simCount}: "
@@ -127,13 +161,13 @@ for game in "${allGames[@]}"; do
   for (( depth=0; depth<${#perftData[@]}; ++depth )); do
     expected=${perftData[depth]}
     runPerft ${depth}
-    infoHead="${game} d=${depth}: "
+    infoHead="${game} depth=${depth}: "
     if [ "${result}" != "${expected}" ]; then
       infoRes="${RED}ERROR${RESET} Expected ${CYAN}${expected}${RESET} but got ${CYAN}${result}${RESET}"
-      info=`printf "%s time %s" "${infoHead}${infoRes}" "${elapsedTime} s"`
+      info=`printf "%s   time %s" "${infoHead}${infoRes}" "${elapsedTime} s"`
     else
       infoRes="${GREEN}OK${RESET} ${CYAN}${result}${RESET}${CYAN}${RESET}"
-      info=`printf "%-${WIDTH_PERFT}s time %9s" "${infoHead}${infoRes}" "${elapsedTime} s"`
+      info=`printf "%-${WIDTH}s time %9s" "${infoHead}${infoRes}" "${elapsedTime} s"`
     fi
     echo -e "${info}"
     sumRuntime=`echo "$sumRuntime + $elapsedTime" | bc`

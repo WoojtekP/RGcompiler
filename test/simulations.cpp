@@ -13,13 +13,14 @@ std::vector<reasoner::Move> moves;
 ulong numSimulations;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
+ulong sumScores[3];
 
 void exitError(const std::string msg) {std::cout << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves);
-    if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
+    if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
     state.applyMove(moves[0]);
   }
 }
@@ -43,6 +44,7 @@ void doSimulation() {
   numStates += depth;
   if (depth < minDepth) minDepth = depth;
   if (depth > maxDepth) maxDepth = depth;
+  for (uint player = 1; player <= 2; player++) sumScores[player] += state.getPlayerScore(player);
 }
 
 int main(int argc, char** argv) {
@@ -65,6 +67,7 @@ int main(int argc, char** argv) {
   #if TEST
     std::cout.precision(2);
     std::cout << static_cast<long double>(numStates) / static_cast<long double>(numSimulations);
+    for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
     std::cout << std::endl;
   #else
     std::cout << "time: " << seconds << " sec" << std::endl;
@@ -72,6 +75,9 @@ int main(int argc, char** argv) {
     std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
     std::cout << "depth: min " << minDepth << " avg " << static_cast<long double>(numStates) / numSimulations << " max " << maxDepth << std::endl;
     std::cout << "moves: min " << minMoves << " avg " << static_cast<long double>(numMoves) / numStates << " max " << maxMoves << std::endl;
+    std::cout << "scores: avg";
+    for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
+    std::cout << std::endl;
   #endif
   return 0;
 }

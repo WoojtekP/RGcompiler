@@ -16,6 +16,7 @@ depth=$2
 
 start_time=$(date +%s.%3N)
 g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.cpp -I${BUILD_TEST_DIR} ${GCC_FLAGS} -o ${BUILD_TEST_DIR}/perft
+#g++ test/perft.cpp ${BUILD_TEST_DIR}/reasoner.cpp -I${BUILD_TEST_DIR} -Wall -Wextra -g -Og -o ${BUILD_TEST_DIR}/perft
 end_time=$(date +%s.%3N)
 elapsed=$(echo "scale=3; $end_time - $start_time" | bc)
 printf "%-20s" "g++ perft:"

@@ -1,7 +1,7 @@
 #pragma once
 
+#include <array>
 #include <map>
-
 
 template<class Key, class T>
 class DefaultMap : public std::map<Key, T>

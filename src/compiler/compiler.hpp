@@ -8,6 +8,8 @@ struct Options
 {
     bool debug;
     int optConditions;
+    bool simplePathCompression_;
+    bool moveCompression_;
 };
 
 class Compiler
@@ -40,7 +42,7 @@ private:
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool doRestore = true);
     void generatePatternReachabilityFunctions();
     void generatePatternAnyFunctions();
-    void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns);
+    void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns);
     template<typename T>
     void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<Action>> assignments);
     std::string getStateIntId(std::string name);
@@ -59,6 +61,6 @@ private:
     const bool debugFlag_;
     const bool optConditionsReachability_;
     const bool optConditionsGeneratingMoves_;
-    const bool optConditionsSimplePaths_;
-    const bool optConditionsUnambigousPaths_;
+    const bool optConditionsSimplePathCompression_;
+    const bool optConditionsMoveCompression_;
 };

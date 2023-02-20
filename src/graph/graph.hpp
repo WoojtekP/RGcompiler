@@ -68,74 +68,50 @@ public:
 class Graph
 {
     std::vector<int> numberOfIncomingEdges_;
-    std::vector<std::string> allNodeNames_;
-    std::vector<std::string> mainNodeNames_;
+    std::vector<std::string> outerAndInnerNodeNames_;
+    std::vector<std::string> outerNodeNames_;
     std::vector<std::vector<std::pair<std::shared_ptr<Edge>, int>>> outgoingEdgesFromNode_;
     std::vector<std::tuple<std::string, std::string, int>> edgeNames_;
     std::map<std::string, int> nodeStringToInt_;
     std::map<std::tuple<std::string, std::string, int>, int> edgeStringToInt_;
     std::map<int, std::shared_ptr<Edge>> edgeIdToEdge_;
     std::map<int, std::shared_ptr<Node>> nodeIdToNode_;
-    std::set<std::pair<std::shared_ptr<Edge>, int>> importantEdges_;
-    std::set<std::string> importantNodes_;
     std::vector<std::shared_ptr<Edge>> edges_;
-    std::vector<std::vector<int>> next_;
+    std::vector<std::vector<int>> nodesFromNode_;
 
-    void traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited);
-    void traverse(int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited);
-    std::vector<std::string> getTransitions(std::string from);
+    void traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited) const;
+    void traverse(
+        int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited) const;
+    std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to) const;
 
 public:
     ~Graph();
     void initialize();
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
-    std::vector<std::string> getOutgoingNodesFrom(std::string from);
+    std::vector<std::string> getOutgoingNodesFrom(std::string from) const;
     std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(
-        const std::string &name, bool checkPlayerChange = false);
-    const std::vector<std::string> &getAllNodeNames();
-    const std::vector<std::string> &getMainNodeNames();
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from);
-    const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
-    const std::vector<std::shared_ptr<Action>> &getActions(std::string a, std::string b, int id);
-    const std::set<std::pair<std::shared_ptr<Edge>, int>> &getImportantEdges();
-    std::string toString();
-    std::shared_ptr<Graph> getGraphWithOptimizedPaths();
-    int getEdgeId(std::string from, std::string to, int id);
-    int getNodeId(std::string name);
-    int getNumberOfOutgoingEdges(const std::string &node);
-    int getNumberOfIncomingEdges(const std::string &node);
-    std::shared_ptr<Edge> getEdge(std::string from, std::string to, int id);
+        const std::string &name, bool checkPlayerChange = false) const;
+    const std::vector<std::string> &getOuterAndInnerNodeNames() const;
+    const std::vector<std::string> &getOuterNodeNames() const;
+    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from) const;
+    const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames() const;
+    const std::vector<std::shared_ptr<Action>> &getActions(std::string fromName, std::string toName, int iid) const;
+    std::set<std::pair<std::shared_ptr<Edge>, int>> getEdgeWithActionChangePlayer();
+    std::string toString() const;
+    std::shared_ptr<Graph> getGraphWithOptimizedPaths() const;
+    int getEdgeId(std::string from, std::string to, int iid) const;
+    int getNodeId(std::string name) const;
+    int getNumberOfOutgoingEdges(const std::string &node) const;
+    int getNumberOfIncomingEdges(const std::string &node) const;
+    std::shared_ptr<Edge> getEdge(std::string from, std::string to, int iid) const;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns(
-        ActionType actionType);
-    std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to);
+        ActionType actionType) const;
     bool generatePathFromNodeToNode(
         std::string node,
         std::string finalNode,
         std::vector<std::shared_ptr<Edge>> &edges,
         std::vector<bool> &visited,
-        std::vector<bool> &onPathToFinalNode);
-
-    bool haveActionChangePlayer(int id);
-
-    std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name)
-    {
-        std::string stateFrom = name;
-        std::string stateTo;
-
-        while (next_[nodeStringToInt_[stateFrom]].size() == 1)
-        {
-            stateTo = nodeIdToNode_[next_[nodeStringToInt_[stateFrom]].back()]->getName();
-            for (const auto &action : getActions(stateFrom, stateTo, 0))
-            {
-                if (action->getType() == ActionType::Assignment)
-                {
-                    return std::make_pair(edgeIdToEdge_[edgeStringToInt_[std::make_tuple(stateFrom, stateTo, 0)]], 0);
-                }
-            }
-            stateFrom = stateTo;
-        }
-
-        return std::make_pair(nullptr, -1);
-    }
+        std::vector<bool> &onPathToFinalNode) const;
+    std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name) const;
 };

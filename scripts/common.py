@@ -1,15 +1,30 @@
 import subprocess
 from shutil import which
 
+def run(cmd):
+  result = subprocess.run(cmd, shell=True)
+  if result.returncode != 0:
+    print(f'exitcode {result.returncode} for {cmd}')
+    exit(2)
+
+def runCap(cmd):
+  return subprocess.run(cmd, shell=True, capture_output=True)
+
+def isProgramAvailable(name):
+  return which(name) is not None
+
 class cfg:
-  BUILD_DIR='build'
-  BUILD_TEST_DIR='build-test'
-  RG_DIR='../rg'
+  BUILD_DIR = 'build'
+  BUILD_TEST_DIR = 'build-test'
+  RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges'
-
-  GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -march=native'
-  #GCC_FLAGS = '-std=c++17 -Ofast -flto -march=native'
+  
+  result = runCap('g++ --version')
+  if 'clang' in result.stdout.decode('UTF-8'):
+    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast'
+  else:
+    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -march=native'
 
 class util:
   RESET = "\033[0m"
@@ -20,15 +35,3 @@ class util:
   ERROR = f'{RED}ERROR{RESET}'
   OK = f'{GREEN}OK{RESET}'
 
-def run(cmd):
-  result = subprocess.run(cmd, shell=True)
-  if result.returncode != 0:
-    print(f'exitcode {result.returncode} for {cmd}')
-    exit(2)
-def runCap(cmd):
-  return subprocess.run(cmd, shell=True, capture_output=True)
-
-def isProgramAvailable(name):
-  return which(name) is not None
-
-  

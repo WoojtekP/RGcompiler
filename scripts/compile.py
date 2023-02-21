@@ -10,12 +10,19 @@ parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate op
 args = parser.parse_args()
 game = args.game[0]
 translateOptions = args.translateOptions
+
+if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
+  print(f'There is no file {cfg.RG_DIR}/examples/{game}')
+  exit(2)
+
 print(f'Compiling {game} with translate options "{translateOptions}"')
 
 run("mkdir -p "+cfg.BUILD_TEST_DIR)
 run("cp defaultMap.hpp "+cfg.BUILD_TEST_DIR+"/defaultMap.hpp")
 
 FORMATTER = "{: <15}{:9.3f} s"
+
+
 
 # create AST
 startTime = time.time()
@@ -34,7 +41,11 @@ elapsedTime = time.time() - startTime
 print(FORMATTER.format("rg2cpp:",elapsedTime))
 
 # Format generated files
-startTime=time.time()
-run("clang-format -style=file -i reasoner.hpp reasoner.cpp")
-elapsedTime = time.time() - startTime
-print(FORMATTER.format("clang-format:",elapsedTime))
+if isProgramAvailable('clang-format'):
+  startTime=time.time()
+  run("clang-format -style=file -i reasoner.hpp reasoner.cpp")
+  elapsedTime = time.time() - startTime
+  print(FORMATTER.format('clang-format:',elapsedTime))
+else:
+  print(f'clang-format: omitted because unavailable')
+

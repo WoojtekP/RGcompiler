@@ -61,7 +61,7 @@ for game in games:
   print()
   
   startTime = time.time()
-  result = runCap(f'scripts/compile.py {game} -t{translateOptions}')
+  result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
     info = f'{util.ERROR} exitcode {result.returncode}'

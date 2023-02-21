@@ -1,4 +1,5 @@
 import subprocess
+from shutil import which
 
 class cfg:
   BUILD_DIR='build'
@@ -26,3 +27,8 @@ def run(cmd):
     exit(2)
 def runCap(cmd):
   return subprocess.run(cmd, shell=True, capture_output=True)
+
+def isProgramAvailable(name):
+  return which(name) is not None
+
+  

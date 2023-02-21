@@ -13,7 +13,7 @@ game = args.game[0]
 depth = args.depth[0]
 translateOptions = '"' + args.translateOptions + '"'
 
-run(f'scripts/compile.py {game} -t{translateOptions}')
+run(f'python3 scripts/compile.py {game} -t{translateOptions}')
 
 FORMATTER = "{: <15}{:9.3f} s"
 

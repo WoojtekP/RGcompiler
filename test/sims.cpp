@@ -1,5 +1,4 @@
 #include <iostream>
-#include <chrono>
 #include "fast_random.hpp"
 #include <reasoner.hpp>
 using uint = unsigned int;
@@ -49,35 +48,25 @@ void doSimulation() {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-      std::cerr << "usage: " << argv[0] << " [number of simulations]" << std::endl;
-      return 1;
+    std::cerr << "usage: " << argv[0] << " [number of simulations]" << std::endl;
+    return 1;
   }
 
   keeperCompletion(initial);
-  
   numSimulations = std::stoi(argv[1]);
-
-  std::chrono::steady_clock::time_point startTime(std::chrono::steady_clock::now());
-  for (uint i = 0; i < numSimulations; i++)
-    doSimulation();
-  std::chrono::steady_clock::time_point endTime(std::chrono::steady_clock::now());
-  long double seconds = std::chrono::duration<long double>(endTime-startTime).count();
+  for (uint i = 0; i < numSimulations; i++) doSimulation();
 
   std::cout << std::fixed;
-  #if TEST
-    std::cout.precision(2);
-    std::cout << static_cast<long double>(numStates) / static_cast<long double>(numSimulations);
-    for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
-    std::cout << std::endl;
-  #else
-    std::cout << "time: " << seconds << " sec" << std::endl;
-    std::cout << "simulations: " << numSimulations << " (" << numSimulations / seconds << " simulations/sec)" << std::endl;
-    std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
-    std::cout << "depth: min " << minDepth << " avg " << static_cast<long double>(numStates) / numSimulations << " max " << maxDepth << std::endl;
-    std::cout << "moves: min " << minMoves << " avg " << static_cast<long double>(numMoves) / numStates << " max " << maxMoves << std::endl;
-    std::cout << "scores: avg";
-    for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
-    std::cout << std::endl;
-  #endif
+  std::cout.precision(2);
+  std::cout << numStates << " " << minDepth << " " << maxDepth;
+  std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
+  for (uint player = 1; player <= 2; player++) std::cout << " " << sumScores[player];
+  std::cout << std::endl;
+  //std::cout << "simulations: " << numSimulations << " (" << numSimulations / seconds << " simulations/sec)" << std::endl;
+  //std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
+  //std::cout << "depth: min " << minDepth << " avg " << static_cast<long double>(numStates) / numSimulations << " max " << maxDepth << std::endl;
+  //std::cout << "moves: min " << minMoves << " avg " << static_cast<long double>(numMoves) / numStates << " max " << maxMoves << std::endl;
+  //std::cout << "scores: avg";
+  //for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
   return 0;
 }

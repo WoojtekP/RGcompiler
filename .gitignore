@@ -1,20 +1,13 @@
 # Directories
 /build
 /build-test
+/scripts/__pycache__
 /.vscode
 
 # RG files
 *.hrg
 *.rg
 *-ast.json
-
-# Compiled benchmark object
-test/perft
-test/simulations
-
-# Generated files
-reasoner.cpp
-reasoner.hpp
 
 # Prerequisites
 *.d

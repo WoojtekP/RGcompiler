@@ -1,5 +1,4 @@
 #include <iostream>
-#include <chrono>
 #include "fast_random.hpp"
 #include <reasoner.hpp>
 using uint = unsigned int;
@@ -13,7 +12,7 @@ std::vector<reasoner::Move> moves[MAX_DEPTH];
 uint maxDepth;
 ulong numStates, numLeaves, numTerminals;
 
-void exitError(const std::string msg) {std::cout << msg << std::endl; exit(2);}
+void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
@@ -42,28 +41,17 @@ void doPerft(reasoner::GameState &state, const uint depth) {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-      std::cerr << "usage: " << argv[0] << " [number of simulations]" << std::endl;
-      return 1;
+    std::cerr << "usage: " << argv[0] << " depth" << std::endl;
+    return 1;
   }
 
   keeperCompletion(initial, 0);
 
   maxDepth = std::stoi(argv[1]);
 
-  std::chrono::steady_clock::time_point startTime(std::chrono::steady_clock::now());
   doPerft(initial, maxDepth);
-  std::chrono::steady_clock::time_point endTime(std::chrono::steady_clock::now());
-  long double seconds = std::chrono::duration<long double>(endTime-startTime).count();
 
   std::cout << std::fixed;
-  #if TEST
-    //std::cout << numStates << " " << numLeaves << " " << numTerminals << std::endl;
-    std::cout << numLeaves << std::endl;
-  #else
-    std::cout << "time: " << seconds << " sec" << std::endl;
-    std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
-    std::cout << "leaves: " << numLeaves << std::endl;
-    std::cout << "terminals: " << numTerminals << std::endl;
-  #endif
+  std::cout << numLeaves << " " << numStates << " " << numTerminals << std::endl;
   return 0;
 }

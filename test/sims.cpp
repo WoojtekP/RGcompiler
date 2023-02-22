@@ -14,7 +14,7 @@ ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 ulong sumScores[3];
 
-void exitError(const std::string msg) {std::cout << msg << std::endl; exit(2);}
+void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {

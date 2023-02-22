@@ -30,9 +30,9 @@ elapsedTime = time.time() - startTime
 print(FORMATTER.format(f'sims {str(sims)}:',elapsedTime))
 
 if result.returncode != 0:
-  print("ERROR: (exitCode "+result.returncode+") "+result.stderr)
-  exit(1)
-stats = result.stdout.decode('UTF-8').strip().split(' ')
+  print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
+  exit(2)
+stats = decodeOutput(result.stdout).strip().split(' ')
 #print(stats)
 resStates = int(stats[0])
 resAvgDepth = resStates / sims

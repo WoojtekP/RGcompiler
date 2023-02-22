@@ -6,7 +6,7 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 parser = argparse.ArgumentParser(description='Compile and run perft.')
 parser.add_argument('game', nargs=1, help='game file')
 parser.add_argument('depth', nargs=1, help='perft depth')
-parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=[cfg.DEFAULT_TRANSLATE_OPTIONS])
+parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 
 args = parser.parse_args()
 game = args.game[0]
@@ -30,9 +30,9 @@ elapsedTime = time.time() - startTime
 print(FORMATTER.format(f'perft depth {str(depth)}:',elapsedTime))
 
 if result.returncode != 0:
-  print("ERROR: (exitCode "+result.returncode+") "+result.stderr)
-  exit(1)
-stats = result.stdout.decode('UTF-8').strip().split(' ')
+  print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
+  exit(2)
+stats = decodeOutput(result.stdout).strip().split(' ')
 #print(stats)
 resLeaves = int(stats[0])
 resStates = int(stats[1])

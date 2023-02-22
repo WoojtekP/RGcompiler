@@ -13,16 +13,20 @@ def runCap(cmd):
 def isProgramAvailable(name):
   return which(name) is not None
 
+def decodeOutput(output):
+  return output.decode('UTF-8')
+  
 class cfg:
   BUILD_DIR = 'build'
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges'
+  DEFAULT_RG2CPP_OPTIONS = '--opt-conditions 6'
   
   result = runCap('g++ --version')
-  if 'clang' in result.stdout.decode('UTF-8'):
-    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast'
+  if 'clang' in decodeOutput(result.stdout):
+    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto'
   else:
     GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -march=native'
 

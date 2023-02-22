@@ -22,7 +22,7 @@ run("cp defaultMap.hpp "+cfg.BUILD_TEST_DIR+"/defaultMap.hpp")
 
 FORMATTER = "{: <15}{:9.3f} s"
 
-# create AST
+# Create AST
 startTime = time.time()
 run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli rg-source {cfg.RG_DIR}/examples/{game} > {cfg.BUILD_TEST_DIR}/game-tmp.rg")
 run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.BUILD_TEST_DIR}/game-tmp.rg > {cfg.BUILD_TEST_DIR}/{game}.json")
@@ -34,7 +34,7 @@ print(FORMATTER.format("ast:",elapsedTime))
 # Generate cpp files
 startTime = time.time()
 os.chdir(cfg.BUILD_TEST_DIR)
-run("../"+cfg.BUILD_DIR+"/rg2cpp --file "+game+"-ast.json --opt-conditions 6")
+run(f'../{cfg.BUILD_DIR}/rg2cpp --file {game}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS}')
 elapsedTime = time.time() - startTime
 print(FORMATTER.format("rg2cpp:",elapsedTime))
 

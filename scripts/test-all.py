@@ -72,7 +72,7 @@ for game in games:
     info = f'{util.OK}'
   print(RESULT_FORMATTER.format(info, elapsedTime))
   if result.returncode != 0:
-    print(util.CYAN + result.stderr.decode('UTF-8').strip() + util.RESET)
+    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
   
   print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
@@ -89,7 +89,7 @@ for game in games:
     info = f'{util.OK}'
   print(RESULT_FORMATTER.format(info, elapsedTime))
   if result.returncode != 0:
-    print(util.CYAN + result.stderr.decode('UTF-8').strip() + util.RESET)
+    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
   
   sims = tests[game][0][0]
@@ -100,10 +100,10 @@ for game in games:
   result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    info = f'{util.ERROR} {util.CYAN}(exitcode {res.returncode}) {res.stderr}{util.RESET}'
+    info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
   else:
     expectedList = [avgDepth] + avgScores
-    stats = result.stdout.decode('UTF-8').strip().split(' ')
+    stats = decodeOutput(result.stdout).strip().split(' ')
     resStates = int(stats[0])
     resultList = [resStates / sims] # avgDepth
     stats = stats[6:]
@@ -122,9 +122,9 @@ for game in games:
     result = runCap(f'{cfg.BUILD_TEST_DIR}/perft {depth}')
     elapsedTime = time.time() - startTime
     if result.returncode != 0:
-      info = f'{util.ERROR} {util.CYAN}(exitcode {res.returncode}) {res.stderr}{util.RESET}'
+      info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
     else:
-      stats = result.stdout.decode('UTF-8').strip().split(' ')
+      stats = decodeOutput(result.stdout).strip().split(' ')
       resLeaves = int(stats[0])
       if expectedPerft[depth] != resLeaves:
         info = f'{util.ERROR} expected {util.CYAN}{expectedPerft[depth]}{util.RESET} but got {util.CYAN}{resLeaves}{util.RESET}'

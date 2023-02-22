@@ -12,6 +12,7 @@ enum class ActionType
     Reachability,
     Comparison,
     Skip,
+    PatternAny,
     Pattern
 };
 
@@ -76,6 +77,13 @@ public:
     std::string toString() override;
 };
 
+class ActionPatternAny : public ActionBase
+{
+public:
+    ActionPatternAny();
+    std::string toString() override;
+};
+
 class ActionReachability : public ActionBase
 {
 public:
@@ -103,8 +111,9 @@ class Action : public ActionI
     std::unique_ptr<ActionI> action_;
 
 public:
-    ~Action();
+    Action();
     Action(const nlohmann::json& t);
+    ~Action();
 
     std::string toString() override;
     std::string getLeftSide() override;

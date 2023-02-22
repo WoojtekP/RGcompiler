@@ -68,6 +68,13 @@ std::string ActionPattern::toString()
     return "";
 }
 
+ActionPatternAny::ActionPatternAny() : ActionBase(ActionType::PatternAny) {}
+
+std::string ActionPatternAny::toString()
+{
+    return "any " + left_->toString() + " -> " + right_->toString();
+}
+
 ActionReachability::ActionReachability(bool negated) : ActionBase(ActionType::Reachability, negated) {}
 
 std::string ActionReachability::toString()
@@ -102,12 +109,17 @@ bool ActionSkip::getNegated()
     return false;
 }
 
-Action::~Action() {}
-
 Action::Action(const nlohmann::json& t)
 {
     this->parse(t);
 }
+
+Action::Action()
+{
+    action_ = std::make_unique<ActionSkip>();
+}
+
+Action::~Action() {}
 
 void Action::parse(const nlohmann::json& t)
 {

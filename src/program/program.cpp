@@ -4,7 +4,6 @@
 
 #include <program/program.hpp>
 
-
 std::string ElementaryType::toString() const
 {
     return identifier;
@@ -26,7 +25,7 @@ std::string FunctionType::toString() const
 
 std::string FunctionType::definitionToString() const
 {
-    return "std::array<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
+    return "Arr<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
 }
 
 std::string CustomType::toString() const
@@ -39,29 +38,31 @@ std::string CustomType::definitionToString() const
     return typeDefinition;
 }
 
-std::string SingleValue::toString(const std::shared_ptr<IType>&, const TypeToSymbolToValueMap&) const
+std::string SingleValue::toString(const std::shared_ptr<IType> &, const TypeToSymbolToValueMap &) const
 {
     return symbol;
 }
 
-std::string MapValue::toString(const std::shared_ptr<IType>& t, const TypeToSymbolToValueMap& typeToSymbolToValueMap) const
+std::string MapValue::toString(
+    const std::shared_ptr<IType> &t, const TypeToSymbolToValueMap &typeToSymbolToValueMap) const
 {
-    if (const FunctionType* functionType = dynamic_cast<FunctionType*>(t.get()))
+    if (const FunctionType *functionType = dynamic_cast<FunctionType *>(t.get()))
     {
         const std::string sourceTypeName = functionType->source->identifier;
-        const auto& symbolToValueMap = typeToSymbolToValueMap.at(sourceTypeName);
-        const auto maxValueIt = std::max_element(
-            symbolToValueMap.begin(),
-            symbolToValueMap.end(),
-            [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
-        const std::string defaultValueString = (defaultValue ? defaultValue->toString(functionType->destination, typeToSymbolToValueMap) : "?");
+        const auto &symbolToValueMap = typeToSymbolToValueMap.at(sourceTypeName);
+        const auto maxValueIt =
+            std::max_element(symbolToValueMap.begin(), symbolToValueMap.end(), [](const auto &lhs, const auto &rhs) {
+                return lhs.second < rhs.second;
+            });
+        const std::string defaultValueString =
+            (defaultValue ? defaultValue->toString(functionType->destination, typeToSymbolToValueMap) : "?");
         std::vector<std::string> values(maxValueIt->second + 1, defaultValueString);
         for (const auto &[id, value] : idToValueMap)
         {
             const int pos = symbolToValueMap.at(id);
             values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
         }
-        std::string result = "std::array{";
+        std::string result = functionType->toString() + "{";
         for (const auto& value : values)
         {
             result += value + ",";
@@ -117,16 +118,21 @@ std::string AssignmentInstruction::toString(int delimiter, int shift, bool semic
     return addSpacesAndSemicolon(delimiter, semicolon, left_->toString(0, shift, false) + " = " + right_);
 }
 
-ComparisonInstruction::ComparisonInstruction(const std::string &left, const std::string &right)
-: ComparisonInstruction(left, right, false)
+ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left)
+: left_(left), negated_(negated), onlyLeftSide_(true)
 {}
 
-ComparisonInstruction::ComparisonInstruction(const std::string &left, const std::string &right, bool negated)
-: left_(left), right_(right), negated_(negated)
+ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left, const std::string &right)
+: left_(left), right_(right), negated_(negated), onlyLeftSide_(false)
 {}
 
 std::string ComparisonInstruction::toString(int delimiter, int shift, bool semicolon)
 {
+    if (onlyLeftSide_)
+    {
+        return addSpacesAndSemicolon(delimiter, semicolon, (negated_ ? "!" : "") + left_);
+    }
+
     return addSpacesAndSemicolon(delimiter, semicolon, left_ + (negated_ ? " != " : " == ") + right_);
 }
 
@@ -322,9 +328,9 @@ const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
     return types_;
 }
 
-std::shared_ptr<IType> Program::findType(const std::string& identifier) const
+std::shared_ptr<IType> Program::findType(const std::string &identifier) const
 {
-    for (const auto& t : types_)
+    for (const auto &t : types_)
     {
         if (t->identifier == identifier)
         {

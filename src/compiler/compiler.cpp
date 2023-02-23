@@ -36,7 +36,7 @@ std::shared_ptr<Edge> findComplementaryEdge(
 }
 }  // namespace
 
-Compiler::Compiler(Parser& parser, const Options& options)
+Compiler::Compiler(const Parser& parser, const Options& options)
 : parser_(parser), debugFlag_(options.debug),
   optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3),
   optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3),
@@ -48,6 +48,7 @@ Compiler::Compiler(Parser& parser, const Options& options)
 
 void Compiler::compile()
 {
+    valueAssigner_.assignValuesToSymbols(parser_.getTypeDeclarations());
     generateTypes();
     generateConstants();
     generateVariables(graph_);
@@ -129,7 +130,7 @@ void Compiler::addNodesForApplyAnyMoveTopatternAnyGraphs()
 
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
 {
-    Printer printer(parser_, headerFile, sourceFile);
+    Printer printer(parser_, valueAssigner_, headerFile, sourceFile);
     printer.initializeHeaderFile(debugFlag_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());
@@ -912,7 +913,7 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     auto sourceType = generateType(functionType["lhs"]);
     auto destinationType = generateType(functionType["rhs"]);
     const std::string sourceTypeName = sourceType->identifier;
-    const auto& symbolToValueMap = parser_.getTypeToSymbolToValueMap().at(sourceTypeName);
+    const auto& symbolToValueMap = valueAssigner_.getTypeToSymbolToValueMap().at(sourceTypeName);
     const auto maxDomainValueIt =
         std::max_element(symbolToValueMap.begin(), symbolToValueMap.end(), [](const auto& lhs, const auto& rhs) {
             return lhs.second < rhs.second;

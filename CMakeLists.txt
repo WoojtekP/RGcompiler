@@ -31,6 +31,7 @@ add_executable(rg2cpp
     src/graph/expression.cpp
     src/graph/graph.cpp
     src/program/program.cpp
+    src/compiler/valueAssigner.cpp
     src/compiler/compiler.cpp)
 
 target_link_libraries(rg2cpp Boost::program_options)

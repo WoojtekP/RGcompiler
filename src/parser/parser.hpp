@@ -35,6 +35,4 @@ public:
 
 private:
     nlohmann::json parsedJson_;
-    std::map<std::string, int> symbolToValue_;
-    TypeToSymbolToValueMap typeToSymbolToValue_;
 };

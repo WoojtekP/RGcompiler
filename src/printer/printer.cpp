@@ -16,8 +16,12 @@ bool isNumber(const std::string& s)
 }
 }  // namespace
 
-Printer::Printer(const Parser& parser, std::ofstream& headerFile, std::ofstream& sourceFile)
-: parser_(parser), headerFile_(headerFile), sourceFile_(sourceFile)
+Printer::Printer(
+    const Parser& parser,
+    const ValueAssigner& valueAssigner,
+    std::ofstream& headerFile,
+    std::ofstream& sourceFile)
+: parser_(parser), valueAssigner_(valueAssigner), headerFile_(headerFile), sourceFile_(sourceFile)
 {}
 
 void Printer::initializeHeaderFile(bool debug)
@@ -79,7 +83,7 @@ void Printer::printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& t
 void Printer::printSymbolValues()
 {
     std::set<std::string> printedSymbols;
-    for (const auto& [typeName, symbolToValueMap] : parser_.getTypeToSymbolToValueMap())
+    for (const auto& [typeName, symbolToValueMap] : valueAssigner_.getTypeToSymbolToValueMap())
     {
         std::map<int, std::string> valueToSymbols;
         for (const auto& [symbol, value] : symbolToValueMap)
@@ -103,7 +107,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
     for (const auto& constant : constants)
     {
         const std::string constType = constant->valueType->toString();
-        const std::string constValue = constant->value->toString(constant->valueType, parser_.getTypeToSymbolToValueMap());
+        const std::string constValue = constant->value->toString(constant->valueType, valueAssigner_.getTypeToSymbolToValueMap());
         const std::string constName = constant->identifier;
         headerFile_ << "constexpr " << constType << " " << constName << " = " << constValue << ";" << std::endl;
     }
@@ -131,7 +135,7 @@ void Printer::printVariables(
             const std::string varName = variable->identifier;
             if (variable->value)
             {
-                const std::string varValue = variable->value->toString(variable->valueType, parser_.getTypeToSymbolToValueMap());
+                const std::string varValue = variable->value->toString(variable->valueType, valueAssigner_.getTypeToSymbolToValueMap());
                 headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
             }
             else

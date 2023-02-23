@@ -77,6 +77,7 @@ void Compiler::initializeGraph()
     }
 
     initializePatternGraphs(patternReachabilityGraphs_);
+    initializePatternGraphs(patternAnyGraphs_);
 }
 
 void Compiler::initializePatternGraphs(
@@ -255,12 +256,18 @@ void Compiler::generateVoidStateOptimizedFunction(
 }
 
 void Compiler::generateBoolStateFunctions(
-    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph)
+    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph, bool patternAny)
 {
+    std::string name;
+    if (patternAny)
+    {
+        name = "any_";
+    }
+
     for (auto& state : graph->getOuterNodeNames())
     {
         std::string prefix =
-            "is_legal_" + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
+            "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
         std::string functionName = prefix + std::to_string(graph_->getNodeId(state));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
@@ -360,12 +367,18 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
                 function->addInstruction(std::move(ifInstruction));
             }
-            else if (action->getType() == ActionType::Reachability)
+            else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
             {
+                std::string patterType;
+                if (action->getType() == ActionType::PatternAny)
+                {
+                    patterType = "any_";
+                }
+
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         action->getNegated() ? false : true,
-                        "is_legal_" + std::to_string(graph->getNodeId(action->getLeftSide())) + "_" +
+                        "is_legal_" + patterType + std::to_string(graph->getNodeId(action->getLeftSide())) + "_" +
                             std::to_string(graph->getNodeId(action->getRightSide())) + "_" +
                             std::to_string(graph->getNodeId(action->getLeftSide())) + "()"));
                 restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
@@ -403,9 +416,15 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 }
 
 void Compiler::generateBoolEdgeFunctions(
-    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph, bool doRestore)
+    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph, bool patternAny)
 {
     const auto& edges = graph->getEdgeNames();
+
+    std::string name;
+    if (patternAny)
+    {
+        name = "any_";
+    }
 
     for (const auto& [stateFrom, stateTo, iid] : edges)
     {
@@ -413,7 +432,7 @@ void Compiler::generateBoolEdgeFunctions(
         std::vector<std::shared_ptr<Action>> assignmentActions;
 
         std::string prefix =
-            "is_legal_" + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
+            "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" + std::to_string(graph_->getNodeId(to)) + "_";
         std::string functionName = prefix + "edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
@@ -447,12 +466,18 @@ void Compiler::generateBoolEdgeFunctions(
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
                 function->addInstruction(std::move(ifInstruction));
             }
-            else if (action->getType() == ActionType::Reachability)
+            else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
             {
+                std::string patterType;
+                if (action->getType() == ActionType::PatternAny)
+                {
+                    patterType = "any_";
+                }
+
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         action->getNegated() ? false : true,
-                        "is_legal_" + std::to_string(graph_->getNodeId(action->getLeftSide())) + "_" +
+                        "is_legal_" + patterType + std::to_string(graph_->getNodeId(action->getLeftSide())) + "_" +
                             std::to_string(graph_->getNodeId(action->getRightSide())) + "_" +
                             std::to_string(graph_->getNodeId(action->getLeftSide())) + "()"));
 
@@ -470,7 +495,7 @@ void Compiler::generateBoolEdgeFunctions(
             function->addInstruction(std::make_unique<AssignmentInstruction>(
                 "tmp", prefix + std::to_string(graph_->getNodeId(stateTo)) + "()", "bool"));
 
-            if (!doRestore)
+            if (patternAny && !assignmentActions.empty())
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, "tmp"));
@@ -485,7 +510,7 @@ void Compiler::generateBoolEdgeFunctions(
         }
         else
         {
-            if (doRestore)
+            if (!patternAny)
             {
                 restoreAssignments<Function>(function, assignmentActions);
             }
@@ -745,16 +770,16 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 }
 
 void Compiler::generatePatternFunctions(
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool doRestore)
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool patternAny)
 {
     for (const auto& [from, to, graph] : patterns)
     {
-        generateBoolStateFunctions(from, to, graph);
+        generateBoolStateFunctions(from, to, graph, patternAny);
     }
 
     for (const auto& [from, to, graph] : patterns)
     {
-        generateBoolEdgeFunctions(from, to, graph, doRestore);
+        generateBoolEdgeFunctions(from, to, graph, patternAny);
     }
 }
 
@@ -765,7 +790,7 @@ void Compiler::generatePatternReachabilityFunctions()
 
 void Compiler::generatePatternAnyFunctions()
 {
-    generatePatternFunctions(patternAnyGraphs_, false);
+    generatePatternFunctions(patternAnyGraphs_, true);
 }
 
 void Compiler::generateFunctions()

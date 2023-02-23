@@ -144,6 +144,10 @@ void Action::parse(const nlohmann::json& t)
     {
         action_ = std::make_unique<ActionComparison>(t["negated"].get<bool>());
     }
+    else if (t["kind"] == "PatternAny")
+    {
+        action_ = std::make_unique<ActionPatternAny>();
+    }
     else
     {
         action_ = std::make_unique<ActionSkip>();

@@ -27,10 +27,10 @@ private:
     void generateVariables(const std::shared_ptr<Graph> &graph);
     void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph);
     void generateBoolStateFunctions(
-        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph);
+        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, bool patternAny = false);
     void generateVoidEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateBoolEdgeFunctions(
-        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, bool doRestore);
+        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, bool patternAny);
     void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
@@ -39,7 +39,7 @@ private:
     void generateVoidStateOptimizedFunction(
         const std::string &state, const std::unique_ptr<Function> &function, const std::shared_ptr<Graph> &graph);
     void generatePatternFunctions(
-        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool doRestore = true);
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool patternAny = false);
     void generatePatternReachabilityFunctions();
     void generatePatternAnyFunctions();
     void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns);

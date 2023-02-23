@@ -15,6 +15,9 @@ public:
     const TypeToSymbolToValueMap& getTypeToSymbolToValueMap() const;
 
 private:
+    void assignValuesForPlayers(const nlohmann::json& types);
+    std::set<std::string> findSymbolsSharedAmongTypes(const nlohmann::json& types) const;
+
     std::map<std::string, int> symbolToValue_;
     TypeToSymbolToValueMap typeToSymbolToValue_;
 };

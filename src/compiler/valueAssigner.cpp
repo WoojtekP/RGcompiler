@@ -19,45 +19,9 @@ void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
     symbolToValue_.clear();
     typeToSymbolToValue_.clear();
 
-    for (const auto& el : types)
-    {
-        if (el["identifier"] == "Player")
-        {
-            symbolToValue_.emplace("keeper", 0);
-            typeToSymbolToValue_["PlayerOrKeeper"].emplace("keeper", 0);
-            int value = 1;
-            for (const auto& identifier : el["type"]["identifiers"])
-            {
-                const std::string id = identifier.get<std::string>();
-                symbolToValue_.emplace(id, value);
-                typeToSymbolToValue_["Player"].emplace(id, value);
-                typeToSymbolToValue_["PlayerOrKeeper"].emplace(id, value);
-                value++;
-            }
-            break;
-        }
-    }
-    std::set<std::string> allSymbols;
-    std::set<std::string> commonSymbols;
-    for (const auto& el : types)
-    {
-        if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
-        {
-            for (const auto& identifier : el["type"]["identifiers"])
-            {
-                const std::string id = identifier.get<std::string>();
-                if (allSymbols.count(id))
-                {
-                    commonSymbols.insert(id);
-                }
-                else
-                {
-                    allSymbols.insert(id);
-                }
-            }
-        }
-    }
+    assignValuesForPlayers(types);
 
+    const auto commonSymbols = findSymbolsSharedAmongTypes(types);
     for (const auto& el : types)
     {
         if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
@@ -114,4 +78,52 @@ void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
 const TypeToSymbolToValueMap& ValueAssigner::getTypeToSymbolToValueMap() const
 {
     return typeToSymbolToValue_;
+}
+
+void ValueAssigner::assignValuesForPlayers(const nlohmann::json& types)
+{
+    for (const auto& el : types)
+    {
+        if (el["identifier"] == "Player")
+        {
+            symbolToValue_.emplace("keeper", 0);
+            typeToSymbolToValue_["PlayerOrKeeper"].emplace("keeper", 0);
+            int value = 1;
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                symbolToValue_.emplace(id, value);
+                typeToSymbolToValue_["Player"].emplace(id, value);
+                typeToSymbolToValue_["PlayerOrKeeper"].emplace(id, value);
+                value++;
+            }
+            return;
+        }
+    }
+    throw std::runtime_error("[ValueAssigner] 'Player' type is not available!");
+}
+
+std::set<std::string> ValueAssigner::findSymbolsSharedAmongTypes(const nlohmann::json& types) const
+{
+    std::set<std::string> allSymbols;
+    std::set<std::string> commonSymbols;
+    for (const auto& el : types)
+    {
+        if (el["type"]["kind"] == "Set" && el["identifier"] != "Player" && el["identifier"] != "PlayerOrKeeper")
+        {
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const std::string id = identifier.get<std::string>();
+                if (allSymbols.count(id))
+                {
+                    commonSymbols.insert(id);
+                }
+                else
+                {
+                    allSymbols.insert(id);
+                }
+            }
+        }
+    }
+    return allSymbols;
 }

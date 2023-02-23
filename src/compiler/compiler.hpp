@@ -53,6 +53,7 @@ private:
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
+    int getNumberOfPlayers();
 
     Parser &parser_;
     std::shared_ptr<Graph> graph_;

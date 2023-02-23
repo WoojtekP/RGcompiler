@@ -175,6 +175,14 @@ void Compiler::generateConstants()
         const std::string identifier = constant["identifier"].get<std::string>();
         program_.addConstantDeclaration(std::make_unique<Constant>(identifier, std::move(valueType), std::move(value)));
     }
+
+    auto playerCountConstantType = std::make_shared<CustomType>("int");
+    auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
+    const std::string playerCountConstantName = "PLAYERS_COUNT";
+    program_.addConstantDeclaration(std::make_unique<Constant>(
+        playerCountConstantName,
+        std::move(playerCountConstantType),
+        std::move(playerCountConstantValue)));
 }
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
@@ -948,4 +956,16 @@ std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionNam
 {
     std::string information = "In function: " + functionName + "\\n";
     return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
+}
+
+int Compiler::getNumberOfPlayers()
+{
+    for (const auto& t : parser_.getTypeDeclarations())
+    {
+        if (t["identifier"] == "Player")
+        {
+            return t["type"]["identifiers"].size();
+        }
+    }
+    throw std::runtime_error("Cannot find 'Player' type in AST.");
 }

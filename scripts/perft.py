@@ -15,19 +15,20 @@ translateOptions = '"' + args.translateOptions + '"'
 
 run(f'python3 scripts/compile.py {game} -t{translateOptions}')
 
-FORMATTER = "{: <15}{:9.3f} s"
+HEAD_FORMATTER = '{: <14} '
+TIME_FORMATTER = '{:9.3f} s'
+FULL_FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
 
 startTime = time.time()
 run(f'g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_FLAGS} -o {cfg.BUILD_TEST_DIR}/perft')
 elapsedTime = time.time() - startTime
-print(FORMATTER.format('g++:',elapsedTime))
+print(FULL_FORMATTER.format('g++:',elapsedTime))
 
-print(f'Running perft depth {str(depth)}')
-
+print(HEAD_FORMATTER.format(f'perft {str(depth)}:'),end='',flush=True)
 startTime = time.time()
 result = runCap(f'{cfg.BUILD_TEST_DIR}/perft {str(depth)}')
 elapsedTime = time.time() - startTime
-print(FORMATTER.format(f'perft depth {str(depth)}:',elapsedTime))
+print(TIME_FORMATTER.format(elapsedTime))
 
 if result.returncode != 0:
   print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
@@ -37,7 +38,6 @@ stats = decodeOutput(result.stdout).strip().split(' ')
 resLeaves = int(stats[0])
 resStates = int(stats[1])
 resTerminals = int(stats[2])
-print()
 print(f'leaves: {resLeaves}')
 print(f'states: {resStates}  ({resStates/elapsedTime:9,.3f} states/s)')
 print(f'terminals: {resTerminals}')

@@ -46,7 +46,6 @@ tests['amazons-smart.hrg'] = tests['amazons.hrg']
 
 HEAD_FORMATTER = '{: <30} '
 RESULT_FORMATTER = '{: <20}{:9.3f} s'
-FORMATTER = "{: <30} {: <20}{:9.3f} s"
 
 TOLERANCE = 0.1
 
@@ -112,7 +111,6 @@ for game in games:
       info = f'{util.ERROR} expected {util.CYAN}{" ".join(f"{x:1.2f}" for x in expectedList)}{util.RESET} but got {util.CYAN}{" ".join(f"{x:1.2f}" for x in resultList)}{util.RESET}'
     else:
       info = f'{util.OK}'
-  #print(FORMATTER.format(f'{game} sims {sims:}:', info, elapsedTime))
   print(RESULT_FORMATTER.format(info, elapsedTime))
 
   expectedPerft = tests[game][1]

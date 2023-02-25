@@ -80,6 +80,38 @@ const TypeToSymbolToValueMap& ValueAssigner::getTypeToSymbolToValueMap() const
     return typeToSymbolToValue_;
 }
 
+std::pair<int, int> ValueAssigner::getTypeMinMaxValues(const std::string& identifier) const
+{
+    const auto& symbolToValuesMap = getSymbolToValueMapForType(identifier);
+    const auto [minIt, maxIt] = std::minmax_element(
+        symbolToValuesMap.begin(),
+        symbolToValuesMap.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+
+    return std::make_pair(minIt->second, maxIt->second);
+}
+
+int ValueAssigner::getTypeRange(const std::string& identifier) const
+{
+    const auto [minValue, maxValue] = getTypeMinMaxValues(identifier);
+    return maxValue - minValue + 1;
+}
+
+int ValueAssigner::getTypeDomainSize(const std::string& identifier) const
+{
+    return getSymbolToValueMapForType(identifier).size();
+}
+
+const SymbolToValueMap& ValueAssigner::getSymbolToValueMapForType(const std::string& identifier) const
+{
+    const auto symbolToValuesIt = typeToSymbolToValue_.find(identifier);
+    if (symbolToValuesIt == typeToSymbolToValue_.end())
+    {
+        throw std::runtime_error("[ValueAssigner] Unknown type: " + identifier);
+    }
+    return symbolToValuesIt->second;
+}
+
 void ValueAssigner::assignValuesForPlayers(const nlohmann::json& types)
 {
     for (const auto& el : types)

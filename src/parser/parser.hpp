@@ -10,19 +10,17 @@
 #include <nlohmann/json.hpp>
 
 
-using TypeToSymbolToValueMap = std::map<std::string, std::map<std::string, int>>;
-
 class Parser
 {
 public:
     Parser(std::ifstream& jsonGameFile);
+    bool isSymbol(const std::string& token) const;
+    bool isConstant(const std::string& token) const;
+    bool isVariable(const std::string& token) const;
     nlohmann::json getTypeDeclarations() const;
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
     nlohmann::json getEdges() const;
-    std::string getValue(const std::string& symbol) const;
-    const std::map<std::string, int>& getSymbolToValueMap() const;
-    const TypeToSymbolToValueMap& getTypeToSymbolToValueMap() const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
     nlohmann::json getDestinationType(const nlohmann::json& t) const;
@@ -35,6 +33,8 @@ public:
 
 private:
     nlohmann::json parsedJson_;
-    std::map<std::string, int> symbolToValue_;
-    TypeToSymbolToValueMap typeToSymbolToValue_;
+    std::set<std::string> symbols_;
+    std::set<std::string> constants_;
+    std::set<std::string> variables_;
+
 };

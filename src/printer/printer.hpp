@@ -2,13 +2,14 @@
 
 #include <nlohmann/json.hpp>
 
+#include <compiler/valueAssigner.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
 class Printer
 {
 public:
-    Printer(const Parser& parse, std::ofstream& headerFile, std::ofstream& sourceFile);
+    Printer(const Parser& parse, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile);
     void initializeHeaderFile(bool debug);
     void initializeSourceFile();
     void initializeMainClass();
@@ -26,6 +27,7 @@ public:
 
 private:
     const Parser& parser_;
+    const ValueAssigner& valueAssigner_;
     std::ofstream& headerFile_;
     std::ofstream& sourceFile_;
 };

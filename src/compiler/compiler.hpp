@@ -3,6 +3,7 @@
 #include <graph/graph.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
+#include <compiler/valueAssigner.hpp>
 
 struct Options
 {
@@ -15,7 +16,7 @@ struct Options
 class Compiler
 {
 public:
-    Compiler(Parser &parser, const Options &options);
+    Compiler(const Parser &parser, const Options &options);
     void compile();
     void generateSourceCode(std::ofstream &headerFile, std::ofstream &sourceFile);
 
@@ -53,8 +54,10 @@ private:
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
+    int getNumberOfPlayers();
 
-    Parser &parser_;
+    const Parser &parser_;
+    ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;

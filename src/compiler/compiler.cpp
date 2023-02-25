@@ -36,7 +36,7 @@ std::shared_ptr<Edge> findComplementaryEdge(
 }
 }  // namespace
 
-Compiler::Compiler(Parser& parser, const Options& options)
+Compiler::Compiler(const Parser& parser, const Options& options)
 : parser_(parser), debugFlag_(options.debug),
   optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3),
   optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3),
@@ -48,6 +48,7 @@ Compiler::Compiler(Parser& parser, const Options& options)
 
 void Compiler::compile()
 {
+    valueAssigner_.assignValuesToSymbols(parser_.getTypeDeclarations());
     generateTypes();
     generateConstants();
     generateVariables(graph_);
@@ -129,7 +130,7 @@ void Compiler::addNodesForApplyAnyMoveTopatternAnyGraphs()
 
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
 {
-    Printer printer(parser_, headerFile, sourceFile);
+    Printer printer(parser_, valueAssigner_, headerFile, sourceFile);
     printer.initializeHeaderFile(debugFlag_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());
@@ -175,6 +176,14 @@ void Compiler::generateConstants()
         const std::string identifier = constant["identifier"].get<std::string>();
         program_.addConstantDeclaration(std::make_unique<Constant>(identifier, std::move(valueType), std::move(value)));
     }
+
+    auto playerCountConstantType = std::make_shared<CustomType>("int");
+    auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
+    const std::string playerCountConstantName = "PLAYERS_COUNT";
+    program_.addConstantDeclaration(std::make_unique<Constant>(
+        playerCountConstantName,
+        std::move(playerCountConstantType),
+        std::move(playerCountConstantValue)));
 }
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
@@ -904,7 +913,7 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     auto sourceType = generateType(functionType["lhs"]);
     auto destinationType = generateType(functionType["rhs"]);
     const std::string sourceTypeName = sourceType->identifier;
-    const auto& symbolToValueMap = parser_.getTypeToSymbolToValueMap().at(sourceTypeName);
+    const auto& symbolToValueMap = valueAssigner_.getTypeToSymbolToValueMap().at(sourceTypeName);
     const auto maxDomainValueIt =
         std::max_element(symbolToValueMap.begin(), symbolToValueMap.end(), [](const auto& lhs, const auto& rhs) {
             return lhs.second < rhs.second;
@@ -948,4 +957,16 @@ std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionNam
 {
     std::string information = "In function: " + functionName + "\\n";
     return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
+}
+
+int Compiler::getNumberOfPlayers()
+{
+    for (const auto& t : parser_.getTypeDeclarations())
+    {
+        if (t["identifier"] == "Player")
+        {
+            return t["type"]["identifiers"].size();
+        }
+    }
+    throw std::runtime_error("Cannot find 'Player' type in AST.");
 }

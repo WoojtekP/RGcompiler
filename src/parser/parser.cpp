@@ -9,6 +9,41 @@
 
 Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
+    for (const auto& type : getTypeDeclarations())
+    {
+        if (type["type"]["kind"] == "Set")
+        {
+            for (const auto& symbol : type["type"]["identifiers"])
+            {
+                symbols_.insert(symbol.get<std::string>());
+            }
+        }
+    }
+
+    for (const auto& constant : getConstants())
+    {
+        constants_.insert(constant["identifier"].get<std::string>());
+    }
+
+    for (const auto& variable : getVariables())
+    {
+        variables_.insert(variable["identifier"].get<std::string>());
+    }
+}
+
+bool Parser::isSymbol(const std::string& identifier) const
+{
+    return symbols_.count(identifier);
+}
+
+bool Parser::isConstant(const std::string& identifier) const
+{
+    return constants_.count(identifier);
+}
+
+bool Parser::isVariable(const std::string& identifier) const
+{
+    return variables_.count(identifier);
 }
 
 nlohmann::json Parser::getTypeDeclarations() const

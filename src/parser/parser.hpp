@@ -14,6 +14,9 @@ class Parser
 {
 public:
     Parser(std::ifstream& jsonGameFile);
+    bool isSymbol(const std::string& token) const;
+    bool isConstant(const std::string& token) const;
+    bool isVariable(const std::string& token) const;
     nlohmann::json getTypeDeclarations() const;
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
@@ -30,4 +33,8 @@ public:
 
 private:
     nlohmann::json parsedJson_;
+    std::set<std::string> symbols_;
+    std::set<std::string> constants_;
+    std::set<std::string> variables_;
+
 };

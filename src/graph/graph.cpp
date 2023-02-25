@@ -641,3 +641,66 @@ std::pair<std::shared_ptr<Edge>, int> Graph::getUnambiguousNotEmptyEdge(const st
 
     return std::make_pair(nullptr, -1);
 }
+
+std::vector<std::string> Graph::getNodesBeforeWhichPlayerChangeToKeeper() const
+{
+    std::set<std::string> nodes({"begin"});
+    for (const auto &edge : edges_)
+    {
+        const auto &action = edge->getActions().back();
+        // TODO: We need better way to check if keeper changed
+        if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player" &&
+            (action->getRightSide() == "static_cast<PlayerOrKeeper>(keeper)" || action->getRightSide() == "keeper"))
+        {
+            nodes.insert(edge->toName());
+        }
+    }
+
+    return std::vector<std::string>(nodes.begin(), nodes.end());
+}
+
+std::vector<std::string> Graph::nodesToPlayerChangeOrEnd(const std::string &nodeName) const
+{
+    std::set<std::string> visited;
+    std::string node = nodeName;
+    std::vector<std::string> nodes;
+    std::queue<std::string> nodesToVisit({node});
+    while (!nodesToVisit.empty())
+    {
+        std::string node = nodesToVisit.front();
+        nodesToVisit.pop();
+        for (const auto &[edge, iid] : getOutgoingEdgesFrom(node))
+        {
+            if (visited.find(edge->toName()) == visited.end())
+            {
+                visited.insert(edge->toName());
+                const auto &action = edge->getActions().back();
+                if ((action->getType() == ActionType::Assignment && action->getLeftSide() == "player") ||
+                    edge->toName() == "end")
+                {
+                    nodes.push_back(edge->toName());
+                    continue;
+                }
+                nodesToVisit.push(edge->toName());
+            }
+        }
+    }
+
+    return nodes;
+}
+
+std::vector<std::pair<std::string, std::vector<std::string>>> Graph::getNodesForApplyAnyMove() const
+{
+    std::vector<std::pair<std::string, std::vector<std::string>>> result;
+
+    for (const auto &nodeName : getNodesBeforeWhichPlayerChangeToKeeper())
+    {
+        auto vectorOfNodes = nodesToPlayerChangeOrEnd(nodeName);
+
+        if (!vectorOfNodes.empty())
+        {
+            result.push_back(std::make_pair(nodeName, vectorOfNodes));
+        }
+    }
+    return result;
+}

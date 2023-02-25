@@ -42,6 +42,8 @@ private:
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, bool patternAny = false);
     void generatePatternReachabilityFunctions();
     void generatePatternAnyFunctions();
+    void generateApplyAnyMove();
+    void addNodesForApplyAnyMoveTopatternAnyGraphs();
     void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns);
     template<typename T>
     void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<Action>> assignments);
@@ -56,6 +58,7 @@ private:
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
+    std::vector<std::pair<std::string, std::vector<std::string>>> nodesForApplyAnyMove_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;

@@ -4,6 +4,14 @@
 /scripts/__pycache__
 /.vscode
 
+# Tests executables
+test/perft
+test/simulations
+
+# Temporary files
+*.tmp
+*.diff
+
 # RG files
 *.hrg
 *.rg

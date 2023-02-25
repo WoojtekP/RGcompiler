@@ -132,11 +132,11 @@ for game in games:
   
   gamesOK.append(game)
 
-totalElapsedTime = time.time()
+totalElapsedTime = time.time() - totalStartTime
 gamesError = [game for game in games if game not in gamesOK]
 
 print()
-print(FORMATTER.format(f'---{util.GREEN}{util.RESET}', '', elapsedTime))
+print((HEAD_FORMATTER+RESULT_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
 print(f'Games {util.OK}: {" ".join(gamesOK)}')
 if len(gamesError) == 0:
   print(f'No errors.')

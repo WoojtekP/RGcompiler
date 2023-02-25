@@ -1,5 +1,4 @@
 #include <functional>
-#include <iostream>
 
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
@@ -778,7 +777,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 
     auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
-    getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player]"));
+    getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player - 1]"));
 
     auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrKeeper", true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
@@ -920,13 +919,8 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     auto sourceType = generateType(functionType["lhs"]);
     auto destinationType = generateType(functionType["rhs"]);
     const std::string sourceTypeName = sourceType->identifier;
-    const auto& symbolToValueMap = valueAssigner_.getTypeToSymbolToValueMap().at(sourceTypeName);
-    const auto maxDomainValueIt =
-        std::max_element(symbolToValueMap.begin(), symbolToValueMap.end(), [](const auto& lhs, const auto& rhs) {
-            return lhs.second < rhs.second;
-        });
     return std::make_shared<FunctionType>(
-        std::move(sourceType), std::move(destinationType), maxDomainValueIt->second + 1);
+        std::move(sourceType), std::move(destinationType), valueAssigner_.getTypeRange(sourceTypeName));
 }
 
 std::unique_ptr<IValue> Compiler::generateValue(const nlohmann::json& value)

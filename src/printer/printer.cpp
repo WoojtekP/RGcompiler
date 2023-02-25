@@ -32,12 +32,13 @@ void Printer::initializeHeaderFile(bool debug)
     }
 
     headerFile_ << "#include <array>" << std::endl;
-    headerFile_ << "#include <string>" << std::endl;
-    headerFile_ << "#include <vector>" << std::endl;
-    headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
     headerFile_ << "#include <set>" << std::endl;
-    headerFile_ << "#include <unordered_set>" << std::endl;
+    headerFile_ << "#include <string>" << std::endl;
     headerFile_ << "#include <tuple>" << std::endl;
+    headerFile_ << "#include <unordered_set>" << std::endl;
+    headerFile_ << "#include <vector>" << std::endl;
+    headerFile_ << std::endl;
+    headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
 
     headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;
@@ -110,7 +111,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
     for (const auto& constant : constants)
     {
         const std::string constType = constant->valueType->toString();
-        const std::string constValue = constant->value->toString(constant->valueType, valueAssigner_.getTypeToSymbolToValueMap());
+        const std::string constValue = constant->value->toString(constant->valueType, valueAssigner_);
         const std::string constName = constant->identifier;
         headerFile_ << "constexpr " << constType << " " << constName << " = " << constValue << ";" << std::endl;
     }
@@ -138,7 +139,7 @@ void Printer::printVariables(
             const std::string varName = variable->identifier;
             if (variable->value)
             {
-                const std::string varValue = variable->value->toString(variable->valueType, valueAssigner_.getTypeToSymbolToValueMap());
+                const std::string varValue = variable->value->toString(variable->valueType, valueAssigner_);
                 headerFile_ << varType << " " << varName << " = " << varValue << ";" << std::endl;
             }
             else

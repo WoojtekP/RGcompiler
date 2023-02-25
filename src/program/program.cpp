@@ -2,7 +2,9 @@
 #include <memory>
 #include <vector>
 
+#include <compiler/valueAssigner.hpp>
 #include <program/program.hpp>
+
 
 std::string ElementaryType::toString() const
 {
@@ -38,29 +40,27 @@ std::string CustomType::definitionToString() const
     return typeDefinition;
 }
 
-std::string SingleValue::toString(const std::shared_ptr<IType> &, const TypeToSymbolToValueMap &) const
+std::string SingleValue::toString(const std::shared_ptr<IType> &, const ValueAssigner &) const
 {
     return symbol;
 }
 
 std::string MapValue::toString(
-    const std::shared_ptr<IType> &t, const TypeToSymbolToValueMap &typeToSymbolToValueMap) const
+    const std::shared_ptr<IType> &t, const ValueAssigner &valueAssigner) const
 {
     if (const FunctionType *functionType = dynamic_cast<FunctionType *>(t.get()))
     {
         const std::string sourceTypeName = functionType->source->identifier;
-        const auto &symbolToValueMap = typeToSymbolToValueMap.at(sourceTypeName);
-        const auto maxValueIt =
-            std::max_element(symbolToValueMap.begin(), symbolToValueMap.end(), [](const auto &lhs, const auto &rhs) {
-                return lhs.second < rhs.second;
-            });
+        const auto [minValue, maxValue] = valueAssigner.getTypeMinMaxValues(sourceTypeName);
+        const auto& symbolToValueMap = valueAssigner.getTypeToSymbolToValueMap().at(sourceTypeName);
         const std::string defaultValueString =
-            (defaultValue ? defaultValue->toString(functionType->destination, typeToSymbolToValueMap) : "?");
-        std::vector<std::string> values(maxValueIt->second + 1, defaultValueString);
+            (defaultValue ? defaultValue->toString(functionType->destination, valueAssigner) : "?");
+        const auto size = maxValue - minValue + 1;
+        std::vector<std::string> values(size, defaultValueString);
         for (const auto &[id, value] : idToValueMap)
         {
             const int pos = symbolToValueMap.at(id);
-            values[pos] = value->toString(functionType->destination, typeToSymbolToValueMap);
+            values[pos - minValue] = value->toString(functionType->destination, valueAssigner);
         }
         std::string result = functionType->toString() + "{";
         for (const auto& value : values)

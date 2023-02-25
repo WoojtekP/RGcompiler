@@ -24,6 +24,8 @@ public:
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
     nlohmann::json getDestinationType(const nlohmann::json& t) const;
+    nlohmann::json findTypeOfExpression(const nlohmann::json& expression) const;
+    nlohmann::json findTypeOfVariable(const std::string& identifier) const;
     nlohmann::json findTypeByIdentifier(const std::string& typeIdentifier) const;
 
     static std::string getValueFromEntries(

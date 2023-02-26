@@ -12,7 +12,7 @@ std::vector<reasoner::Move> moves;
 ulong numSimulations;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
-ulong sumScores[3];
+ulong sumScores[1+reasoner::PLAYERS_COUNT];
 
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
@@ -32,7 +32,7 @@ void doSimulation() {
     if (state.getCurrentPlayer() == reasoner::keeper) {
       if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
     } else {
-      if (moves.size() == 0) exitError("Player has 0 moves");
+      if (moves.size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
       depth++;
       numMoves += moves.size();
       if (moves.size() < minMoves) minMoves = moves.size();
@@ -43,7 +43,7 @@ void doSimulation() {
   numStates += depth;
   if (depth < minDepth) minDepth = depth;
   if (depth > maxDepth) maxDepth = depth;
-  for (uint player = 1; player <= 2; player++) sumScores[player] += state.getPlayerScore(player);
+  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) sumScores[player] += state.getPlayerScore(player);
 }
 
 int main(int argc, char** argv) {
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
   std::cout.precision(2);
   std::cout << numStates << " " << minDepth << " " << maxDepth;
   std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
-  for (uint player = 1; player <= 2; player++) std::cout << " " << sumScores[player];
+  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) std::cout << " " << sumScores[player];
   std::cout << std::endl;
   //std::cout << "simulations: " << numSimulations << " (" << numSimulations / seconds << " simulations/sec)" << std::endl;
   //std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;

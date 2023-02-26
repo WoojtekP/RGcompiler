@@ -90,6 +90,8 @@ for game in games:
   if result.returncode != 0:
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
+    
+  isOK = True
   
   sims = tests[game][0][0]
   avgDepth = tests[game][0][1]
@@ -109,6 +111,7 @@ for game in games:
     for p in range(len(stats)): resultList.append(int(stats[p]) / sims) # avgScores
     if not verifyWithTolerance(expectedList, resultList):
       info = f'{util.ERROR} expected {util.CYAN}{" ".join(f"{x:1.2f}" for x in expectedList)}{util.RESET} but got {util.CYAN}{" ".join(f"{x:1.2f}" for x in resultList)}{util.RESET}'
+      isOK = False
     else:
       info = f'{util.OK}'
   print(RESULT_FORMATTER.format(info, elapsedTime))
@@ -121,6 +124,7 @@ for game in games:
     elapsedTime = time.time() - startTime
     if result.returncode != 0:
       info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
+      isOK = False
     else:
       stats = decodeOutput(result.stdout).strip().split(' ')
       resLeaves = int(stats[0])
@@ -130,7 +134,7 @@ for game in games:
         info = f'{util.OK}'
     print(RESULT_FORMATTER.format(info, elapsedTime))
   
-  gamesOK.append(game)
+  if isOK: gamesOK.append(game)
 
 totalElapsedTime = time.time() - totalStartTime
 gamesError = [game for game in games if game not in gamesOK]

@@ -12,7 +12,7 @@ game = args.game[0]
 translateOptions = args.translateOptions
 
 if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
-  print(f'There is no file {cfg.RG_DIR}/examples/{game}')
+  print(f'There is no file {cfg.RG_DIR}/examples/{game}', file=sys.stderr)
   exit(2)
 
 print(f'Compiling {game} with translate options "{translateOptions}"')

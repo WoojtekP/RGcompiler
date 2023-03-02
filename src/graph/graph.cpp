@@ -704,3 +704,18 @@ std::vector<std::pair<std::string, std::vector<std::string>>> Graph::getNodesFor
     }
     return result;
 }
+
+void Graph::getVariablesInPatternGraphs(std::map<std::string, int> &result) const
+{
+    for (const auto &edge : edges_)
+    {
+        for (const auto &action : edge->getActions())
+        {
+            const auto &variable = action->getLeftSide();
+            if (action->getType() == ActionType::Assignment && (result.find(variable) == result.end()))
+            {
+                result.insert({variable, result.size()});
+            }
+        }
+    }
+}

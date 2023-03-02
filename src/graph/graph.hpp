@@ -118,4 +118,5 @@ public:
     std::vector<std::string> getNodesBeforeWhichPlayerChangeToKeeper() const;
     std::vector<std::string> nodesToPlayerChangeOrEnd(const std::string &nodeName) const;
     std::vector<std::pair<std::string, std::vector<std::string>>> getNodesForApplyAnyMove() const;
+    void getVariablesInPatternGraphs(std::map<std::string, int> &result) const;
 };

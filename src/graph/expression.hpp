@@ -4,80 +4,73 @@
 
 #include <nlohmann/json.hpp>
 
-enum class ExpressionType
-{
-    Reference,
-    TypeReference,
-    Access,
-    Cast,
-    EdgeName
-};
 
-class ExpressionI
+class IExpression
 {
 public:
-    virtual ~ExpressionI() = default;
-    virtual std::string toString() = 0;
-    virtual void parse(const nlohmann::json& t) = 0;
+    virtual ~IExpression() = default;
+    virtual std::string toString() const = 0;
 };
 
-class ExpressionBinaryBase : public ExpressionI
+class ExpressionBinaryBase : public IExpression
 {
+public:
+    ExpressionBinaryBase(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right);
+    ~ExpressionBinaryBase() = default;
+
 protected:
-    std::unique_ptr<ExpressionI> left_;
-    std::unique_ptr<ExpressionI> right_;
-
-public:
-    ExpressionBinaryBase();
-    ~ExpressionBinaryBase();
-    void parse(const nlohmann::json& t) override;
-};
-
-class Expression : public ExpressionI
-{
-    std::unique_ptr<ExpressionI> expression_;
-
-public:
-    ~Expression();
-
-    void parse(const nlohmann::json& t) override;
-    std::string toString() override;
+    std::unique_ptr<IExpression> left_;
+    std::unique_ptr<IExpression> right_;
 };
 
 class ExpressionAccess : public ExpressionBinaryBase
 {
 public:
-    std::string toString() override;
+    ExpressionAccess(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right, const int minValue = 0);
+    ~ExpressionAccess() = default;
+    std::string toString() const override;
+
+private:
+    const int minValue_;
 };
 
 class ExpressionCast : public ExpressionBinaryBase
 {
 public:
-    std::string toString() override;
+    ExpressionCast(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right);
+    ~ExpressionCast() = default;
+    std::string toString() const override;
 };
 
-class ExpressionUnaryBase : public ExpressionI
+class ExpressionUnaryBase : public IExpression
 {
-    std::string val_;
-
 public:
-    void parse(const nlohmann::json& t) override;
+    ExpressionUnaryBase(const std::string& identifier);
+    ~ExpressionUnaryBase() = default;
+    std::string toString() const override;
 
-    std::string toString() override;
+private:
+    std::string identifier_;
 };
 
 class ExpressionReference : public ExpressionUnaryBase
-{};
+{
+public:
+    ExpressionReference(const std::string& identifier);
+    ~ExpressionReference() = default;
+};
 
 class ExpressionTypeReference : public ExpressionUnaryBase
-{};
-
-class ExpressionEdgeName : public ExpressionI
 {
-    std::string val_;
-
 public:
-    void parse(const nlohmann::json& t) override;
+    ExpressionTypeReference(const std::string& identifier);
+    ~ExpressionTypeReference() = default;
+};
 
-    std::string toString() override;
+class ExpressionEdgeName : public ExpressionUnaryBase
+{
+public:
+    ExpressionEdgeName(const std::string& identifier);
+    ~ExpressionEdgeName() = default;
+    // std::string toString() const override;
 };

@@ -45,14 +45,14 @@ bool Node::operator==(const Node &rhs) const
 Edge::Edge(
     const std::shared_ptr<Node> &from,
     const std::shared_ptr<Node> &to,
-    const std::vector<std::shared_ptr<Action>> &actions)
+    const std::vector<std::shared_ptr<IAction>> &actions)
 : Edge(from, to, actions, {})
 {}
 
 Edge::Edge(
     const std::shared_ptr<Node> &from,
     const std::shared_ptr<Node> &to,
-    const std::vector<std::shared_ptr<Action>> &actions,
+    const std::vector<std::shared_ptr<IAction>> &actions,
     const std::vector<std::shared_ptr<Node>> &innerNodes)
 : from_(from), to_(to), actions_(actions.begin(), actions.end()), innerNodes_(innerNodes.begin(), innerNodes.end()) {};
 
@@ -170,7 +170,7 @@ bool Edge::isComplementaryTo(const Edge &rhs) const
            getActionNegationValue() != rhs.getActionNegationValue();
 }
 
-const std::vector<std::shared_ptr<Action>> &Edge::getActions() const
+const std::vector<std::shared_ptr<IAction>> &Edge::getActions() const
 {
     return actions_;
 }
@@ -243,7 +243,7 @@ const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getOutgoingEdge
     return outgoingEdgesFromNode_[nodeStringToInt_.at(from)];
 }
 
-const std::vector<std::shared_ptr<Action>> &Graph::getActions(std::string fromName, std::string toName, int iid) const
+const std::vector<std::shared_ptr<IAction>> &Graph::getActions(std::string fromName, std::string toName, int iid) const
 {
     return edgeIdToEdge_.at(edgeStringToInt_.at(std::make_tuple(fromName, toName, iid)))->getActions();
 }
@@ -401,7 +401,7 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths() const
         int firstNode = path.front();
         int lastNode = path.back();
 
-        std::vector<std::shared_ptr<Action>> actions;
+        std::vector<std::shared_ptr<IAction>> actions;
 
         for (int i = 0; i < path.size() - 1; i++)
         {

@@ -57,6 +57,8 @@ void Compiler::compile()
 
 void Compiler::initializeGraph()
 {
+    ActionFactory actionFactory(parser_, valueAssigner_);
+
     graph_ = std::make_shared<Graph>();
 
     for (const auto& edge : parser_.getEdges())
@@ -64,7 +66,7 @@ void Compiler::initializeGraph()
         graph_->addEdge(std::make_shared<Edge>(
             std::make_shared<Node>(edge["lhs"]["parts"]),
             std::make_shared<Node>(edge["rhs"]["parts"]),
-            std::vector<std::shared_ptr<Action>> {std::make_shared<Action>(edge["label"])}));
+            std::vector<std::shared_ptr<IAction>> {actionFactory.createAction(edge["label"])}));
     }
 
     graph_->initialize();
@@ -189,7 +191,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 }
 
 template<typename T>
-void Compiler::restoreAssignments(const std::unique_ptr<T>& function, std::vector<std::shared_ptr<Action>> assignments)
+void Compiler::restoreAssignments(const std::unique_ptr<T>& function, std::vector<std::shared_ptr<IAction>> assignments)
 {
     int cnt = assignments.size() - 1;
     std::reverse(assignments.begin(), assignments.end());
@@ -349,7 +351,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         }
 
         const auto& actions = graph->getActions(stateFrom, stateTo, iid);
-        std::vector<std::shared_ptr<Action>> assignmentActions;
+        std::vector<std::shared_ptr<IAction>> assignmentActions;
 
         bool pushed = false;
         bool playerChanged = false;
@@ -470,7 +472,7 @@ void Compiler::generateBoolEdgeFunctions(
     for (const auto& [stateFrom, stateTo, iid] : edges)
     {
         const auto& actions = graph->getActions(stateFrom, stateTo, iid);
-        std::vector<std::shared_ptr<Action>> assignmentActions;
+        std::vector<std::shared_ptr<IAction>> assignmentActions;
 
         std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
                              std::to_string(graph_->getNodeId(to)) + "_";

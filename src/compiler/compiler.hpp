@@ -2,6 +2,7 @@
 
 #include <compiler/valueAssigner.hpp>
 #include <graph/graph.hpp>
+#include <graph/actionFactory.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
@@ -47,7 +48,7 @@ private:
     void initializePatternGraphs(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
     template<typename T>
-    void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<Action>> assignments);
+    void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments);
     std::string getStateIntId(std::string name);
     std::shared_ptr<IType> generateType(const nlohmann::json &t);
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);

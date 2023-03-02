@@ -5,6 +5,8 @@
 #include <nlohmann/json.hpp>
 
 #include <graph/expression.hpp>
+#include <graph/expressionFactory.hpp>
+
 
 enum class ActionType
 {
@@ -16,112 +18,79 @@ enum class ActionType
     Pattern
 };
 
-class ActionI
+class IAction
 {
 public:
-    virtual ~ActionI() = default;
-    virtual std::string toString() = 0;
-    virtual std::string getLeftSide() = 0;
-    virtual std::string getRightSide() = 0;
-
-    virtual ActionType getType() = 0;
-
-    virtual bool getNegated() = 0;
-
-    virtual void parse(const nlohmann::json& t) = 0;
+    virtual ~IAction() = default;
+    virtual std::string toString() const = 0;
+    virtual std::string getLeftSide() const = 0;
+    virtual std::string getRightSide() const = 0;
+    virtual ActionType getType() const = 0;
+    virtual bool getNegated() const = 0;
 };
 
-class ActionBase : public ActionI
+class ActionBase : public IAction
 {
-protected:
-    std::unique_ptr<ExpressionI> left_;
-    std::unique_ptr<ExpressionI> right_;
-
-    ActionType actionType_;
-
-    bool negated_;
-
 public:
-    ActionBase(ActionType actionType);
-    ActionBase(ActionType actionType, bool negated);
-    ~ActionBase();
+    ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string getLeftSide() const override;
+    std::string getRightSide() const override;
+    bool getNegated() const override;
 
-    std::string getLeftSide() override;
-    std::string getRightSide() override;
-
-    ActionType getType() override;
-
-    bool getNegated() override;
-
-    void parse(const nlohmann::json& t) override;
+protected:
+    std::unique_ptr<IExpression> left_;
+    std::unique_ptr<IExpression> right_;
+    bool negated_;
 };
 
 class ActionAssignment : public ActionBase
 {
 public:
-    ActionAssignment();
-    std::string toString() override;
+    ActionAssignment(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
 };
+
 class ActionComparison : public ActionBase
 {
 public:
-    ActionComparison(bool negated);
-    std::string toString() override;
+    ActionComparison(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
 };
 
 // TODO: pattern need to be implemented
 class ActionPattern : public ActionBase
 {
 public:
-    ActionPattern();
-    std::string toString() override;
+    ActionPattern(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
 };
 
 class ActionPatternAny : public ActionBase
 {
 public:
-    ActionPatternAny();
-    std::string toString() override;
+    ActionPatternAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
 };
 
 class ActionReachability : public ActionBase
 {
 public:
-    ActionReachability(bool negated);
-    std::string toString() override;
+    ActionReachability(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
 };
 
-class ActionSkip : public ActionI
+class ActionSkip : public IAction
 {
 public:
-    std::string toString() override;
-
-    std::string getLeftSide() override;
-    std::string getRightSide() override;
-
-    ActionType getType() override;
-
-    bool getNegated() override;
-
-    void parse(const nlohmann::json& t) override;
-};
-
-class Action : public ActionI
-{
-    std::unique_ptr<ActionI> action_;
-
-public:
-    Action();
-    Action(const nlohmann::json& t);
-    ~Action();
-
-    std::string toString() override;
-    std::string getLeftSide() override;
-    std::string getRightSide() override;
-
-    ActionType getType() override;
-
-    bool getNegated() override;
-
-    void parse(const nlohmann::json& t) override;
+    ActionSkip() = default;
+    std::string toString() const override;
+    std::string getLeftSide() const override;
+    std::string getRightSide() const override;
+    ActionType getType() const override;
+    bool getNegated() const override;
 };

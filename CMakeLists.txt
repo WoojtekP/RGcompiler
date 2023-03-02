@@ -28,7 +28,9 @@ add_executable(rg2cpp
     src/parser/parser.cpp
     src/printer/printer.cpp
     src/graph/action.cpp
+    src/graph/actionFactory.cpp
     src/graph/expression.cpp
+    src/graph/expressionFactory.cpp
     src/graph/graph.cpp
     src/program/program.cpp
     src/compiler/valueAssigner.cpp

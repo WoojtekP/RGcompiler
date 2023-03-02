@@ -3,104 +3,61 @@
 #include <graph/expression.hpp>
 #include <parser/parser.hpp>
 
-ExpressionBinaryBase::ExpressionBinaryBase() {}
 
-ExpressionBinaryBase::~ExpressionBinaryBase() {}
+ExpressionBinaryBase::ExpressionBinaryBase(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right)
+: left_(std::move(left))
+, right_(std::move(right))
+{}
 
-void ExpressionBinaryBase::parse(const nlohmann::json& t)
+
+ExpressionAccess::ExpressionAccess(
+    std::unique_ptr<IExpression> left,
+    std::unique_ptr<IExpression> right,
+    const int minValue)
+: ExpressionBinaryBase(std::move(left), std::move(right))
+, minValue_(minValue)
+{}
+
+std::string ExpressionAccess::toString() const
 {
-    if (left_ == nullptr)
+    if (minValue_ > 0)
     {
-        left_ = std::make_unique<Expression>();
+        return left_->toString() + "[" + right_->toString() + " - " + std::to_string(minValue_) + "]";
     }
-
-    left_->parse(t["lhs"]);
-
-    if (right_ == nullptr)
-    {
-        right_ = std::make_unique<Expression>();
-    }
-
-    right_->parse(t["rhs"]);
-}
-
-std::string ExpressionAccess::toString()
-{
     return left_->toString() + "[" + right_->toString() + "]";
 }
 
-std::string ExpressionCast::toString()
+
+ExpressionCast::ExpressionCast(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right)
+: ExpressionBinaryBase(std::move(left), std::move(right))
+{}
+
+std::string ExpressionCast::toString() const
 {
     return "static_cast<" + left_->toString() + ">(" + right_->toString() + ")";
 }
 
-void ExpressionUnaryBase::parse(const nlohmann::json& t)
+
+ExpressionUnaryBase::ExpressionUnaryBase(const std::string& identifier)
+: identifier_(identifier)
+{}
+
+std::string ExpressionUnaryBase::toString() const
 {
-    val_ = t["identifier"];
+    return identifier_;
 }
 
-void ExpressionEdgeName::parse(const nlohmann::json& t)
-{
-    const auto& node = Parser::getPartFromParts(t["parts"], "Literal");
 
-    if (node)
-    {
-        val_ = (*node).get()["identifier"];
-    }
-}
+ExpressionReference::ExpressionReference(const std::string& identifier)
+: ExpressionUnaryBase(identifier)
+{}
 
-std::string ExpressionEdgeName::toString()
-{
-    return val_;
-}
 
-std::string ExpressionUnaryBase::toString()
-{
-    return val_;
-}
+ExpressionTypeReference::ExpressionTypeReference(const std::string& identifier)
+: ExpressionUnaryBase(identifier)
+{}
 
-Expression::~Expression() {}
 
-void Expression::parse(const nlohmann::json& t)
-{
-    if (expression_)
-    {
-        expression_.reset();
-    }
-
-    if (t["kind"] == "Reference")
-    {
-        expression_ = std::make_unique<ExpressionReference>();
-    }
-    else if (t["kind"] == "TypeReference")
-    {
-        expression_ = std::make_unique<ExpressionTypeReference>();
-    }
-    else if (t["kind"] == "Access")
-    {
-        expression_ = std::make_unique<ExpressionAccess>();
-    }
-    else if (t["kind"] == "Cast")
-    {
-        expression_ = std::make_unique<ExpressionCast>();
-    }
-    else if (t["kind"] == "EdgeName")
-    {
-        expression_ = std::make_unique<ExpressionEdgeName>();
-    }
-
-    if (expression_)
-    {
-        expression_->parse(t);
-    }
-}
-
-std::string Expression::toString()
-{
-    if (expression_)
-    {
-        return expression_->toString();
-    }
-
-    return "";
-}
+ExpressionEdgeName::ExpressionEdgeName(const std::string& identifier)
+: ExpressionUnaryBase(identifier)
+{}

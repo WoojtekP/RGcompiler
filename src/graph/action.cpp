@@ -4,204 +4,120 @@
 
 #include <graph/action.hpp>
 
-ActionBase::ActionBase(ActionType actionType) : ActionBase(actionType, false) {}
 
-ActionBase::ActionBase(ActionType actionType, bool negated) : actionType_(actionType), negated_(negated) {}
-
-ActionBase::~ActionBase() {}
-
-void ActionBase::parse(const nlohmann::json& t)
+ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: left_(expressionFactory.createExpression(label["lhs"]))
+, right_(expressionFactory.createExpression(label["rhs"]))
+, negated_(label.count("negated") ? label["negated"].get<bool>() : false)
 {
-    if (left_ == nullptr)
-    {
-        left_ = std::make_unique<Expression>();
-    }
-
-    left_->parse(t["lhs"]);
-
-    if (right_ == nullptr)
-    {
-        right_ = std::make_unique<Expression>();
-    }
-
-    right_->parse(t["rhs"]);
 }
 
-bool ActionBase::getNegated()
+bool ActionBase::getNegated() const
 {
     return negated_;
 }
 
-std::string ActionBase::getLeftSide()
+std::string ActionBase::getLeftSide() const
 {
     return left_->toString();
 }
 
-std::string ActionBase::getRightSide()
+std::string ActionBase::getRightSide() const
 {
     return right_->toString();
 }
 
-ActionType ActionBase::getType()
-{
-    return actionType_;
-}
+ActionAssignment::ActionAssignment(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
 
-ActionAssignment::ActionAssignment() : ActionBase(ActionType::Assignment) {}
-
-std::string ActionAssignment::toString()
+std::string ActionAssignment::toString() const
 {
     return left_->toString() + " = " + right_->toString();
 }
 
-ActionComparison::ActionComparison(bool negated) : ActionBase(ActionType::Comparison, negated) {}
+ActionType ActionAssignment::getType() const
+{
+    return ActionType::Assignment;
+}
 
-std::string ActionComparison::toString()
+ActionComparison::ActionComparison(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
+
+std::string ActionComparison::toString() const
 {
     return left_->toString() + " == " + right_->toString();
 }
 
-ActionPattern::ActionPattern() : ActionBase(ActionType::Pattern) {}
+ActionType ActionComparison::getType() const
+{
+    return ActionType::Comparison;
+}
 
-std::string ActionPattern::toString()
+ActionPattern::ActionPattern(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
+
+std::string ActionPattern::toString() const
 {
     return "";
 }
 
-ActionPatternAny::ActionPatternAny() : ActionBase(ActionType::PatternAny) {}
+ActionType ActionPattern::getType() const
+{
+    return ActionType::Pattern;
+}
 
-std::string ActionPatternAny::toString()
+ActionPatternAny::ActionPatternAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
+
+std::string ActionPatternAny::toString() const
 {
     return "any " + left_->toString() + " -> " + right_->toString();
 }
 
-ActionReachability::ActionReachability(bool negated) : ActionBase(ActionType::Reachability, negated) {}
+ActionType ActionPatternAny::getType() const
+{
+    return ActionType::PatternAny;
+}
 
-std::string ActionReachability::toString()
+ActionReachability::ActionReachability(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
+
+std::string ActionReachability::toString() const
 {
     return (negated_ ? "!" : "?") + left_->toString() + " -> " + right_->toString();
 }
 
-void ActionSkip::parse(const nlohmann::json& t) {}
+ActionType ActionReachability::getType() const
+{
+    return ActionType::Reachability;
+}
 
-std::string ActionSkip::toString()
+std::string ActionSkip::toString() const
 {
     return "";
 }
 
-std::string ActionSkip::getLeftSide()
+std::string ActionSkip::getLeftSide() const
 {
     return "";
 }
 
-std::string ActionSkip::getRightSide()
+std::string ActionSkip::getRightSide() const
 {
     return "";
 }
 
-ActionType ActionSkip::getType()
+ActionType ActionSkip::getType() const
 {
     return ActionType::Skip;
 }
 
-bool ActionSkip::getNegated()
+bool ActionSkip::getNegated() const
 {
-    return false;
-}
-
-Action::Action(const nlohmann::json& t)
-{
-    this->parse(t);
-}
-
-Action::Action()
-{
-    action_ = std::make_unique<ActionSkip>();
-}
-
-Action::~Action() {}
-
-void Action::parse(const nlohmann::json& t)
-{
-    if (action_)
-    {
-        action_.reset();
-    }
-
-    if (t["kind"] == "Assignment")
-    {
-        action_ = std::make_unique<ActionAssignment>();
-    }
-    else if (t["kind"] == "Pattern")
-    {
-        action_ = std::make_unique<ActionPattern>();
-    }
-    else if (t["kind"] == "Reachability")
-    {
-        action_ = std::make_unique<ActionReachability>(t["negated"].get<bool>());
-    }
-    else if (t["kind"] == "Comparison")
-    {
-        action_ = std::make_unique<ActionComparison>(t["negated"].get<bool>());
-    }
-    else if (t["kind"] == "PatternAny")
-    {
-        action_ = std::make_unique<ActionPatternAny>();
-    }
-    else
-    {
-        action_ = std::make_unique<ActionSkip>();
-    }
-
-    action_->parse(t);
-}
-
-std::string Action::toString()
-{
-    if (action_)
-    {
-        return action_->toString();
-    }
-
-    return "";
-}
-
-ActionType Action::getType()
-{
-    if (action_)
-    {
-        return action_->getType();
-    }
-
-    return ActionType::Skip;
-}
-
-std::string Action::getLeftSide()
-{
-    if (action_)
-    {
-        return action_->getLeftSide();
-    }
-
-    return "";
-}
-
-std::string Action::getRightSide()
-{
-    if (action_)
-    {
-        return action_->getRightSide();
-    }
-
-    return "";
-}
-
-bool Action::getNegated()
-{
-    if (action_)
-    {
-        return action_->getNegated();
-    }
-
     return false;
 }

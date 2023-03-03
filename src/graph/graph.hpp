@@ -80,15 +80,27 @@ class Graph
     std::vector<std::shared_ptr<Edge>> edges_;
     std::vector<std::vector<int>> nodesFromNode_;
 
+    std::vector<std::string> getNodesBeforeWhichPlayerChangeToKeeper() const;
+    std::vector<std::string> nodesToPlayerChangeOrEnd(const std::string &nodeName) const;
+    std::shared_ptr<Graph> generateGraphForPattern(
+        std::string from, std::string to, const std::set<int> &bannedEdges = std::set<int>()) const;
     void traverseCycle(int node, std::vector<int> &path, std::vector<bool> &visited) const;
     void traverse(
         int node, std::vector<int> &path, std::vector<std::vector<int>> &paths, std::vector<bool> &visited) const;
+    bool generatePathFromNodeToNode(
+        std::string node,
+        std::string finalNode,
+        std::vector<std::shared_ptr<Edge>> &edges,
+        std::vector<bool> &visited,
+        std::vector<bool> &onPathToFinalNode,
+        const std::set<int> &bannedEdges) const;
 
 public:
     ~Graph();
     void initialize();
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
+    bool empty() const;
     std::vector<std::string> getOutgoingNodesFrom(std::string from) const;
     std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(
         const std::string &name, bool checkPlayerChange = false) const;
@@ -107,16 +119,7 @@ public:
     std::shared_ptr<Edge> getEdge(std::string from, std::string to, int iid) const;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphForPatterns(
         ActionType actionType) const;
-    std::shared_ptr<Graph> generateGraphForPattern(std::string from, std::string to) const;
-    bool generatePathFromNodeToNode(
-        std::string node,
-        std::string finalNode,
-        std::vector<std::shared_ptr<Edge>> &edges,
-        std::vector<bool> &visited,
-        std::vector<bool> &onPathToFinalNode) const;
-    std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name) const;
-    std::vector<std::string> getNodesBeforeWhichPlayerChangeToKeeper() const;
-    std::vector<std::string> nodesToPlayerChangeOrEnd(const std::string &nodeName) const;
-    std::vector<std::pair<std::string, std::vector<std::string>>> getNodesForApplyAnyMove() const;
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphsForApplyAnyMove() const;
     void getVariablesInPatternGraphs(std::map<std::string, int> &result) const;
+    std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name) const;
 };

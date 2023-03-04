@@ -118,6 +118,59 @@ nlohmann::json Parser::getDestinationType(const nlohmann::json& t) const
     return "?";
 }
 
+nlohmann::json Parser::findTypeOfExpression(const nlohmann::json& expression) const
+{
+    const auto& expressionKind = expression["kind"].get<std::string>();
+    if (expressionKind == "Reference")
+    {
+        return findTypeOfVariable(expression["identifier"]);
+    }
+    if (expressionKind == "TypeReference")
+    {
+        return findTypeByIdentifier(expression["identifier"]);
+    }
+    if (expressionKind == "Access")
+    {
+        return getDestinationType(findTypeOfExpression(expression["lhs"]));
+    }
+    if (expressionKind == "Cast")
+    {
+        return findTypeOfExpression(expression["lhs"]);
+    }
+    if (expressionKind == "EdgeName")
+    {
+        throw std::runtime_error("[Parser] Illegal operation: cannot extract type from edge.");
+    }
+    throw std::runtime_error("[ExpressionFactory] Unknown type of expression " + expressionKind);
+}
+
+nlohmann::json Parser::findTypeOfVariable(const std::string& identifier) const
+{
+    if (variables_.count(identifier))
+    {
+        for (const auto& variable : getVariables())
+        {
+            if (variable["identifier"] == identifier)
+            {
+                return variable["type"];
+            }
+        }
+        throw std::runtime_error("[Parser] Cannot find type of variable: " + identifier);
+    }
+    if (constants_.count(identifier))
+    {
+        for (const auto& constant : getConstants())
+        {
+            if (constant["identifier"] == identifier)
+            {
+                return constant["type"];
+            }
+        }
+        throw std::runtime_error("[Parser] Cannot find type of constant: " + identifier);
+    }
+    throw std::runtime_error("[Parser] Unknown variable or constant: " + identifier);
+}
+
 nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) const
 {
     for (const auto& el : parsedJson_["types"])
@@ -127,7 +180,7 @@ nlohmann::json Parser::findTypeByIdentifier(const std::string& typeIdentifier) c
             return el;
         }
     }
-    throw std::invalid_argument("Cannot found type identifier: " + typeIdentifier);
+    throw std::invalid_argument("Cannot find type identifier: " + typeIdentifier);
 }
 
 std::string Parser::getValueFromEntries(

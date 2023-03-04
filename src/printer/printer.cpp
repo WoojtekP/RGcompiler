@@ -35,6 +35,9 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <string>" << std::endl;
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
+    headerFile_ << "#include <set>" << std::endl;
+    headerFile_ << "#include <unordered_set>" << std::endl;
+    headerFile_ << "#include <tuple>" << std::endl;
 
     headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;

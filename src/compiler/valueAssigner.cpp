@@ -13,6 +13,38 @@ bool isNumber(const std::string& s)
 }
 }  // namespace
 
+ValueAssigner::ValueAssigner(const nlohmann::json& types)
+{
+    assignValuesToSymbols(types);
+}
+
+const TypeToSymbolToValueMap& ValueAssigner::getTypeToSymbolToValueMap() const
+{
+    return typeToSymbolToValue_;
+}
+
+std::pair<int, int> ValueAssigner::getTypeMinMaxValues(const std::string& identifier) const
+{
+    const auto& symbolToValuesMap = getSymbolToValueMapForType(identifier);
+    const auto [minIt, maxIt] = std::minmax_element(
+        symbolToValuesMap.begin(),
+        symbolToValuesMap.end(),
+        [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
+
+    return std::make_pair(minIt->second, maxIt->second);
+}
+
+int ValueAssigner::getTypeRange(const std::string& identifier) const
+{
+    const auto [minValue, maxValue] = getTypeMinMaxValues(identifier);
+    return maxValue - minValue + 1;
+}
+
+int ValueAssigner::getTypeDomainSize(const std::string& identifier) const
+{
+    return getSymbolToValueMapForType(identifier).size();
+}
+
 void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
 {
     symbolToValue_.clear();
@@ -72,33 +104,6 @@ void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
             assert(assignedValues.size() == el["type"]["identifiers"].size());
         }
     }
-}
-
-const TypeToSymbolToValueMap& ValueAssigner::getTypeToSymbolToValueMap() const
-{
-    return typeToSymbolToValue_;
-}
-
-std::pair<int, int> ValueAssigner::getTypeMinMaxValues(const std::string& identifier) const
-{
-    const auto& symbolToValuesMap = getSymbolToValueMapForType(identifier);
-    const auto [minIt, maxIt] = std::minmax_element(
-        symbolToValuesMap.begin(),
-        symbolToValuesMap.end(),
-        [](const auto& lhs, const auto& rhs) { return lhs.second < rhs.second; });
-
-    return std::make_pair(minIt->second, maxIt->second);
-}
-
-int ValueAssigner::getTypeRange(const std::string& identifier) const
-{
-    const auto [minValue, maxValue] = getTypeMinMaxValues(identifier);
-    return maxValue - minValue + 1;
-}
-
-int ValueAssigner::getTypeDomainSize(const std::string& identifier) const
-{
-    return getSymbolToValueMapForType(identifier).size();
 }
 
 const SymbolToValueMap& ValueAssigner::getSymbolToValueMapForType(const std::string& identifier) const

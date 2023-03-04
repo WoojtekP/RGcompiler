@@ -37,18 +37,19 @@ std::shared_ptr<Edge> findComplementaryEdge(
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
-: parser_(parser), debugFlag_(options.debug),
-  optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3),
-  optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3),
-  optConditionsSimplePathCompression_(options.simplePathCompression_),
-  optConditionsMoveCompression_(options.moveCompression_), temporaryVariableNamePrefix_("old")
+: parser_(parser)
+, valueAssigner_(parser_.getTypeDeclarations())
+, debugFlag_(options.debug)
+, optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
+, optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
+, optConditionsSimplePathCompression_(options.simplePathCompression_)
+, optConditionsMoveCompression_(options.moveCompression_), temporaryVariableNamePrefix_("old")
 {
     initializeGraph();
 }
 
 void Compiler::compile()
 {
-    valueAssigner_.assignValuesToSymbols(parser_.getTypeDeclarations());
     generateTypes();
     generateConstants();
     generateVariables(graph_);

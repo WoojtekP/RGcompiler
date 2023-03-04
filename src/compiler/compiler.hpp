@@ -60,7 +60,7 @@ private:
     getExecutionTypesForCyclicStates(const std::map<std::string, int> &m);
 
     const Parser &parser_;
-    ValueAssigner valueAssigner_;
+    const ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;

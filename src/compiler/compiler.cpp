@@ -911,7 +911,7 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
     {
         return generateFunctionType(t);
     }
-    return nullptr;
+    throw std::runtime_error("Illegal kind of type (not implemented): " + t["kind"].get<std::string>());
 }
 
 std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)

@@ -75,7 +75,7 @@ std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) co
     }
     else if (t["type"]["kind"] == "Arrow")
     {
-        return getDomain(t["type"]["lhs"]);
+        return getDomain(t["type"]["lhs"]["identifier"]);
     }
     return {};
 }
@@ -85,16 +85,16 @@ std::string Parser::getSourceType(const nlohmann::json& t) const
     if (t.is_string())
     {
         const auto& typeObject = findTypeByIdentifier(t);
-        return typeObject["type"]["lhs"];
+        return typeObject["type"]["lhs"]["identifier"];
     }
     if (t["kind"] == "TypeReference")
     {
         const auto& typeObject = findTypeByIdentifier(t["identifier"]);
-        return typeObject["type"]["lhs"];
+        return typeObject["type"]["lhs"]["identifier"];
     }
     else if (t["kind"] == "Arrow")
     {
-        return t["lhs"];
+        return t["lhs"]["identifier"];
     }
     return "?";
 }

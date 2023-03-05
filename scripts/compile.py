@@ -15,6 +15,8 @@ if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
   print(f'There is no file {cfg.RG_DIR}/examples/{game}', file=sys.stderr)
   exit(2)
 
+game_basename = args.game[0].split('.')[0]
+
 print(f'Compiling {game} with translate options "{translateOptions}"')
 
 run("mkdir -p "+cfg.BUILD_TEST_DIR)
@@ -24,17 +26,19 @@ FORMATTER = "{: <15}{:9.3f} s"
 
 # Create AST
 startTime = time.time()
-run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli rg-source {cfg.RG_DIR}/examples/{game} > {cfg.BUILD_TEST_DIR}/game-tmp.rg")
-run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.BUILD_TEST_DIR}/game-tmp.rg > {cfg.BUILD_TEST_DIR}/{game}.json")
-run(f"python3 -m json.tool {cfg.BUILD_TEST_DIR}/{game}.json > {cfg.BUILD_TEST_DIR}/{game}-ast.json")
-run(f"rm {cfg.BUILD_TEST_DIR}/game-tmp.rg")
+tmp_rg_file = f"{cfg.BUILD_TEST_DIR}/game-tmp.rg"
+tmp_ast_file = f"{cfg.BUILD_TEST_DIR}/{game_basename}.json"
+run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli rg-source {cfg.RG_DIR}/examples/{game} > {tmp_rg_file}")
+run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {tmp_rg_file} > {tmp_ast_file}")
+run(f"python3 -m json.tool {tmp_ast_file} > {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
+run(f"rm {tmp_rg_file} {tmp_ast_file}")
 elapsedTime = time.time() - startTime
 print(FORMATTER.format("ast:",elapsedTime))
 
 # Generate cpp files
 startTime = time.time()
 os.chdir(cfg.BUILD_TEST_DIR)
-run(f'../{cfg.BUILD_DIR}/rg2cpp --file {game}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS}')
+run(f'../{cfg.BUILD_DIR}/rg2cpp --file {game_basename}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS}')
 elapsedTime = time.time() - startTime
 print(FORMATTER.format("rg2cpp:",elapsedTime))
 
@@ -46,4 +50,3 @@ if isProgramAvailable('clang-format'):
   print(FORMATTER.format('clang-format:',elapsedTime))
 else:
   print(f'clang-format: omitted because unavailable')
-

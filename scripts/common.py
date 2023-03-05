@@ -15,15 +15,15 @@ def isProgramAvailable(name):
 
 def decodeOutput(output):
   return output.decode('UTF-8')
-  
+
 class cfg:
   BUILD_DIR = 'build'
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges'
+  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions'
   DEFAULT_RG2CPP_OPTIONS = '--opt-conditions 3 --simple-path-compression 1 --move-compression 1'
-  
+
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):
     GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto'
@@ -36,7 +36,6 @@ class util:
   GREEN = "\033[32m"
   CYAN = "\033[36m"
   YELLOW = "\033[33m"
-  
+
   ERROR = f'{RED}ERROR{RESET}'
   OK = f'{GREEN}OK{RESET}'
-

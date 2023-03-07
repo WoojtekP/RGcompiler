@@ -21,7 +21,7 @@ class cfg:
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions'
+  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions --normalizeTypes'
   DEFAULT_RG2CPP_OPTIONS = '--opt-conditions 3 --simple-path-compression 1 --move-compression 1'
 
   result = runCap('g++ --version')

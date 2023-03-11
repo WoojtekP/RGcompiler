@@ -6,7 +6,6 @@
 
 #include <nlohmann/json.hpp>
 
-
 using SymbolToValueMap = std::map<std::string, int>;
 using TypeToSymbolToValueMap = std::map<std::string, SymbolToValueMap>;
 
@@ -20,11 +19,14 @@ public:
     int getTypeDomainSize(const std::string& identifier) const;
 
 private:
+    using SymbolToTypesMap = std::map<std::string, std::set<int>>;
+
     void assignValuesToSymbols(const nlohmann::json& types);
     const SymbolToValueMap& getSymbolToValueMapForType(const std::string& identifier) const;
-    void assignValuesForPlayers(const nlohmann::json& types);
-    std::set<std::string> findSymbolsSharedAmongTypes(const nlohmann::json& types) const;
+    void assignValuesForPlayers(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
+    void assignValuesForNumbers(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
+    void assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
+    void assignValuesForRemainingSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
 
-    std::map<std::string, int> symbolToValue_;
     TypeToSymbolToValueMap typeToSymbolToValue_;
 };

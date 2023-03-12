@@ -27,7 +27,7 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     {
         return createActionComparison(label);
     }
-    if (labelKind == "PatternAny")
+    if (labelKind == "Any")
     {
         return createActionPatternAny(label);
     }

@@ -183,6 +183,12 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
+    // TODO: this is too tricky (declaring variable with type using), need proper implementation
+    for (const auto& [type, customType] : containerChooser_.getTypeToCustomType())
+    {
+        program_.addVariableDeclaration(std::make_unique<Variable>(customType, std::make_unique<ElementaryType>("using"), std::make_unique<SingleValue>(type)));
+    }
+
     auto initialType = std::make_shared<CustomType>("static constexpr int");
     auto initialValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(

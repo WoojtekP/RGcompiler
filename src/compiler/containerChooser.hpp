@@ -18,16 +18,18 @@ public:
     }
     idToType_[id] = type;
     typeToOrder_[type] = order;
+    typeToCustomType_[type] = prefix_ + "_" + std::to_string(typeToTypeNumber_[type]);
   }
 
   std::string getType(const IdType &id) const
   {
-    return idToType_.at(id);
+    std::string type = idToType_.at(id);
+    return (useCustomName ? typeToCustomType_.at(type) : type);
   }
 
   std::string getContainerDeclaration(const IdType &id) const
   {
-    return containerName + "<" + idToType_.at(id) + ">";
+    return containerName + "<" + getType(id)+ ">";
   }
 
   std::string getSetDeclaration(const IdType &id, int node) const
@@ -38,6 +40,11 @@ public:
   std::string getIsSetDeclaration(const IdType &id, int node) const
   {
     return "count" + getFunctionInput(id, node);
+  }
+
+  const std::map<std::string, std::string> &getTypeToCustomType()
+  {
+    return typeToCustomType_;
   }
 
 private:
@@ -69,7 +76,9 @@ private:
   std::map<IdType, SymbolMap> idToSymbolMap_;
   std::map<IdType, std::string> idToType_;
   std::map<std::string, std::string> typeToOrder_;
+  std::map<std::string, std::string> typeToCustomType_;
   std::map<std::string, int>  typeToTypeNumber_;
   std::string containerName = "std::set";
-
+  std::string prefix_ = "containerType";
+  bool useCustomName = true;
 };

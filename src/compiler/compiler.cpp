@@ -36,13 +36,11 @@ std::shared_ptr<Edge> findComplementaryEdge(
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
-: parser_(parser)
-, valueAssigner_(parser_.getTypeDeclarations())
-, debugFlag_(options.debug)
-, optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
-, optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
-, optConditionsSimplePathCompression_(options.simplePathCompression_)
-, optConditionsMoveCompression_(options.moveCompression_), temporaryVariableNamePrefix_("old")
+: parser_(parser), valueAssigner_(parser_.getTypeDeclarations()), debugFlag_(options.debug),
+  optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3),
+  optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3),
+  optConditionsSimplePathCompression_(options.simplePathCompression_),
+  optConditionsMoveCompression_(options.moveCompression_), temporaryVariableNamePrefix_("old")
 {
     initializeGraph();
 }
@@ -108,6 +106,7 @@ void Compiler::initializePatternGraphs(
     {
         variablesInPatternGraphs_[std::make_tuple(from, to, patternId)] = std::map<std::string, int>();
         graph->getVariablesInPatternGraphs(variablesInPatternGraphs_.at({from, to, patternId}));
+        containerChooser_.add({from, to, patternId}, variablesInPatternGraphs_.at({from, to, patternId}));
     }
 }
 
@@ -278,16 +277,14 @@ void Compiler::generateBoolStateFunctions(
     std::string name = patternIdToPrefixName[patternId];
     std::string cacheName = "cache";
 
-    const auto& variablesInPattern = variablesInPatternGraphs_.at({from, to, patternId});
-    auto [argumentType, isSetMethod, setMethod] = getExecutionTypesForCyclicStates(variablesInPattern);
-
     for (auto& state : graph->getOuterNodeNames())
     {
         std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
                              std::to_string(graph_->getNodeId(to)) + "_";
         std::string functionName = prefix + std::to_string(graph_->getNodeId(state));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>(cacheName, argumentType + "&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+            cacheName, containerChooser_.getContainerDeclaration({from, to, patternId}) + "&"));
 
         if (debugFlag_)
         {
@@ -296,12 +293,15 @@ void Compiler::generateBoolStateFunctions(
 
         std::unique_ptr<IfInstruction> checkCache =
             std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                false, cacheName + "." + isSetMethod(std::to_string(graph_->getNodeId(state)))));
+                false,
+                cacheName + "." +
+                    containerChooser_.getIsSetDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
         function->addInstruction(std::move(checkCache));
 
         function->addInstruction(std::make_unique<CustomInstruction>(
-            cacheName + "." + setMethod(std::to_string(graph_->getNodeId(state))) + ";"));
+            cacheName + "." + containerChooser_.getIsSetDeclaration({from, to, patternId}, graph_->getNodeId(state)) +
+            ";"));
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
 
@@ -413,9 +413,8 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 
                 std::string fromNode = std::to_string(graph->getNodeId(action->getLeftSide()));
                 std::string toNode = std::to_string(graph->getNodeId(action->getRightSide()));
-                const auto& variablesInPattern =
-                    variablesInPatternGraphs_.at({action->getLeftSide(), action->getRightSide(), patternId});
-                auto [argumentType, isSetMethod, setMethod] = getExecutionTypesForCyclicStates(variablesInPattern);
+                std::tuple<std::string, std::string, int> typeId = {
+                    action->getLeftSide(), action->getRightSide(), patternId};
                 std::string cacheName = "cache_" + patterType + fromNode + "_" + toNode;
 
                 std::unique_ptr<IfInstruction> ifInstruction =
@@ -426,7 +425,8 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
 
-                function->addInstruction(std::make_unique<CustomInstruction>(argumentType + cacheName));
+                function->addInstruction(
+                    std::make_unique<CustomInstruction>(containerChooser_.getContainerDeclaration(typeId) + cacheName));
                 function->addInstruction(std::move(ifInstruction));
             }
         }
@@ -464,9 +464,7 @@ void Compiler::generateBoolEdgeFunctions(
     const auto& edges = graph->getEdgeNames();
 
     std::string name = patternIdToPrefixName[patternId];
-
-    const auto& variablesInPattern = variablesInPatternGraphs_.at({from, to, patternId});
-    auto [argumentType, isSetMethod, setMethod] = getExecutionTypesForCyclicStates(variablesInPattern);
+    std::tuple<std::string, std::string, int> typeId = {from, to, patternId};
     std::string cacheName = "cache";
 
     for (const auto& [stateFrom, stateTo, iid] : edges)
@@ -478,7 +476,8 @@ void Compiler::generateBoolEdgeFunctions(
                              std::to_string(graph_->getNodeId(to)) + "_";
         std::string functionName = prefix + "edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>(cacheName, argumentType + "&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+            cacheName, containerChooser_.getContainerDeclaration(typeId) + "&"));
 
         const auto& innerNodes = graph->getEdge(stateFrom, stateTo, iid)->getInnerNodes();
 
@@ -525,10 +524,8 @@ void Compiler::generateBoolEdgeFunctions(
                 std::string toNode = std::to_string(graph_->getNodeId(action->getRightSide()));
 
                 std::string innerCacheName = "cache_" + patterType + fromNode + "_" + toNode;
-
-                const auto& variablesInPattern =
-                    variablesInPatternGraphs_.at({action->getLeftSide(), action->getRightSide(), innerPatternId});
-                auto [argumentType, isSetMethod, setMethod] = getExecutionTypesForCyclicStates(variablesInPattern);
+                std::tuple<std::string, std::string, int> innerTypeId = {
+                    action->getLeftSide(), action->getRightSide(), innerPatternId};
 
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -540,7 +537,8 @@ void Compiler::generateBoolEdgeFunctions(
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
 
-                function->addInstruction(std::make_unique<CustomInstruction>(argumentType + innerCacheName));
+                function->addInstruction(std::make_unique<CustomInstruction>(
+                    containerChooser_.getContainerDeclaration(innerTypeId) + innerCacheName));
                 function->addInstruction(std::move(ifInstruction));
             }
         }
@@ -838,8 +836,6 @@ void Compiler::generateApplyAnyMove()
         auto block = std::make_unique<BlockInstruction>();
         for (const auto& nodeTo : nodesToPlayerChangeOrEnd)
         {
-            const auto& variablesInPattern = variablesInPatternGraphs_.at({nodeName, nodeTo, 2});
-            auto [argumentType, isSetMethod, setMethod] = getExecutionTypesForCyclicStates(variablesInPattern);
             std::string cacheName = "cache_" + nodeName + "_" + nodeTo;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -848,7 +844,8 @@ void Compiler::generateApplyAnyMove()
                         std::to_string(graph_->getNodeId(nodeTo)) + "_" + std::to_string(graph_->getNodeId(nodeName)) +
                         "(" + cacheName + ")"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
-            function->addInstruction(std::make_unique<CustomInstruction>(argumentType + cacheName));
+            function->addInstruction(std::make_unique<CustomInstruction>(
+                containerChooser_.getContainerDeclaration({nodeName, nodeTo, 2}) + cacheName));
             block->addInstruction(std::move(ifInstruction));
         }
         block->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -970,36 +967,4 @@ int Compiler::getNumberOfPlayers()
         }
     }
     throw std::runtime_error("Cannot find 'Player' type in AST.");
-}
-
-std::tuple<std::string, std::function<std::string(std::string)>, std::function<std::string(std::string)>>
-Compiler::getExecutionTypesForCyclicStates(const std::map<std::string, int>& m)
-{
-    std::string functionArgumentType = "std::set<std::tuple<int";
-    std::string executionArguments;
-    std::string executionArgumentsTable[m.size()];
-
-    for (auto p : m)
-    {
-        executionArgumentsTable[p.second] = p.first;
-    }
-
-    for (int i = 0; i < m.size(); i++)
-    {
-        functionArgumentType += ",decltype(" + executionArgumentsTable[i] + ")";
-        executionArguments += "," + executionArgumentsTable[i];
-    }
-
-    functionArgumentType += ">>";
-
-    std::function<std::function<std::string(const std::string&)>(const std::string&)> method =
-        [executionArguments](const std::string& type) {
-            return [type, executionArguments](const std::string& node) {
-                return type + "({" + node + executionArguments + "})";
-            };
-        };
-    std::function<std::string(const std::string&)> isSetMethod = method("count");
-    std::function<std::string(const std::string&)> setMethod = method("insert");
-
-    return {functionArgumentType, isSetMethod, setMethod};
 }

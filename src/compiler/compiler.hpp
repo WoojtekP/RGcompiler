@@ -1,8 +1,9 @@
 #pragma once
 
+#include <compiler/containerChooser.hpp>
 #include <compiler/valueAssigner.hpp>
-#include <graph/graph.hpp>
 #include <graph/actionFactory.hpp>
+#include <graph/graph.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
@@ -56,11 +57,10 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     int getNumberOfPlayers();
-    std::tuple<std::string, std::function<std::string(std::string)>, std::function<std::string(std::string)>>
-    getExecutionTypesForCyclicStates(const std::map<std::string, int> &m);
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
+    ContainerChooser containerChooser_;
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;

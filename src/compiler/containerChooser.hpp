@@ -29,7 +29,7 @@ public:
 
   std::string getContainerDeclaration(const IdType &id) const
   {
-    return containerName + "<" + getType(id)+ ">";
+    return containerName + "<" + getType(id)+ "," + "rg_hash" + ">";
   }
 
   std::string getSetDeclaration(const IdType &id, int node) const
@@ -45,6 +45,56 @@ public:
   const std::map<std::string, std::string> &getTypeToCustomType()
   {
     return typeToCustomType_;
+  }
+
+  std::string getAdditionalData()
+  {
+    std::string s = R"(struct rg_hash
+{
+  void combine(size_t &acc, size_t x) const
+  {
+    acc ^= x;
+  }
+
+  template<typename T = int>
+  size_t hash(int x) const
+  {
+    return x;
+  }
+
+  template<typename T, size_t N>
+  size_t hash(std::array<T, N> a) const
+  {
+    size_t acc = 0;
+    for (size_t i=0;i<N;i++)
+    {
+      combine(acc, hash(a[i]));
+    }
+
+    return acc;
+  }
+
+  template<typename ...Tp>
+  size_t operator()(const std::tuple<Tp...> &t) const
+  {
+    size_t acc = 0;
+    hashIter<0 ,Tp...>(t, acc);
+    return acc;
+  }
+
+  template<size_t I = 0, typename... Tp>
+  void hashIter(const std::tuple<Tp...>& t, size_t &acc) const
+  {
+    combine(acc, hash(std::get<I>(t)));
+
+    if constexpr(I+1 != sizeof...(Tp))
+    {
+      hashIter<I+1>(t, acc);
+    }
+  }
+};)";
+
+  return s;
   }
 
 private:
@@ -78,7 +128,7 @@ private:
   std::map<std::string, std::string> typeToOrder_;
   std::map<std::string, std::string> typeToCustomType_;
   std::map<std::string, int>  typeToTypeNumber_;
-  std::string containerName = "std::set";
+  std::string containerName = "std::unordered_set";
   std::string prefix_ = "containerType";
   bool useCustomName = true;
 };

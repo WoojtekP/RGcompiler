@@ -1,5 +1,5 @@
 #include <functional>
-
+#include <iostream>
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
@@ -119,6 +119,7 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printSymbolValues();
     printer.printConstants(program_.getConstants());
     printer.printMoveRepresentationDeclaration();
+    printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
     printer.initializeMainClass();
     printer.printVariables(program_.getVariables());
     printer.printFunctions(program_.getFunctions());

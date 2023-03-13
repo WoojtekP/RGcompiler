@@ -122,4 +122,5 @@ public:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> generateGraphsForApplyAnyMove() const;
     void getVariablesInPatternGraphs(std::set<std::string> &result) const;
     std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name) const;
+    int getMaximalNodeId() const;
 };

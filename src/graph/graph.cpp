@@ -768,3 +768,8 @@ void Graph::getVariablesInPatternGraphs(std::set<std::string> &result) const
         }
     }
 }
+
+int Graph::getMaximalNodeId() const
+{
+    return nodeStringToInt_.size();
+}

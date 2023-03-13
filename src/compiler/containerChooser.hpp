@@ -21,7 +21,7 @@ private:
     std::map<IdType, std::unique_ptr<IContainer>> idTypeToContainer_;
 
 public:
-    void add(const IdType &id, const VariableAndDomain &v);
+    void add(const IdType &id, const VariableAndDomain &v, int nodeNumber);
     std::string getType(const IdType &id) const;
     std::string getContainerDeclaration(const IdType &id) const;
     std::string getSetMethodDeclaration(const IdType &id, int node) const;

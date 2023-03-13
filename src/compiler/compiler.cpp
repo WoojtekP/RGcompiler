@@ -113,7 +113,7 @@ void Compiler::initializePatternGraphs(
         {
             variableAndDomain.emplace_back(std::make_pair(name, getDomain(name)));
         }
-        containerChooser_.add({from, to, patternId}, variableAndDomain);
+        containerChooser_.add({from, to, patternId}, variableAndDomain, graph_->getMaximalNodeId());
     }
 }
 

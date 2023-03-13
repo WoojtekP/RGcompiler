@@ -57,6 +57,7 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     int getNumberOfPlayers();
+    int getDomain(const std::string &s);
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
@@ -65,7 +66,7 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
-    std::map<std::tuple<std::string, std::string, int>, std::map<std::string, int>> variablesInPatternGraphs_;
+    std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;

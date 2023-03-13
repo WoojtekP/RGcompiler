@@ -754,7 +754,7 @@ std::vector<std::string> Graph::nodesToPlayerChangeOrEnd(const std::string &node
     return nodes;
 }
 
-void Graph::getVariablesInPatternGraphs(std::map<std::string, int> &result) const
+void Graph::getVariablesInPatternGraphs(std::set<std::string> &result) const
 {
     for (const auto &edge : edges_)
     {
@@ -763,7 +763,7 @@ void Graph::getVariablesInPatternGraphs(std::map<std::string, int> &result) cons
             const auto &variable = action->getLeftSide();
             if (action->getType() == ActionType::Assignment && (result.find(variable) == result.end()))
             {
-                result.insert({variable, result.size()});
+                result.insert(variable);
             }
         }
     }

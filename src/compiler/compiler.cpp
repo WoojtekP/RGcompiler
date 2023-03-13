@@ -1,5 +1,6 @@
 #include <functional>
 #include <iostream>
+
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
 #include <printer/printer.hpp>
@@ -104,10 +105,66 @@ void Compiler::initializePatternGraphs(
 
     for (const auto& [from, to, graph] : patterns)
     {
-        variablesInPatternGraphs_[std::make_tuple(from, to, patternId)] = std::map<std::string, int>();
+        variablesInPatternGraphs_[std::make_tuple(from, to, patternId)] = std::set<std::string>();
         graph->getVariablesInPatternGraphs(variablesInPatternGraphs_.at({from, to, patternId}));
-        containerChooser_.add({from, to, patternId}, variablesInPatternGraphs_.at({from, to, patternId}));
+        const auto& variables = variablesInPatternGraphs_.at({from, to, patternId});
+        std::vector<std::pair<std::string, int>> variableAndDomain;
+        for (const auto& name : variables)
+        {
+            variableAndDomain.emplace_back(std::make_pair(name, getDomain(name)));
+        }
+        containerChooser_.add({from, to, patternId}, variableAndDomain);
     }
+}
+
+// TODO this function need to be tested
+int Compiler::getDomain(const std::string& s)
+{
+    int check = 0;
+    int open = 0;
+    int cnt = 0;
+    for (int i = 0; i < s.size(); i++)
+    {
+        char c = s[i];
+        if (c == '[')
+        {
+            if (check == 0)
+            {
+                check = i;
+            }
+            if (open == 0)
+            {
+                cnt++;
+            }
+            open++;
+        }
+        else if (c == ']')
+        {
+            open--;
+        }
+    }
+
+    std::string k = s;
+
+    if (check > 0)
+    {
+        k = s.substr(0, check);
+    }
+
+    std::string type = parser_.findTypeOfVariable(k)["identifier"];
+
+    while (cnt)
+    {
+        type = parser_.getDestinationType(parser_.findTypeByIdentifier(type)["type"])["identifier"];
+        cnt--;
+    }
+
+    if (parser_.findTypeByIdentifier(type)["type"]["kind"] == "Arrow")
+    {
+        return -1;
+    }
+
+    return valueAssigner_.getTypeDomainSize(type);
 }
 
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
@@ -185,10 +242,10 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
     // TODO: this is too tricky (declaring variable with type using), need proper implementation
-    for (const auto& [type, customType] : containerChooser_.getTypeToCustomType())
-    {
-        program_.addVariableDeclaration(std::make_unique<Variable>(customType, std::make_unique<ElementaryType>("using"), std::make_unique<SingleValue>(type)));
-    }
+    // for (const auto& [type, customType] : containerChooser_.getTypeToCustomType())
+    // {
+    //     program_.addVariableDeclaration(std::make_unique<Variable>(customType, std::make_unique<ElementaryType>("using"), std::make_unique<SingleValue>(type)));
+    // }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
     auto initialValue = std::make_unique<SingleValue>(initialState);
@@ -302,13 +359,13 @@ void Compiler::generateBoolStateFunctions(
             std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                 false,
                 cacheName + "." +
-                    containerChooser_.getIsSetDeclaration({from, to, patternId}, graph_->getNodeId(state))));
+                    containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
         function->addInstruction(std::move(checkCache));
 
         function->addInstruction(std::make_unique<CustomInstruction>(
-            cacheName + "." + containerChooser_.getIsSetDeclaration({from, to, patternId}, graph_->getNodeId(state)) +
-            ";"));
+            cacheName + "." +
+            containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state)) + ";"));
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
 

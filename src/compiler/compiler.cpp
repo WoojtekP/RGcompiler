@@ -151,6 +151,11 @@ int Compiler::getDomain(const std::string& s)
         k = s.substr(0, check);
     }
 
+    if (k == "goals")
+    {
+        return 101;
+    }
+
     std::string type = parser_.findTypeOfVariable(k)["identifier"];
 
     while (cnt)

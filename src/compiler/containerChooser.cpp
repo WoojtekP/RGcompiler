@@ -26,19 +26,19 @@ void ContainerChooser::add(const IdType &id, const VariableAndDomain &v, int nod
     }
 
     std::unique_ptr<IContainer> container;
-    if (isDomainSmall)
-    {
-      container = std::move(std::make_unique<BitArrayContainer>(nodeNumber, v));
-    }
-    else
-    {
+    // if (isDomainSmall)
+    // {
+    //   container = std::move(std::make_unique<BitArrayContainer>(nodeNumber, v));
+    // }
+    // else
+    // {
         std::vector<std::string> variables;
         for (const auto &[name, domain] : v)
         {
             variables.push_back(name);
         }
         container = std::make_unique<UnorderedSetContainer>(variables);
-    }
+    // }
 
     idTypeToContainer_.emplace(std::make_pair(id, std::move(container)));
 }

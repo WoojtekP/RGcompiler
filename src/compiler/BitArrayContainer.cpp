@@ -36,7 +36,7 @@ void BitArrayContainer::generateTypeAndOrder(const std::vector<std::pair<std::st
     keyType_ += "int," + std::to_string(nodeNumber_);
     for (const auto &[variable, domain] : variablesAndDomains)
     {
-        keyType_ += "," + std::to_string(domain) + "+101";
+        keyType_ += "," + std::to_string(domain);
         accessOrder_ += "," + variable;
     }
 }

@@ -9,10 +9,18 @@ std::string UnorderedSetContainer::getContainerDeclaration() const
     return prefix_ + containerTypeName_ + "<" + keyType_ + "," + "rg_hash" + ">";
 }
 
+ContainerType UnorderedSetContainer::getContainerType() const
+{
+    return ContainerType::UnorderedSet;
+}
+
 std::string UnorderedSetContainer::getAdditionalData() const
 {
-    return
-        R"(
+    return data_;
+}
+
+const std::string UnorderedSetContainer::data_ =
+    R"(
 struct rg_hash
 {
   void combine(size_t &acc, size_t x) const
@@ -57,4 +65,3 @@ struct rg_hash
     }
   }
 };)";
-}

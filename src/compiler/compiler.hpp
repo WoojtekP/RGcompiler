@@ -61,7 +61,6 @@ private:
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
-    ContainerChooser containerChooser_;
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
@@ -75,4 +74,7 @@ private:
     const bool optConditionsSimplePathCompression_;
     const bool optConditionsMoveCompression_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
+    const std::string mainCacheName_;
+    const std::string mainCacheType_;
+    ContainerChooser containerChooser_;
 };

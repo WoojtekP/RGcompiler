@@ -1,7 +1,11 @@
 #include "BitArrayContainer.hpp"
 
-BitArrayContainer::BitArrayContainer(int nodeNumber, const std::vector<std::pair<std::string, int>> &variablesAndDomains)
-: containerTypeName_("bitarray"), nodeNumber_(nodeNumber)
+BitArrayContainer::BitArrayContainer(
+    int nodeNumber,
+    const std::vector<std::pair<std::string, int>> &variablesAndDomains,
+    bool isCacheOn,
+    const std::string &cacheName)
+: containerTypeName_("bitarray"), nodeNumber_(nodeNumber), isCacheOn_(isCacheOn), chaceName_(cacheName)
 {
     generateTypeAndOrder(variablesAndDomains);
 }
@@ -28,7 +32,7 @@ std::string BitArrayContainer::getIsSetMethodDeclaration(int node) const
 
 std::string BitArrayContainer::getFunctionInput(int node) const
 {
-    return "(" + std::to_string(node)  + accessOrder_ +")";
+    return "(" + std::to_string(node) + accessOrder_ + ")";
 }
 
 void BitArrayContainer::generateTypeAndOrder(const std::vector<std::pair<std::string, int>> &variablesAndDomains)
@@ -41,13 +45,32 @@ void BitArrayContainer::generateTypeAndOrder(const std::vector<std::pair<std::st
     }
 }
 
+ContainerType BitArrayContainer::getContainerType() const
+{
+    return ContainerType::BitArray;
+}
+
 std::string BitArrayContainer::getAdditionalData() const
 {
-  return R"(
+    return data_;
+}
+
+const std::string BitArrayContainer::data_ =
+    R"(
 template< class Type, unsigned ...Ts>
 class bitarray
 {
 public:
+  void reset()
+  {
+    // TODO Add better reseting
+    // if (++currentThreshold == 0)
+    // {
+    //   currentThreshold++;
+    //   memset(&content_, 0, sizeof(content_));
+    // }
+    currentThreshold++;
+  }
   template<typename P, typename I>
   bool isSet2(P &content, I i)
   {
@@ -109,4 +132,3 @@ private:
   array<Type, Ts...> content_;
   int currentThreshold = 1;
 };)";
-}

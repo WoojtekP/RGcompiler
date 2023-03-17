@@ -37,7 +37,7 @@ std::string BitArrayContainer::getFunctionInput(int node) const
 
 void BitArrayContainer::generateTypeAndOrder(const std::vector<std::pair<std::string, int>> &variablesAndDomains)
 {
-    keyType_ += "int," + std::to_string(nodeNumber_);
+    keyType_ += std::to_string(nodeNumber_);
     for (const auto &[variable, domain] : variablesAndDomains)
     {
         keyType_ += "," + std::to_string(domain);
@@ -57,20 +57,42 @@ std::string BitArrayContainer::getAdditionalData() const
 
 const std::string BitArrayContainer::data_ =
     R"(
-template< class Type, unsigned ...Ts>
+template<unsigned ...Ts>
 class bitarray
 {
 public:
-  void reset()
+  template<typename P, typename I>
+  void reset2(P &content, I i)
   {
-    // TODO Add better reseting
-    // if (++currentThreshold == 0)
-    // {
-    //   currentThreshold++;
-    //   memset(&content_, 0, sizeof(content_));
-    // }
-    currentThreshold++;
+    unsigned ui = static_cast<unsigned>(i);
+
+    for (unsigned k=0;k<ui;k++)
+    {
+      content[k] = 0;
+    }
   }
+
+  template<typename P, typename I, typename ...Is>
+  void reset2(P &content, I i, Is ...is)
+  {
+    unsigned ui = static_cast<unsigned>(i);
+
+    for (unsigned k=0;k<ui;k++)
+    {
+      reset2(content[k], is...);
+    }
+  }
+
+  template<typename ...Is>
+  void reset(Is... is)
+  {
+    if (++currentThreshold == 0)
+    {
+      currentThreshold++;
+      reset2(content_, is...);
+    }
+  }
+
   template<typename P, typename I>
   bool isSet2(P &content, I i)
   {
@@ -129,6 +151,6 @@ private:
     BaseArray& operator[](unsigned i) { return data[i]; }
   };
 
-  array<Type, Ts...> content_;
-  int currentThreshold = 1;
+  array<unsigned, Ts...> content_;
+  unsigned currentThreshold = 1;
 };)";

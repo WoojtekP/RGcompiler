@@ -505,7 +505,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 if (containerChooser_.isInCache(typeId))
                 {
                     cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(typeId);
-                    cacheDecl += "\n;" + cacheName + ".reset()";
+                    cacheDecl += "\n;" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
                 }
                 else
                 {
@@ -628,7 +628,7 @@ void Compiler::generateBoolEdgeFunctions(
                 {
                     cacheDecl +=
                         "&" + innerCacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(innerTypeId);
-                    cacheDecl += "\n;" + innerCacheName + ".reset()";
+                    cacheDecl += "\n;" + innerCacheName + ".reset(" + containerChooser_.getType(innerTypeId) + ")";
                 }
                 else
                 {
@@ -950,7 +950,7 @@ void Compiler::generateApplyAnyMove()
             {
                 cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." +
                              containerChooser_.getFromCache({nodeName, nodeTo, 2});
-                cacheDecl += "\n;" + cacheName + ".reset()";
+                cacheDecl += "\n;" + cacheName + ".reset(" + containerChooser_.getType({nodeName, nodeTo, 2}) + ")";
             }
             else
             {

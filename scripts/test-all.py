@@ -42,7 +42,7 @@ if len(games) == 0:
   games.append('connect4.hrg')
   games.append('amazons-smart.hrg')
   games.append('amazons-naive.hrg')
-  
+
 print(f'Testing: {" ".join(games)}')
 print(f'with translate options {translateOptions}')
 
@@ -62,7 +62,7 @@ gamesOK = []
 totalStartTime = time.time()
 for game in games:
   print()
-  
+
   print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
@@ -75,7 +75,7 @@ for game in games:
   if result.returncode != 0:
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
-  
+
   print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'''
@@ -92,9 +92,9 @@ for game in games:
   if result.returncode != 0:
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
-    
+
   isOK = True
-  
+
   sims = tests[game][0][0]
   avgDepth = tests[game][0][1]
   avgScores = tests[game][0][2]
@@ -104,6 +104,7 @@ for game in games:
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
     info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
+    isOK = False
   else:
     expectedList = [avgDepth] + avgScores
     stats = decodeOutput(result.stdout).strip().split(' ')
@@ -135,7 +136,7 @@ for game in games:
       else:
         info = f'{util.OK}'
     print(RESULT_FORMATTER.format(info, elapsedTime))
-  
+
   if isOK: gamesOK.append(game)
 
 totalElapsedTime = time.time() - totalStartTime

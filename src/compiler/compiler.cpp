@@ -942,13 +942,20 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
     std::unique_ptr<IValue> defaultValue;
     for (const auto& entry : value["entries"])
     {
-        if (entry["kind"] == "NamedEntry")
+        if (entry["kind"] == "ValueEntry")
         {
-            idToValueMap.emplace(entry["identifier"].get<std::string>(), generateValue(entry["value"]));
+            if (entry["identifier"].is_null())
+            {
+                defaultValue = generateValue(entry["value"]);
+            }
+            else
+            {
+                idToValueMap.emplace(entry["identifier"].get<std::string>(), generateValue(entry["value"]));
+            }
         }
-        else if (entry["kind"] == "DefaultEntry")
+        else
         {
-            defaultValue = generateValue(entry["value"]);
+            throw std::runtime_error("Unknown type of map entry: " + entry["kind"].get<std::string>());
         }
     }
     return std::make_unique<MapValue>(std::move(idToValueMap), std::move(defaultValue));

@@ -17,32 +17,40 @@ ulong sumScores[1+reasoner::PLAYERS_COUNT];
 
 void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
-void keeperCompletion(reasoner::GameState &state) {
-  while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
+bool keeperCompletion(reasoner::GameState &state) {
+  while (state.getCurrentPlayer() == reasoner::keeper) {
+    if (state.isTerminal()) return false;
     state.getAllMoves(moves, cache);
-    if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+    #ifndef NDEBUG
+      if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+    #endif
     state.applyMove(moves[0]);
+
+    //state.applyAnyMove(cache);
   }
+  return true;
 }
 
 void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
-  while (!state.isTerminal()) {
+  while (true) {
+    assert(state.getCurrentPlayer() != reasoner::keeper);
+    
     state.getAllMoves(moves, cache);
-    if (state.getCurrentPlayer() == reasoner::keeper) {
-      if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
-    } else {
+    #ifndef NDEBUG
       if (moves.size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
-      depth++;
-      numMoves += moves.size();
-      if (moves.size() < minMoves) minMoves = moves.size();
-      if (moves.size() > maxMoves) maxMoves = moves.size();
-    }
+    #endif
+    depth++;
+    numMoves += moves.size();
+    if (moves.size() < minMoves) minMoves = moves.size(); else
+    if (moves.size() > maxMoves) maxMoves = moves.size();
     state.applyMove(moves[randomGenerator.rand_uint(moves.size())]);
+    
+    if (!keeperCompletion(state)) break;
   }
   numStates += depth;
-  if (depth < minDepth) minDepth = depth;
+  if (depth < minDepth) minDepth = depth; else
   if (depth > maxDepth) maxDepth = depth;
   for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) sumScores[player] += state.getPlayerScore(player);
 }
@@ -53,9 +61,13 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  keeperCompletion(initial);
+  [[maybe_unused]] bool initialNonterminal = keeperCompletion(initial);
+  assert(initialNonterminal);
+  
   numSimulations = std::stoi(argv[1]);
   for (uint i = 0; i < numSimulations; i++) doSimulation();
+  if (maxMoves == 0) maxMoves = minMoves;
+  if (maxDepth == 0) maxDepth = minDepth;
 
   std::cout << std::fixed;
   std::cout.precision(2);
@@ -63,11 +75,5 @@ int main(int argc, char** argv) {
   std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
   for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) std::cout << " " << sumScores[player];
   std::cout << std::endl;
-  //std::cout << "simulations: " << numSimulations << " (" << numSimulations / seconds << " simulations/sec)" << std::endl;
-  //std::cout << "states: " << numStates << " (" << numStates / seconds << " states/sec)" << std::endl;
-  //std::cout << "depth: min " << minDepth << " avg " << static_cast<long double>(numStates) / numSimulations << " max " << maxDepth << std::endl;
-  //std::cout << "moves: min " << minMoves << " avg " << static_cast<long double>(numMoves) / numStates << " max " << maxMoves << std::endl;
-  //std::cout << "scores: avg";
-  //for (uint player = 1; player <= 2; player++) std::cout << " " << static_cast<long double>(sumScores[player]) / numSimulations;
   return 0;
 }

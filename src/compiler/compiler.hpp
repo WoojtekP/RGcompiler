@@ -13,6 +13,7 @@ struct Options
     int optConditions;
     bool simplePathCompression_;
     bool moveCompression_;
+    bool noCycleDetection_;
 };
 
 class Compiler
@@ -73,6 +74,7 @@ private:
     const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;
     const bool optConditionsMoveCompression_;
+    const bool optNoCycleDetection_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;

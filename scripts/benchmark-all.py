@@ -69,7 +69,7 @@ for game in games:
   result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    print(f'{util.ERROR} exitcode {result.returncode}')
+    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
   else:
@@ -85,7 +85,7 @@ for game in games:
   ''')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}){util.RESET}')
+    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
   else:
@@ -101,8 +101,8 @@ for game in games:
     result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    print(f'{util.ERROR}')
-    print(f'{util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
+    print(f'{util.ERROR} exitcode {result.returncode}')
+    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
   else:
     if usePerf:
       output = decodeOutput(result.stderr)
@@ -112,8 +112,8 @@ for game in games:
         sumSimsTime += elapsedTime
         sumSimsInstr += elapsedInstr
       else:
-        print(f'{util.ERROR}')
-        print(f'{util.CYAN}(exitcode {result.returncode}) {output}{util.RESET}')
+        print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+        print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     else:
       print(TIME_FORMATTER.format(elapsedTime))
       sumSimsTime += elapsedTime
@@ -127,10 +127,11 @@ for game in games:
     result = runCap(f'{cfg.BUILD_TEST_DIR}/perft {depth}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
+    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
   else:
     if usePerf:
-      output = decodeOutput(result.stderr)
+      output = decodeOutput(result.stderr).strip()
       if str.isnumeric(output.split(' ')[0]):
         elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
         print((TIME_FORMATTER+INSTR_FORMATTER).format(elapsedTime, elapsedInstr))
@@ -138,6 +139,7 @@ for game in games:
         sumPerftInstr += elapsedInstr
       else:
         print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {output}{util.RESET}')
+        print(f'{util.CYAN}{output}{util.RESET}')
     else:
       print(TIME_FORMATTER.format(elapsedTime))
       sumPerftTime += elapsedTime

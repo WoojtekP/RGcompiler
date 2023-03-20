@@ -46,7 +46,7 @@ if len(games) == 0:
 print(f'Testing: {" ".join(games)}')
 print(f'with translate options {translateOptions}')
 
-HEAD_FORMATTER = '{: <30} '
+HEAD_FORMATTER = '{: <35} '
 RESULT_FORMATTER = '{: <20}{:9.3f} s'
 
 TOLERANCE = 0.1
@@ -68,7 +68,7 @@ for game in games:
   result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    info = f'{util.ERROR} exitcode {result.returncode}'
+    info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
   else:
     info = f'{util.OK}'
   print(RESULT_FORMATTER.format(info, elapsedTime))
@@ -85,7 +85,7 @@ for game in games:
   ''')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}){util.RESET}'
+    info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
   else:
     info = f'{util.OK}'
   print(RESULT_FORMATTER.format(info, elapsedTime))
@@ -103,8 +103,9 @@ for game in games:
   result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
-    info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
+    info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
     isOK = False
+    errInfo = decodeOutput(result.stderr).strip()
   else:
     expectedList = [avgDepth] + avgScores
     stats = decodeOutput(result.stdout).strip().split(' ')
@@ -117,7 +118,9 @@ for game in games:
       isOK = False
     else:
       info = f'{util.OK}'
+    errInfo = None
   print(RESULT_FORMATTER.format(info, elapsedTime))
+  if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   expectedPerft = tests[game][1]
   for depth in range(len(expectedPerft)):
@@ -126,7 +129,8 @@ for game in games:
     result = runCap(f'{cfg.BUILD_TEST_DIR}/perft {depth}')
     elapsedTime = time.time() - startTime
     if result.returncode != 0:
-      info = f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}'
+      info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
+      errInfo = decodeOutput(result.stderr).strip()
       isOK = False
     else:
       stats = decodeOutput(result.stdout).strip().split(' ')
@@ -135,7 +139,9 @@ for game in games:
         info = f'{util.ERROR} expected {util.CYAN}{expectedPerft[depth]}{util.RESET} but got {util.CYAN}{resLeaves}{util.RESET}'
       else:
         info = f'{util.OK}'
+      errInfo = None
     print(RESULT_FORMATTER.format(info, elapsedTime))
+    if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   if isOK: gamesOK.append(game)
 

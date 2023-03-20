@@ -6,7 +6,8 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 parser = argparse.ArgumentParser(description='Benchmark with predefined tests.')
 parser.add_argument('games', nargs='*', help='run tests only for these games')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
-parser.add_argument('-noperf', action='store_true', help='disable using perf for counting instructions', )
+parser.add_argument('-noperf', action='store_true', help='disable using perf for counting instructions')
+parser.add_argument('-skipcompilation', action='store_true', help='skip compile.py and use the existing reasoner sources')
 
 args = parser.parse_args()
 games = args.games
@@ -64,17 +65,18 @@ gamesOK = []
 for game in games:
   print()
   
-  print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
-  startTime = time.time()
-  result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
-  elapsedTime = time.time() - startTime
-  if result.returncode != 0:
-    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
-    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
-    continue
-  else:
-    print(TIME_FORMATTER.format(elapsedTime))
-    sumCompileTime += elapsedTime
+  if not args.skipcompilation:
+    print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
+    startTime = time.time()
+    result = runCap(f'python3 scripts/compile.py {game} -t{translateOptions}')
+    elapsedTime = time.time() - startTime
+    if result.returncode != 0:
+      print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+      print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
+      continue
+    else:
+      print(TIME_FORMATTER.format(elapsedTime))
+      sumCompileTime += elapsedTime
   
   print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
   startTime = time.time()
@@ -145,15 +147,16 @@ for game in games:
       sumPerftTime += elapsedTime
 
 
-print()
-print(f'--- Summary ---')
-FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
-print(FORMATTER.format(f'Total compile:', sumCompileTime))
-print(FORMATTER.format(f'Total g++:', sumGCCTime))
-if usePerf:
-  FORMATTER += INSTR_FORMATTER
-  print(FORMATTER.format(f'Total sims:', sumSimsTime, sumSimsInstr))
-  print(FORMATTER.format(f'Total perft:', sumPerftTime, sumPerftInstr))
-else:
-  print(FORMATTER.format(f'Total sims:', sumSimsTime))
-  print(FORMATTER.format(f'Total perft:', sumPerftTime))
+if len(games) > 1:
+  print()
+  print(f'--- Summary ---')
+  FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
+  print(FORMATTER.format(f'Total compile:', sumCompileTime))
+  print(FORMATTER.format(f'Total g++:', sumGCCTime))
+  if usePerf:
+    FORMATTER += INSTR_FORMATTER
+    print(FORMATTER.format(f'Total sims:', sumSimsTime, sumSimsInstr))
+    print(FORMATTER.format(f'Total perft:', sumPerftTime, sumPerftInstr))
+  else:
+    print(FORMATTER.format(f'Total sims:', sumSimsTime))
+    print(FORMATTER.format(f'Total perft:', sumPerftTime))

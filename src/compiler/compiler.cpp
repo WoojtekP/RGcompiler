@@ -399,7 +399,7 @@ void Compiler::generateBoolStateFunctions(
 
             function->addInstruction(std::make_unique<CustomInstruction>(
                 cacheName + "." +
-                containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state)) + ";"));
+                containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         }
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);

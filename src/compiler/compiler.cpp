@@ -284,14 +284,16 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
         std::string functionName = prefix + std::to_string(graph->getNodeId(state));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
+        function->addArgument(
+            std::make_unique<VariableDeclarationInstruction>("moves", "[[maybe_unused]] std::vector<Move>&"));
+        function->addArgument(
+            std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
 
         if (!optNoCycleDetection_)
         {
             functionArguments += "," + mainCacheName_;
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
         }
 
         if (debugFlag_)
@@ -383,8 +385,8 @@ void Compiler::generateBoolStateFunctions(
 
         if (!optNoCycleDetection_)
         {
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 cacheName, containerChooser_.getCustomName({from, to, patternId}) + "&"));
             std::unique_ptr<IfInstruction> checkCache =
@@ -445,13 +447,15 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         std::string prefix = "edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
+        function->addArgument(
+            std::make_unique<VariableDeclarationInstruction>("moves", "[[maybe_unused]] std::vector<Move>&"));
+        function->addArgument(
+            std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
 
         if (!optNoCycleDetection_)
         {
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
         }
 
         if (debugFlag_)
@@ -612,10 +616,10 @@ void Compiler::generateBoolEdgeFunctions(
 
         if (!optNoCycleDetection_)
         {
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                cacheName, containerChooser_.getCustomName(typeId) + "&"));
+                mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                cacheName, "[[maybe_unused]]" + containerChooser_.getCustomName(typeId) + "&"));
         }
 
         const auto& innerNodes = graph->getEdge(stateFrom, stateTo, iid)->getInnerNodes();
@@ -900,7 +904,8 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+    function->addArgument(
+        std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
     std::string functionArguments = "moves, mr";
     if (!optNoCycleDetection_)
     {
@@ -982,7 +987,8 @@ void Compiler::generateApplyAnyMove()
     generatePatternFunctions(applyAnyMoveGraphs_, 2);
 
     auto function = std::make_unique<Function>("applyAnyMove", "bool", true);
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+    function->addArgument(
+        std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 
     auto sw = std::make_unique<SwitchInstruction>("currentState");
 

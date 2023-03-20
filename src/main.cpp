@@ -8,7 +8,6 @@
 #include <compiler/compiler.hpp>
 #include <parser/parser.hpp>
 
-
 int main(const int argc, const char **argv)
 {
     Options options;
@@ -29,7 +28,10 @@ int main(const int argc, const char **argv)
             "Enable compressing moves")(
             "simple-path-compression",
             boost::program_options::value<bool>(&options.simplePathCompression_)->default_value(false),
-            "Enable compressing simple paths");
+            "Enable compressing simple paths")(
+            "no-cycle-detection",
+            boost::program_options::value<bool>(&options.noCycleDetection_)->default_value(false),
+            "Disable detecting cycles in patterns");
 
         boost::program_options::variables_map vm;
         boost::program_options::store(boost::program_options::parse_command_line(argc, argv, mainOptions), vm);

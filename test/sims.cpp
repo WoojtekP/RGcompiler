@@ -7,6 +7,7 @@ using ulong = unsigned long;
 fast_random::GenDefault randomGenerator(1);
 
 reasoner::GameState initial;
+reasoner::RgCache cache;
 std::vector<reasoner::Move> moves;
 
 ulong numSimulations;
@@ -18,7 +19,7 @@ void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
-    state.getAllMoves(moves);
+    state.getAllMoves(moves, cache);
     if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
     state.applyMove(moves[0]);
   }
@@ -28,7 +29,7 @@ void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
   while (!state.isTerminal()) {
-    state.getAllMoves(moves);
+    state.getAllMoves(moves, cache);
     if (state.getCurrentPlayer() == reasoner::keeper) {
       if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves");
     } else {

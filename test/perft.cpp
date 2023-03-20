@@ -7,6 +7,7 @@ using ulong = unsigned long;
 constexpr uint MAX_DEPTH = 100;
 
 reasoner::GameState initial;
+reasoner::RgCache cache;
 std::vector<reasoner::Move> moves[MAX_DEPTH];
 
 uint maxDepth;
@@ -16,7 +17,7 @@ void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
-    state.getAllMoves(moves[depth]);
+    state.getAllMoves(moves[depth], cache);
     if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
     state.applyMove(moves[depth][0]);
   }
@@ -29,7 +30,7 @@ void doPerft(reasoner::GameState &state, const uint depth) {
     if (state.isTerminal()) numTerminals++;
     return;
   }
-  state.getAllMoves(moves[depth]);
+  state.getAllMoves(moves[depth], cache);
   if (moves[depth].size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
   for (uint i = 0; i < moves[depth].size(); i++) {
     reasoner::GameState nextState = state;

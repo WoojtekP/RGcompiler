@@ -205,3 +205,8 @@ struct Move
 
     headerFile_ << obj << std::endl << std::endl;
 }
+
+void Printer::printAdditionDataForCycleHandling(const std::string &s)
+{
+    headerFile_ << s << std::endl << std::endl;
+}

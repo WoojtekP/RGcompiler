@@ -1,8 +1,9 @@
 #pragma once
 
+#include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/valueAssigner.hpp>
-#include <graph/graph.hpp>
 #include <graph/actionFactory.hpp>
+#include <graph/graph.hpp>
 #include <parser/parser.hpp>
 #include <program/program.hpp>
 
@@ -12,6 +13,7 @@ struct Options
     int optConditions;
     bool simplePathCompression_;
     bool moveCompression_;
+    bool noCycleDetection_;
 };
 
 class Compiler
@@ -56,8 +58,7 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     int getNumberOfPlayers();
-    std::tuple<std::string, std::function<std::string(std::string)>, std::function<std::string(std::string)>>
-    getExecutionTypesForCyclicStates(const std::map<std::string, int> &m);
+    int getDomain(const std::string &s);
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
@@ -65,7 +66,7 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
-    std::map<std::tuple<std::string, std::string, int>, std::map<std::string, int>> variablesInPatternGraphs_;
+    std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;
@@ -73,5 +74,9 @@ private:
     const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;
     const bool optConditionsMoveCompression_;
+    const bool optNoCycleDetection_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
+    const std::string mainCacheName_;
+    const std::string mainCacheType_;
+    ContainerChooser containerChooser_;
 };

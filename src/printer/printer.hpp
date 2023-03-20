@@ -24,6 +24,7 @@ public:
         const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration();
+    void printAdditionDataForCycleHandling(const std::string &s);
 
 private:
     const Parser& parser_;

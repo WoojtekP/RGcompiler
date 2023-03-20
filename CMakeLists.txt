@@ -34,6 +34,11 @@ add_executable(rg2cpp
     src/graph/graph.cpp
     src/program/program.cpp
     src/compiler/valueAssigner.cpp
+    src/compiler/cacheContainers/ContainerChooser.cpp
+    src/compiler/cacheContainers/BitArrayContainer.cpp
+    src/compiler/cacheContainers/StlContainerBase.cpp
+    src/compiler/cacheContainers/SetContainer.cpp
+    src/compiler/cacheContainers/UnorderedSetContainer.cpp
     src/compiler/compiler.cpp)
 
 target_link_libraries(rg2cpp Boost::program_options)

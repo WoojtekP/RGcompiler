@@ -20,7 +20,7 @@ TIME_FORMATTER = '{:9.3f} s'
 FULL_FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
 
 startTime = time.time()
-run(f'g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_FLAGS} -o {cfg.BUILD_TEST_DIR}/sims')
+run(f'g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_TEST_FLAGS} -o {cfg.BUILD_TEST_DIR}/sims')
 elapsedTime = time.time() - startTime
 print(FULL_FORMATTER.format('g++:',elapsedTime))
 

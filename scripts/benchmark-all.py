@@ -79,9 +79,9 @@ for game in games:
   print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'''
-    g++ -c {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_FLAGS} -o {cfg.BUILD_TEST_DIR}/reasoner.o &&
-    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_FLAGS} -o {cfg.BUILD_TEST_DIR}/sims &&
-    g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_FLAGS} -o {cfg.BUILD_TEST_DIR}/perft
+    g++ -c {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_BENCHMARK_FLAGS} -o {cfg.BUILD_TEST_DIR}/reasoner.o &&
+    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_BENCHMARK_FLAGS} -o {cfg.BUILD_TEST_DIR}/sims &&
+    g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_BENCHMARK_FLAGS} -o {cfg.BUILD_TEST_DIR}/perft
   ''')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:

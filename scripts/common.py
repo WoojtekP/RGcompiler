@@ -26,9 +26,11 @@ class cfg:
 
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):
-    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -DNDEBUG'
   else:
-    GCC_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -march=native'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -march=native -ftracer'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto  -march=native -ftracer -DNDEBUG'
 
 class util:
   RESET = "\033[0m"

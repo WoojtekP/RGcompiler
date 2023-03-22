@@ -50,13 +50,14 @@ private:
     void initializePatternGraphs(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
     template<typename T>
-    void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments);
+    void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
     std::string getStateIntId(std::string name);
     std::shared_ptr<IType> generateType(const nlohmann::json &t);
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
+    std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
 

@@ -262,16 +262,21 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 }
 
 template<typename T>
-void Compiler::restoreAssignments(const std::unique_ptr<T>& function, std::vector<std::shared_ptr<IAction>> assignments)
+void Compiler::restoreAssignments(const std::unique_ptr<T>& function, std::vector<std::shared_ptr<IAction>> assignments,int edgeId)
 {
     int cnt = assignments.size() - 1;
     std::reverse(assignments.begin(), assignments.end());
     for (const auto& action : assignments)
     {
         function->addInstruction(std::make_unique<AssignmentInstruction>(
-            action->getLeftSide(), std::string(temporaryVariableNamePrefix_ + std::to_string(cnt))));
+            action->getLeftSide(), getTemporaryVariableName(cnt, edgeId)));
         cnt--;
     }
+}
+
+std::string Compiler::getTemporaryVariableName(int idx, int edgeId)
+{
+    return temporaryVariableNamePrefix_ + std::to_string(edgeId) + "_" + std::to_string(idx);
 }
 
 void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
@@ -489,14 +494,14 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                     {
                         function->addInstruction(std::make_unique<CustomInstruction>("mr.pop_back()"));
                     }
-                    restoreAssignments<Function>(function, assignmentActions);
+                    restoreAssignments<Function>(function, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
                     function->addInstruction(std::make_unique<ReturnInstruction>());
                     program_.addFunction(std::move(function));
                     playerChanged = true;
                     break;
                 }
                 function->addInstruction(std::make_unique<AssignmentInstruction>(
-                    std::string(temporaryVariableNamePrefix_ + std::to_string(assignmentActions.size())),
+                    getTemporaryVariableName(assignmentActions.size(), graph->getEdgeId(stateFrom, stateTo, iid)),
                     action->getLeftSide(),
                     "const auto"));
                 function->addInstruction(
@@ -508,7 +513,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         !action->getNegated(), action->getLeftSide(), action->getRightSide()));
-                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
+                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
                 function->addInstruction(std::move(ifInstruction));
@@ -553,7 +558,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
                         action->getNegated() ? false : true,
                         "is_legal_" + patterType + fromNode + "_" + toNode + "_" + fromNode + "(" + functionArguments +
                             ")"));
-                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
+                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
 
@@ -584,7 +589,7 @@ void Compiler::generateVoidEdgeFunctions(const std::shared_ptr<Graph>& graph)
         function->addInstruction(std::make_unique<CustomInstruction>(
             "state_" + std::to_string(graph->getNodeId(stateTo)) + "(" + stateFunctionArguments + ")"));
 
-        restoreAssignments<Function>(function, assignmentActions);
+        restoreAssignments<Function>(function, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
         if (pushed)
         {
@@ -634,7 +639,7 @@ void Compiler::generateBoolEdgeFunctions(
             if (action->getType() == ActionType::Assignment)
             {
                 function->addInstruction(std::make_unique<AssignmentInstruction>(
-                    temporaryVariableNamePrefix_ + std::to_string(assignmentActions.size()),
+                    getTemporaryVariableName(assignmentActions.size(), graph->getEdgeId(stateFrom, stateTo, iid)),
                     action->getLeftSide(),
                     "const auto"));
                 function->addInstruction(
@@ -647,7 +652,7 @@ void Compiler::generateBoolEdgeFunctions(
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         !action->getNegated(), action->getLeftSide(), action->getRightSide()));
 
-                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
+                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
                 function->addInstruction(std::move(ifInstruction));
@@ -693,7 +698,7 @@ void Compiler::generateBoolEdgeFunctions(
                         "is_legal_" + patterType + fromNode + "_" + toNode + "_" + fromNode + "(" + functionArguments +
                             ")"));
 
-                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions);
+                restoreAssignments<IfInstruction>(ifInstruction, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
 
@@ -720,7 +725,7 @@ void Compiler::generateBoolEdgeFunctions(
             function->addInstruction(std::move(ifInstruction));
         }
 
-        restoreAssignments<Function>(function, assignmentActions);
+        restoreAssignments<Function>(function, assignmentActions, graph->getEdgeId(stateFrom, stateTo, iid));
 
         function->addInstruction(std::make_unique<ReturnInstruction>("tmp"));
 

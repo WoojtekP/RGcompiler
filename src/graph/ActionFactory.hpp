@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include <compiler/valueAssigner.hpp>
-#include <graph/action.hpp>
-#include <graph/expressionFactory.hpp>
-#include <parser/parser.hpp>
+#include <compiler/ValueAssigner.hpp>
+#include <graph/Action.hpp>
+#include <graph/ExpressionFactory.hpp>
+#include <parser/Parser.hpp>
 
 
 class ActionFactory

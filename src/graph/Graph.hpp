@@ -6,7 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/action.hpp>
+#include <graph/Action.hpp>
 
 class Binding
 {

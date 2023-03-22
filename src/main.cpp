@@ -5,8 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <compiler/compiler.hpp>
-#include <parser/parser.hpp>
+#include <compiler/Compiler.hpp>
+#include <parser/Parser.hpp>
 
 int main(const int argc, const char **argv)
 {

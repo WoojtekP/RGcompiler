@@ -3,9 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/action.hpp>
-#include <graph/graph.hpp>
-#include <parser/parser.hpp>
+#include <graph/Graph.hpp>
+#include <parser/Parser.hpp>
 
 Binding::Binding(std::string variableName, std::string iteratedType)
 : variableName_(variableName), iteratedType_(iteratedType)

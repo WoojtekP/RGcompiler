@@ -2,8 +2,8 @@
 #include <memory>
 #include <vector>
 
-#include <compiler/valueAssigner.hpp>
-#include <program/program.hpp>
+#include <compiler/ValueAssigner.hpp>
+#include <program/Program.hpp>
 
 
 std::string ElementaryType::toString() const

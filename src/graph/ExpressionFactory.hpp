@@ -2,9 +2,9 @@
 
 #include <memory>
 
-#include <compiler/valueAssigner.hpp>
-#include <graph/expression.hpp>
-#include <parser/parser.hpp>
+#include <compiler/ValueAssigner.hpp>
+#include <graph/Expression.hpp>
+#include <parser/Parser.hpp>
 
 class ExpressionFactory
 {

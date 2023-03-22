@@ -4,8 +4,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/expression.hpp>
-#include <graph/expressionFactory.hpp>
+#include <graph/Expression.hpp>
+#include <graph/ExpressionFactory.hpp>
 
 
 enum class ActionType

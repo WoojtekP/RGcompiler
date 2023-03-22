@@ -1,11 +1,11 @@
 #pragma once
 
 #include <compiler/cacheContainers/ContainerChooser.hpp>
-#include <compiler/valueAssigner.hpp>
-#include <graph/actionFactory.hpp>
-#include <graph/graph.hpp>
-#include <parser/parser.hpp>
-#include <program/program.hpp>
+#include <compiler/ValueAssigner.hpp>
+#include <graph/ActionFactory.hpp>
+#include <graph/Graph.hpp>
+#include <parser/Parser.hpp>
+#include <program/Program.hpp>
 
 struct Options
 {

@@ -1,9 +1,9 @@
 #include <functional>
 #include <iostream>
 
-#include <compiler/compiler.hpp>
-#include <parser/parser.hpp>
-#include <printer/printer.hpp>
+#include <compiler/Compiler.hpp>
+#include <parser/Parser.hpp>
+#include <printer/Printer.hpp>
 
 namespace
 {

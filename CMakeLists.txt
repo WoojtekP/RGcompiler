@@ -25,20 +25,20 @@ include_directories(src)
 
 add_executable(rg2cpp
     src/main.cpp
-    src/parser/parser.cpp
-    src/printer/printer.cpp
-    src/graph/action.cpp
-    src/graph/actionFactory.cpp
-    src/graph/expression.cpp
-    src/graph/expressionFactory.cpp
-    src/graph/graph.cpp
-    src/program/program.cpp
-    src/compiler/valueAssigner.cpp
+    src/parser/Parser.cpp
+    src/printer/Printer.cpp
+    src/graph/Action.cpp
+    src/graph/ActionFactory.cpp
+    src/graph/Expression.cpp
+    src/graph/ExpressionFactory.cpp
+    src/graph/Graph.cpp
+    src/program/Program.cpp
+    src/compiler/ValueAssigner.cpp
     src/compiler/cacheContainers/ContainerChooser.cpp
     src/compiler/cacheContainers/BitArrayContainer.cpp
     src/compiler/cacheContainers/StlContainerBase.cpp
     src/compiler/cacheContainers/SetContainer.cpp
     src/compiler/cacheContainers/UnorderedSetContainer.cpp
-    src/compiler/compiler.cpp)
+    src/compiler/Compiler.cpp)
 
 target_link_libraries(rg2cpp Boost::program_options)

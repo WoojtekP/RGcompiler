@@ -1,7 +1,7 @@
 #include <nlohmann/json.hpp>
 
-#include <graph/expression.hpp>
-#include <parser/parser.hpp>
+#include <graph/Expression.hpp>
+#include <parser/Parser.hpp>
 
 
 ExpressionBinaryBase::ExpressionBinaryBase(std::unique_ptr<IExpression> left, std::unique_ptr<IExpression> right)

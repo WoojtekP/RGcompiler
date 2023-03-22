@@ -2,9 +2,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include <compiler/valueAssigner.hpp>
-#include <parser/parser.hpp>
-#include <program/program.hpp>
+#include <compiler/ValueAssigner.hpp>
+#include <parser/Parser.hpp>
+#include <program/Program.hpp>
 
 class Printer
 {

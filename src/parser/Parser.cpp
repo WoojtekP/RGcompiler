@@ -3,8 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
-#include <parser/parser.hpp>
-#include <program/program.hpp>
+#include <parser/Parser.hpp>
+#include <program/Program.hpp>
 
 
 Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))

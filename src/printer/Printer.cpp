@@ -3,9 +3,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include <parser/parser.hpp>
-#include <printer/printer.hpp>
-#include <program/program.hpp>
+#include <parser/Parser.hpp>
+#include <printer/Printer.hpp>
+#include <program/Program.hpp>
 
 
 namespace

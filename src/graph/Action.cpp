@@ -2,7 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/action.hpp>
+#include <graph/Action.hpp>
 
 
 ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)

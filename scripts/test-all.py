@@ -11,6 +11,8 @@ args = parser.parse_args()
 games = args.games
 translateOptions = '"' + args.translateOptions + '"'
 
+#######################################################################################################################
+
 tests = {}
 tests['ticTacToe.rg'] = ((100000,7.63,[64.84,35.16]), [1,9,72,504,3024,15120,54720]) # 148176 200448 127872
 tests['ticTacToe.rbg'] = tests['ticTacToe.rg']
@@ -20,11 +22,13 @@ tests['breakthrough.hrg'] = tests['breakthrough.rg']
 tests['breakthrough.rbg'] = tests['breakthrough.rg']
 tests['breakthroughWithAny.rg'] = tests['breakthrough.rg']
 
+tests['connect4.hrg'] = ((10000,21.31,[55.72,44.28]), [1,7,49,343,2401,16807]) # 117649 823536 5673234
+
 tests['hex2.rbg'] = ((1000,3.50,[50.00,50.00]), [1,4,12,24,12,0])
 
 tests['hex9.rbg'] = ((1000,107.51,[52.30,47.70]), [1,81,6480]) # 511920 39929760
 
-tests['connect4.hrg'] = ((10000,21.31,[55.72,44.28]), [1,7,49,343,2401,16807]) # 117649 823536 5673234
+tests['knightthrough.hrg'] = ((10000,33.64,[51.67,48.33]), [1,40,1600,63520,2521306,99598454]) # 3929482778
 
 tests['amazons.hrg'] = ((200,71.46,[50.10,49.90]), [1,2176]) # 4307152
 tests['amazons-naive.hrg'] = tests['amazons.hrg']
@@ -37,11 +41,14 @@ if len(games) == 0:
   games.append('breakthrough.rg')
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
+  games.append('connect4.hrg')
   games.append('hex2.rbg')
   games.append('hex9.rbg')
-  games.append('connect4.hrg')
+  games.append('knightthrough.hrg')
   games.append('amazons-smart.hrg')
   games.append('amazons-naive.hrg')
+
+#######################################################################################################################
 
 print(f'Testing: {" ".join(games)}')
 print(f'with translate options {translateOptions}')

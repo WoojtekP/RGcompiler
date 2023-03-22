@@ -32,7 +32,8 @@ tests = {}
 tests['breakthrough.rg'] =  (100_000, 5)
 tests['breakthrough.hrg'] = (100_000, 5)
 tests['breakthrough.rbg'] = (100_000, 5)
-tests['breakthroughWithAny.rg'] =  (100_000, 5)
+#tests['breakthroughWithAny.rg'] =  (100_000, 5)
+tests['knightthrough.hrg'] = (100_000, 5)
 tests['connect4.hrg'] =     (200_000, 8)
 tests['amazons-smart.hrg'] =  (1000, 1)
 
@@ -40,8 +41,9 @@ if len(games) == 0:
   games.append('breakthrough.rg')
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
-  games.append('breakthroughWithAny.rg')
+  #games.append('breakthroughWithAny.rg')
   games.append('connect4.hrg')
+  games.append('knightthrough.hrg')
   games.append('amazons-smart.hrg')
 
 print(f'Testing: {" ".join(games)}')
@@ -50,7 +52,7 @@ print(f'Using perf: {usePerf}')
 
 HEAD_FORMATTER = '{: <50} '
 TIME_FORMATTER = '{:9.3f} s'
-INSTR_FORMATTER = ' {:9,.0f} instr'
+INSTR_FORMATTER = ' {:9,.0f} mil instr'
 
 INSTR_SCALE = 1_000_000
 

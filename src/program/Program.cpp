@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <iostream>
 
 #include <compiler/ValueAssigner.hpp>
 #include <program/Program.hpp>
@@ -199,9 +200,14 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
 
 BlockInstruction::BlockInstruction() {}
 
-void BlockInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
+void BlockInstruction::pushInstructionBack(std::unique_ptr<IInstruction> &&instruction)
 {
     instructions_.push_back(std::move(instruction));
+}
+
+void BlockInstruction::pushInstructionFront(std::unique_ptr<IInstruction> &&instruction)
+{
+    instructions_.push_front(std::move(instruction));
 }
 
 std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)

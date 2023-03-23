@@ -2,6 +2,7 @@
 
 #include <map>
 #include <memory>
+#include <list>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -196,12 +197,13 @@ public:
 
 class BlockInstruction : public IInstruction
 {
-    std::vector<std::unique_ptr<IInstruction>> instructions_;
+    std::list<std::unique_ptr<IInstruction>> instructions_;
 
 public:
     BlockInstruction();
 
-    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+    void pushInstructionBack(std::unique_ptr<IInstruction> &&instruction);
+    void pushInstructionFront(std::unique_ptr<IInstruction> &&instruction);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/ValueAssigner.hpp>
+#include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Graph.hpp>
 #include <parser/Parser.hpp>
@@ -32,9 +32,38 @@ private:
     void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph);
     void generateBoolStateFunctions(
         const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, int patternId = 0);
-    void generateVoidEdgeFunctions(const std::shared_ptr<Graph> &graph);
-    void generateBoolEdgeFunctions(
-        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, int patternId);
+    std::unique_ptr<BlockInstruction> addActionPattern(
+        const std::shared_ptr<IAction> &action,
+        const std::shared_ptr<Graph> &graph,
+        const std::string &stateFrom,
+        const std::string &stateTo,
+        int iid,
+        std::unique_ptr<BlockInstruction> blockInstruction);
+    std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
+        const std::shared_ptr<Graph> &graph, const std::string &stateFrom, const std::string &stateTo, int iid);
+    std::unique_ptr<BlockInstruction> prepareBaseInstructions(
+        const std::shared_ptr<Graph> &graph,
+        std::vector<std::shared_ptr<IAction>> &actions,
+        std::string stateFrom,
+        std::string stateTo,
+        int iid);
+    std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
+        const std::string &from,
+        const std::string &to,
+        const std::shared_ptr<Graph> &graph,
+        const std::string &stateFrom,
+        const std::string &stateTo,
+        int iid,
+        int patternId);
+    std::unique_ptr<BlockInstruction> prepareBaseInstructions(
+        const std::shared_ptr<Graph> &graph,
+        const std::vector<std::shared_ptr<IAction>> &actions,
+        const std::string &stateFrom,
+        const std::string &stateTo,
+        int iid,
+        const std::string &cacheName,
+        const std::string &prefix,
+        int patternId);
     void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
@@ -50,7 +79,8 @@ private:
     void initializePatternGraphs(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
     template<typename T>
-    void restoreAssignments(const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
+    void restoreAssignments(
+        const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
     std::string getStateIntId(std::string name);
     std::shared_ptr<IType> generateType(const nlohmann::json &t);
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
@@ -68,6 +98,7 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
+    std::map<std::string, std::unique_ptr<Function>> functionNameToFunction_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool debugFlag_;

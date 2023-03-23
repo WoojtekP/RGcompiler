@@ -5,24 +5,27 @@ ContainerChooser::ContainerChooser(const std::string &cacheName) : smallDomainMa
 
 void ContainerChooser::add(const IdType &id, const VariableAndDomain &v, int nodeNumber)
 {
-    bool isDomainSmall = true;
+    int domainSize = nodeNumber;
 
-    int domainSize = 1;
+    bool isDomainSmall = (domainSize < smallDomainMaxiumSize_ ? true : false);
 
-    for (const auto &[variable, domain] : v)
+    if (isDomainSmall)
     {
-        if (domain == -1 || domain > smallDomainMaxiumSize_)
+        for (const auto &[variable, domain] : v)
         {
-            isDomainSmall = false;
-            break;
-        }
+            if (domain == -1 || domain > smallDomainMaxiumSize_)
+            {
+                isDomainSmall = false;
+                break;
+            }
 
-        domainSize *= domain;
+            domainSize *= domain;
 
-        if (domainSize > smallDomainMaxiumSize_)
-        {
-            isDomainSmall = false;
-            break;
+            if (domainSize > smallDomainMaxiumSize_)
+            {
+                isDomainSmall = false;
+                break;
+            }
         }
     }
 

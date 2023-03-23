@@ -287,7 +287,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
         std::string prefix = "state_";
         std::string functionArguments = "moves, mr";
 
-        std::string functionName = prefix + std::to_string(graph->getNodeId(state));
+        std::string name = std::to_string(graph->getNodeId(state));
+        if (debugFlag_ == 2)
+        {
+            name = state;
+        }
+        std::string functionName = prefix + name;
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
         function->addArgument(
@@ -302,7 +307,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
         }
 
-        if (debugFlag_)
+        if (debugFlag_ == 1)
         {
             function->addInstruction(debugInstruction(prefix + state));
         }
@@ -368,17 +373,23 @@ void Compiler::generateBoolStateFunctions(
 {
     std::string name = patternIdToPrefixName[patternId];
     std::string cacheName = "cache";
-
+    std::string prefix = "is_legal_" + name;
     for (auto& state : graph->getOuterNodeNames())
     {
-        std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
-                             std::to_string(graph_->getNodeId(to)) + "_";
-        std::string functionName = prefix + std::to_string(graph_->getNodeId(state));
+        std::string functionName = prefix + std::to_string(graph_->getNodeId(from)) + "_" +
+                                   std::to_string(graph_->getNodeId(to)) + "_" +
+                                   std::to_string(graph_->getNodeId(state));
+
+        if (debugFlag_ == 2)
+        {
+            functionName = prefix + from + "_" + to + "_" + state;
+        }
+
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
-        if (debugFlag_)
+        if (debugFlag_ == 1)
         {
-            function->addInstruction(debugInstruction(prefix + state));
+            function->addInstruction(debugInstruction(functionName));
         }
 
         if (!optNoCycleDetection_)
@@ -446,6 +457,13 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 
     std::string fromNode = std::to_string(graph_->getNodeId(action->getLeftSide()));
     std::string toNode = std::to_string(graph_->getNodeId(action->getRightSide()));
+    std::string prefix = "is_legal_" + patterType;
+    std::string functionName = prefix + fromNode + "_" + toNode + "_" + fromNode;
+
+    if (debugFlag_ == 2)
+    {
+        functionName = prefix + action->getLeftSide() + "_" + action->getRightSide() + "_" + action->getLeftSide();
+    }
     std::tuple<std::string, std::string, int> typeId = {action->getLeftSide(), action->getRightSide(), patternId};
     std::string cacheName = "cache_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + "_" + patterType +
                             fromNode + "_" + toNode;
@@ -468,10 +486,8 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
     }
 
-    std::unique_ptr<IfInstruction> ifInstruction =
-        std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-            action->getNegated(),
-            "is_legal_" + patterType + fromNode + "_" + toNode + "_" + fromNode + "(" + functionArguments + ")"));
+    std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+        std::make_unique<ComparisonInstruction>(action->getNegated(), functionName + "(" + functionArguments + ")"));
 
     ifInstruction->addInstruction(std::move(blockInstruction));
     tmpBlockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -510,8 +526,15 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             stateFunctionArguments += "," + mainCacheName_;
         }
 
-        blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "state_" + std::to_string(graph->getNodeId(stateTo)) + "(" + stateFunctionArguments + ")"));
+        std::string functionName = std::to_string(graph->getNodeId(stateTo));
+
+        if (debugFlag_ == 2)
+        {
+            functionName = stateTo;
+        }
+
+        blockInstruction->pushInstructionBack(
+            std::make_unique<CustomInstruction>("state_" + functionName + "(" + stateFunctionArguments + ")"));
     }
 
     if (mrPused)
@@ -582,9 +605,13 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     {
         functionArguments = mainCacheName_ + "," + cacheName;
     }
-    std::unique_ptr<IfInstruction> ifInstruction =
-        std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-            false, prefix + std::to_string(graph_->getNodeId(stateTo)) + "(" + functionArguments + ")"));
+    std::string name = std::to_string(graph_->getNodeId(stateTo));
+    if (debugFlag_ == 2)
+    {
+        name = stateTo;
+    }
+    std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+        std::make_unique<ComparisonInstruction>(false, prefix + name + "(" + functionArguments + ")"));
 
     if (patternId == 0)
     {
@@ -618,8 +645,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     std::tuple<std::string, std::string, int> typeId = {stateFrom, stateTo, patternId};
     std::string cacheName = "cache";
     std::string name = patternIdToPrefixName[patternId];
+
     std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
                          std::to_string(graph_->getNodeId(to)) + "_";
+
+    if (debugFlag_ == 2)
+    {
+        prefix = "is_legal_" + name + from + "_" + to + "_";
+    }
 
     const auto& actions = graph->getActions(stateFrom, stateTo, iid);
     std::unique_ptr<BlockInstruction> blockInstruction =
@@ -666,9 +699,15 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
     {
         std::string prefix = "apply_edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
+
+        if (debugFlag_ == 2)
+        {
+            functionName = prefix + stateFrom + "_" + stateTo + "_" + std::to_string(iid);
+        }
+
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
 
-        if (debugFlag_)
+        if (debugFlag_ == 1)
         {
             function->addInstruction(debugInstruction(prefix + stateFrom + "_" + stateTo));
         }
@@ -699,8 +738,15 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
                         continue;
                     }
 
-                    function->addInstruction(std::make_unique<CustomInstruction>(
-                        prefix + std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), iid)) + "()"));
+                    std::string innerFunctionName =
+                        std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), iid));
+
+                    if (debugFlag_ == 2)
+                    {
+                        innerFunctionName = edge->fromName() + "_" + edge->toName() + "_" + std::to_string(iid);
+                    }
+
+                    function->addInstruction(std::make_unique<CustomInstruction>(prefix + innerFunctionName + "()"));
                 }
             }
 
@@ -759,24 +805,29 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
     auto sw = std::make_unique<SwitchInstruction>("val");
     std::string instructionStr;
 
-    for (const auto& [stateFrom, stateTo, edgeId] : graph->getEdgeNames())
+    for (const auto& [stateFrom, stateTo, iid] : graph->getEdgeNames())
     {
+        std::string functionName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
+        bool isInstructionStrValid = false;
+        if (debugFlag_ == 2)
+        {
+            functionName = stateFrom + "_" + stateTo + "_" + std::to_string(iid);
+        }
         if (optConditionsMoveCompression_)
         {
             if (graph->getNumberOfIncomingEdges(stateFrom) == 0 || graph->getNumberOfOutgoingEdges(stateFrom) != 1)
             {
                 bool emptyFunction = true;
 
-                for (const auto& action : graph->getActions(stateFrom, stateTo, edgeId))
+                for (const auto& action : graph->getActions(stateFrom, stateTo, iid))
                 {
                     if (action->getType() == ActionType::Assignment)
                     {
                         auto block = std::make_unique<BlockInstruction>();
-                        block->pushInstructionBack(std::make_unique<CustomInstruction>(
-                            "apply_edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()"));
+                        block->pushInstructionBack(
+                            std::make_unique<CustomInstruction>("apply_edge_" + functionName + "()"));
                         block->pushInstructionBack(std::make_unique<ReturnInstruction>());
-
-                        sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(block));
+                        sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, iid), std::move(block));
                         emptyFunction = false;
                         break;
                     }
@@ -787,22 +838,27 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
                     continue;
                 }
 
-                const auto& [edge, id] = graph->getUnambiguousNotEmptyEdge(stateTo);
+                const auto [edge, id] = graph->getUnambiguousNotEmptyEdge(stateTo);
 
                 if (id == -1)
                 {
                     continue;
                 }
 
-                instructionStr =
-                    "apply_edge_" + std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), id)) + "()";
+                std::string innerFunctionName = std::to_string(graph->getEdgeId(edge->fromName(), edge->toName(), id));
+                if (debugFlag_ == 2)
+                {
+                    innerFunctionName = edge->fromName() + "_" + edge->toName() + "_" + std::to_string(id);
+                }
+                isInstructionStrValid = true;
+                instructionStr = "apply_edge_" + innerFunctionName + "()";
             }
         }
         else
         {
             bool emptyFunction = true;
 
-            for (const auto& action : graph->getActions(stateFrom, stateTo, edgeId))
+            for (const auto& action : graph->getActions(stateFrom, stateTo, iid))
             {
                 if (action->getType() == ActionType::Assignment)
                 {
@@ -815,15 +871,18 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
             {
                 continue;
             }
-
-            instructionStr = "apply_edge_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, edgeId)) + "()";
+            isInstructionStrValid = true;
+            instructionStr = "apply_edge_" + functionName + "()";
         }
 
-        auto block = std::make_unique<BlockInstruction>();
-        block->pushInstructionBack(std::make_unique<CustomInstruction>(instructionStr));
-        block->pushInstructionBack(std::make_unique<ReturnInstruction>());
+        if (isInstructionStrValid)
+        {
+            auto block = std::make_unique<BlockInstruction>();
+            block->pushInstructionBack(std::make_unique<CustomInstruction>(instructionStr));
+            block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
-        sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(block));
+            sw->addCaseInstruction(graph->getEdgeId(stateFrom, stateTo, iid), std::move(block));
+        }
     }
 
     function->addInstruction(std::move(sw));
@@ -848,17 +907,27 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph)
 
     for (const auto& [edge, iid] : graph->getEdgeWithActionChangePlayer())
     {
+        std::string stateName = std::to_string(graph->getNodeId(edge->toName()));
+        if (debugFlag_ == 2)
+        {
+            stateName = edge->toName();
+        }
         auto block = std::make_unique<BlockInstruction>();
-        block->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "state_" + std::to_string(graph->getNodeId(edge->toName())) + "(" + functionArguments + ")"));
+        block->pushInstructionBack(
+            std::make_unique<CustomInstruction>("state_" + stateName + "(" + functionArguments + ")"));
         block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
     }
 
+    std::string stateBeginName = std::to_string(graph->getNodeId("begin"));
+    if (debugFlag_ == 2)
+    {
+        stateBeginName = "begin";
+    }
     auto block = std::make_unique<BlockInstruction>();
-    block->pushInstructionBack(std::make_unique<CustomInstruction>(
-        "state_" + std::to_string(graph->getNodeId("begin")) + "(" + functionArguments + ")"));
+    block->pushInstructionBack(
+        std::make_unique<CustomInstruction>("state_" + stateBeginName + "(" + functionArguments + ")"));
     block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
     sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
@@ -961,12 +1030,16 @@ void Compiler::generateApplyAnyMove()
                 }
                 function->addInstruction(std::make_unique<CustomInstruction>(cacheDecl));
             }
+            std::string functionName = std::to_string(graph_->getNodeId(nodeName)) + "_" +
+                                       std::to_string(graph_->getNodeId(nodeTo)) + "_" +
+                                       std::to_string(graph_->getNodeId(nodeName));
+            if (debugFlag_ == 2)
+            {
+                functionName = nodeName + "_" + nodeTo + "_" + nodeName;
+            }
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false,
-                    "is_legal_any2_" + std::to_string(graph_->getNodeId(nodeName)) + "_" +
-                        std::to_string(graph_->getNodeId(nodeTo)) + "_" + std::to_string(graph_->getNodeId(nodeName)) +
-                        "(" + functionArguments + ")"));
+                    false, "is_legal_any2_" + functionName + "(" + functionArguments + ")"));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
             block->pushInstructionBack(std::move(ifInstruction));
         }

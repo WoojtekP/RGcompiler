@@ -26,7 +26,7 @@ Printer::Printer(
 
 void Printer::initializeHeaderFile(bool debug)
 {
-    if (debug)
+    if (debug == 1)
     {
         headerFile_ << "#include <iostream>" << std::endl;
     }

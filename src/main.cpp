@@ -19,7 +19,9 @@ int main(const int argc, const char **argv)
 
         mainOptions.add_options()(
             "file", boost::program_options::value<std::string>(&fileName)->required(), "Json file name")(
-            "debug", boost::program_options::value<bool>(&options.debug)->default_value(false), "Debug flag")(
+            "debug",
+            boost::program_options::value<int>(&options.debug)->default_value(0),
+            "Debug flag:\n0 - off\n1 - print function names in reasoner\n2 - show orginal node names")(
             "opt-conditions",
             boost::program_options::value<int>(&options.optConditions)->default_value(0),
             "Optimizing complementary conditions:\n 0 - off\n 1 - checking reachability\n 2 - generating moves\n 3 - all")(

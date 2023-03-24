@@ -9,7 +9,7 @@
 
 struct Options
 {
-    bool debug;
+    int debug;
     int optConditions;
     bool simplePathCompression_;
     bool moveCompression_;
@@ -98,10 +98,9 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
-    std::map<std::string, std::unique_ptr<Function>> functionNameToFunction_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
-    const bool debugFlag_;
+    const int debugFlag_;
     const bool optConditionsReachability_;
     const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;

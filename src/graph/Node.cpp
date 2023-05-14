@@ -1,9 +1,9 @@
+#include "Node.hpp"
+
 #include <exception>
 #include <string>
 
 #include <nlohmann/json.hpp>
-
-#include "Node.hpp"
 
 #include <parser/Parser.hpp>
 

@@ -1,10 +1,10 @@
+#include "Graph.hpp"
+
 #include <iostream>
-#include <string>
 #include <queue>
+#include <string>
 
 #include <nlohmann/json.hpp>
-
-#include "Graph.hpp"
 
 #include <parser/Parser.hpp>
 

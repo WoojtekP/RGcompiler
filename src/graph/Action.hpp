@@ -7,7 +7,6 @@
 #include <graph/Expression.hpp>
 #include <graph/ExpressionFactory.hpp>
 
-
 enum class ActionType
 {
     Assignment,

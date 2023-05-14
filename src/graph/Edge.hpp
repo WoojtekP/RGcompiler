@@ -1,13 +1,13 @@
 #pragma once
 
-#include <string>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include <graph/Node.hpp>
 #include <graph/Action.hpp>
+#include <graph/Node.hpp>
 
 class Edge
 {

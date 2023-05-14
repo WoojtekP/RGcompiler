@@ -1,12 +1,10 @@
 #include "ActionFactory.hpp"
 
-
 ActionFactory::ActionFactory(const Parser& parser, const ValueAssigner& valueAssigner)
 : parser_(parser)
 , valueAssigner_(valueAssigner)
 , expressionFactory_(parser, valueAssigner)
-{
-}
+{}
 
 std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label)
 {

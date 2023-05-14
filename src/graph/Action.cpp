@@ -4,13 +4,11 @@
 
 #include <graph/Action.hpp>
 
-
 ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : left_(expressionFactory.createExpression(label["lhs"]))
 , right_(expressionFactory.createExpression(label["rhs"]))
 , negated_(label.count("negated") ? label["negated"].get<bool>() : false)
-{
-}
+{}
 
 bool ActionBase::getNegated() const
 {

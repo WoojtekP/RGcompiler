@@ -7,7 +7,6 @@
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
 
-
 class ActionFactory
 {
 public:

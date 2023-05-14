@@ -1,13 +1,12 @@
-#include <string>
+#include "Edge.hpp"
+
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include "Edge.hpp"
-
 #include <graph/Node.hpp>
-
 
 Edge::Edge(
     const std::shared_ptr<Node> &from,
@@ -21,7 +20,10 @@ Edge::Edge(
     const std::shared_ptr<Node> &to,
     const std::vector<std::shared_ptr<IAction>> &actions,
     const std::vector<std::shared_ptr<Node>> &innerNodes)
-: from_(from), to_(to), actions_(actions.begin(), actions.end()), innerNodes_(innerNodes.begin(), innerNodes.end()) {};
+: from_(from)
+, to_(to)
+, actions_(actions.begin(), actions.end())
+, innerNodes_(innerNodes.begin(), innerNodes.end()) {};
 
 Edge::~Edge() {}
 

@@ -2,12 +2,10 @@
 
 #include <graph/Expression.hpp>
 
-
 ExpressionFactory::ExpressionFactory(const Parser& parser, const ValueAssigner& valueAssigner)
 : parser_(parser)
 , valueAssigner_(valueAssigner)
-{
-}
+{}
 
 std::unique_ptr<IExpression> ExpressionFactory::createExpression(const nlohmann::json& expression) const
 {
@@ -69,5 +67,6 @@ std::unique_ptr<IExpression> ExpressionFactory::createEdgeNameExpression(const n
     {
         return std::make_unique<ExpressionEdgeName>(node->get()["identifier"].get<std::string>());
     }
-    throw std::runtime_error("[ExpressionFactory] Cannot find part: \"Literal\" for " + expression["kind"].get<std::string>());
+    throw std::runtime_error(
+        "[ExpressionFactory] Cannot find part: \"Literal\" for " + expression["kind"].get<std::string>());
 }

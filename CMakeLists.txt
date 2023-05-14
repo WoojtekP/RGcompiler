@@ -29,9 +29,11 @@ add_executable(rg2cpp
     src/printer/Printer.cpp
     src/graph/Action.cpp
     src/graph/ActionFactory.cpp
+    src/graph/Edge.cpp
     src/graph/Expression.cpp
     src/graph/ExpressionFactory.cpp
     src/graph/Graph.cpp
+    src/graph/Node.cpp
     src/program/Program.cpp
     src/compiler/ValueAssigner.cpp
     src/compiler/cacheContainers/ContainerChooser.cpp

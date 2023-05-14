@@ -1,70 +1,15 @@
+#pragma once
+
 #include <map>
-#include <queue>
 #include <set>
 #include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include <graph/Action.hpp>
+#include <graph/Edge.hpp>
+#include <graph/Node.hpp>
 
-class Binding
-{
-    std::string variableName_;
-    std::string iteratedType_;
-
-public:
-    Binding(std::string variableName, std::string iteratedType);
-    std::string toString() const;
-};
-
-class Node
-{
-    std::string name_;
-
-public:
-    Node(const nlohmann::json &t);
-    std::string toString() const;
-    std::string getName() const;
-    bool operator==(const Node &rhs) const;
-};
-
-class Edge
-{
-private:
-    std::shared_ptr<Node> from_;
-    std::shared_ptr<Node> to_;
-    std::vector<std::shared_ptr<IAction>> actions_;
-    std::vector<std::shared_ptr<Node>> innerNodes_;
-
-    ActionType getActionType() const;
-    std::string getActionLeftSide() const;
-    std::string getActionRightSide() const;
-    bool getActionNegationValue() const;
-
-public:
-    Edge(
-        const std::shared_ptr<Node> &from,
-        const std::shared_ptr<Node> &to,
-        const std::vector<std::shared_ptr<IAction>> &actions);
-    Edge(
-        const std::shared_ptr<Node> &from,
-        const std::shared_ptr<Node> &to,
-        const std::vector<std::shared_ptr<IAction>> &actions,
-        const std::vector<std::shared_ptr<Node>> &innerNodes);
-    ~Edge();
-    bool operator==(const Edge &edge) const;
-    std::string toString() const;
-    std::string fromName() const;
-    std::string toName() const;
-    std::string fullName() const;
-    std::string actionToString() const;
-    std::shared_ptr<Node> getLeftNode() const;
-    std::shared_ptr<Node> getRightNode() const;
-    bool isComplementaryTo(const Edge &rhs) const;
-    const std::vector<std::shared_ptr<Node>> &getInnerNodes() const;
-    const std::vector<std::shared_ptr<IAction>> &getActions() const;
-};
 
 class Graph
 {

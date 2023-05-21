@@ -53,6 +53,7 @@ public:
     const std::vector<std::string> &getOuterNodeNames() const;
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from) const;
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames() const;
+    std::vector<std::tuple<std::shared_ptr<Edge>, int>> getAllEdges() const;
     const std::vector<std::shared_ptr<IAction>> &getActions(std::string fromName, std::string toName, int iid) const;
     std::set<std::pair<std::shared_ptr<Edge>, int>> getEdgeWithActionChangePlayer();
     std::string toString() const;

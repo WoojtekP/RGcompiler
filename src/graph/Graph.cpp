@@ -48,6 +48,16 @@ const std::vector<std::tuple<std::string, std::string, int>> &Graph::getEdgeName
     return edgeNames_;
 }
 
+std::vector<std::tuple<std::shared_ptr<Edge>, int>> Graph::getAllEdges() const
+{
+    std::vector<std::tuple<std::shared_ptr<Edge>, int>> allEdges;
+    for (const auto& edges : outgoingEdgesFromNode_)
+    {
+        allEdges.insert(allEdges.end(), edges.begin(), edges.end());
+    }
+    return allEdges;
+}
+
 std::set<std::pair<std::shared_ptr<Edge>, int>> Graph::getEdgeWithActionChangePlayer()
 {
     std::set<std::string> nodes;

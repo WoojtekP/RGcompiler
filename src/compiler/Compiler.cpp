@@ -695,8 +695,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
 void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
 {
-    for (const auto& [stateFrom, stateTo, iid] : graph->getEdgeNames())
+    for (const auto& [edge, iid] : graph->getAllEdges())
     {
+        const auto& stateFrom = edge->fromName();
+        const auto& stateTo = edge->toName();
+
         std::string prefix = "apply_edge_";
         std::string functionName = prefix + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
 
@@ -723,6 +726,18 @@ void Compiler::generateApplyEdgeFunctions(const std::shared_ptr<Graph>& graph)
                 emptyFunction = false;
             }
         }
+
+        // TODO fix case with bindings in inner nodes
+        // if (const auto& leftBinding = edge->getLeftNode()->getBinding())
+        // {
+        //     function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+        //         leftBinding->getVariableName(), leftBinding->getTypeName()));
+        // }
+        // if (const auto& rightBinding = edge->getRightNode()->getBinding())
+        // {
+        //     function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+        //         rightBinding->getVariableName(), rightBinding->getTypeName()));
+        // }
 
         if (!emptyFunction)
         {

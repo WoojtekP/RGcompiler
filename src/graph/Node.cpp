@@ -22,6 +22,17 @@ bool Binding::operator==(const Binding &rhs) const
     return variableName_ == rhs.variableName_ && iteratedType_ == rhs.iteratedType_;
 }
 
+const std::string& Binding::getVariableName() const
+{
+    return variableName_;
+}
+
+const std::string& Binding::getTypeName() const
+{
+    return iteratedType_;
+}
+
+
 Node::Node(const nlohmann::json &t)
 {
     name_ = Parser::getValueFromEntries(t, "Literal", "identifier");

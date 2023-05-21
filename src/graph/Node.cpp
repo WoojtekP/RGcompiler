@@ -28,7 +28,9 @@ Node::Node(const nlohmann::json &t)
 
     if (const auto& optBinding = Parser::getPartFromParts(t, "Binding"))
     {
-        throw std::logic_error("Binds are not implemented. Use --expandGeneratorNodes to remove them when generating AST");
+        const auto& binding = optBinding->get();
+        assert(binding["type"]["kind"] == "TypeReference");
+        binding_.emplace(binding["identifier"].get<std::string>(), binding["type"]["identifier"]);
     }
 }
 

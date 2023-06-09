@@ -63,9 +63,9 @@ std::set<std::pair<std::shared_ptr<Edge>, int>> Graph::getEdgeWithActionChangePl
     std::set<std::string> nodes;
     std::set<std::pair<std::shared_ptr<Edge>, int>> edges;
 
-    for (auto &state : getOuterNodeNames())
+    for (auto &node : getOuterNodes())
     {
-        for (const auto &[edge, iid] : getOutgoingEdgesFrom(state))
+        for (const auto &[edge, iid] : getOutgoingEdgesFrom(node->toString()))
         {
             for (const auto &action : edge->getActions())
             {
@@ -99,9 +99,9 @@ const std::vector<std::string> &Graph::getOuterAndInnerNodeNames() const
     return outerAndInnerNodeNames_;
 }
 
-const std::vector<std::string> &Graph::getOuterNodeNames() const
+const std::vector<std::shared_ptr<Node>> &Graph::getOuterNodes() const
 {
-    return outerNodeNames_;
+    return outerNodes_;
 }
 
 std::vector<std::string> Graph::getOutgoingNodesFrom(std::string from) const
@@ -274,14 +274,14 @@ std::shared_ptr<Graph> Graph::getGraphWithOptimizedPaths() const
 void Graph::initialize()
 {
     std::set<std::string> nodes;
-    std::set<std::string> outerNodes;
+    std::set<std::shared_ptr<Node>, ByNameComparator<std::shared_ptr<Node>>> outerNodes;
 
     for (auto &&edge : edges_)
     {
         nodes.insert(edge->fromName());
         nodes.insert(edge->toName());
-        outerNodes.insert(edge->fromName());
-        outerNodes.insert(edge->toName());
+        outerNodes.insert(edge->getLeftNode());
+        outerNodes.insert(edge->getRightNode());
 
         for (const auto &innerNode : edge->getInnerNodes())
         {
@@ -294,7 +294,7 @@ void Graph::initialize()
     outgoingEdgesFromNode_.resize(numberOfNodes);
 
     outerAndInnerNodeNames_.insert(outerAndInnerNodeNames_.end(), nodes.begin(), nodes.end());
-    outerNodeNames_.insert(outerNodeNames_.end(), outerNodes.begin(), outerNodes.end());
+    outerNodes_.insert(outerNodes_.end(), outerNodes.begin(), outerNodes.end());
 
     for (auto &node : nodes)
     {

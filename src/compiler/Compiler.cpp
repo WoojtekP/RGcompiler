@@ -282,8 +282,9 @@ std::string Compiler::getTemporaryVariableName(int idx, int edgeId)
 
 void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
 {
-    for (auto& state : graph->getOuterNodeNames())
+    for (auto& node : graph->getOuterNodes())
     {
+        const std::string state = node->toString();
         std::string prefix = "state_";
         std::string functionArguments = "moves, mr";
 
@@ -294,6 +295,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
         }
         std::string functionName = prefix + name;
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "void");
+
+        // if (const auto& optBinding = node->getBinding())
+        // {
+        //     function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+        //         optBinding->getVariableName(), optBinding->getTypeName()));
+        // }
 
         function->addArgument(
             std::make_unique<VariableDeclarationInstruction>("moves", "[[maybe_unused]] std::vector<Move>&"));
@@ -374,8 +381,9 @@ void Compiler::generateBoolStateFunctions(
     std::string name = patternIdToPrefixName[patternId];
     std::string cacheName = "cache";
     std::string prefix = "is_legal_" + name;
-    for (auto& state : graph->getOuterNodeNames())
+    for (auto& node : graph->getOuterNodes())
     {
+        const std::string state = node->toString();
         std::string functionName = prefix + std::to_string(graph_->getNodeId(from)) + "_" +
                                    std::to_string(graph_->getNodeId(to)) + "_" +
                                    std::to_string(graph_->getNodeId(state));

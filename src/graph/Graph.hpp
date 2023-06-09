@@ -11,11 +11,21 @@
 #include <graph/Node.hpp>
 
 
+template <typename T>
+struct ByNameComparator
+{
+    inline bool operator()(const T& lhs, const T& rhs) const
+    {
+        return lhs->toString() < rhs->toString();
+    };
+};
+
+
 class Graph
 {
     std::vector<int> numberOfIncomingEdges_;
     std::vector<std::string> outerAndInnerNodeNames_;
-    std::vector<std::string> outerNodeNames_;
+    std::vector<std::shared_ptr<Node>> outerNodes_;
     std::vector<std::vector<std::pair<std::shared_ptr<Edge>, int>>> outgoingEdgesFromNode_;
     std::vector<std::tuple<std::string, std::string, int>> edgeNames_;
     std::map<std::string, int> nodeStringToInt_;
@@ -50,7 +60,7 @@ public:
     std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(
         const std::string &name, bool checkPlayerChange = false) const;
     const std::vector<std::string> &getOuterAndInnerNodeNames() const;
-    const std::vector<std::string> &getOuterNodeNames() const;
+    const std::vector<std::shared_ptr<Node>> &getOuterNodes() const;
     const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(std::string from) const;
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames() const;
     std::vector<std::tuple<std::shared_ptr<Edge>, int>> getAllEdges() const;

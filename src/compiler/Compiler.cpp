@@ -286,7 +286,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
     {
         const std::string state = node->toString();
         std::string prefix = "state_";
-        std::string functionArguments = "moves, mr";
 
         std::string name = std::to_string(graph->getNodeId(state));
         if (debugFlag_ == 2)
@@ -309,7 +308,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
 
         if (!optNoCycleDetection_)
         {
-            functionArguments += "," + mainCacheName_;
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
         }
@@ -339,13 +337,6 @@ void Compiler::generateVoidStateOptimizedFunction(
 {
     std::set<std::shared_ptr<Edge>> complementaryEdges;
     const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
-
-    std::string functionArguments = "moves, mr";
-
-    if (!optNoCycleDetection_)
-    {
-        functionArguments += "," + mainCacheName_;
-    }
 
     for (auto [outgoingEdge, iid] : outgoingEdges)
     {

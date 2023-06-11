@@ -325,7 +325,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph)
         {
             for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
             {
-                function->addInstruction(generateVoidEdgeInstruction(graph, state, outgoingEdge->toName(), iid));
+                function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid));
             }
         }
         program_.addFunction(std::move(function));
@@ -345,7 +345,7 @@ void Compiler::generateVoidStateOptimizedFunction(
             const std::string shouldCheckVarName = "should_check_" + outgoingEdge->toName();
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, shouldCheckVarName));
-            ifInstruction->addInstruction(generateVoidEdgeInstruction(graph, state, outgoingEdge->toName(), iid));
+            ifInstruction->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid));
             function->addInstruction(std::move(ifInstruction));
         }
         else if (const auto complementaryEdge = findComplementaryEdge(outgoingEdge, outgoingEdges))
@@ -355,13 +355,13 @@ void Compiler::generateVoidStateOptimizedFunction(
             const std::string shouldCheckVarName = "should_check_" + complementaryEdge->toName();
             function->addInstruction(
                 std::make_unique<AssignmentInstruction>(sizeVarName, "moves.size()", "const auto"));
-            function->addInstruction(generateVoidEdgeInstruction(graph, state, outgoingEdge->toName(), iid));
+            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid));
             function->addInstruction(std::make_unique<AssignmentInstruction>(
                 shouldCheckVarName, "(" + sizeVarName + "==moves.size())", "const auto"));
         }
         else
         {
-            function->addInstruction(generateVoidEdgeInstruction(graph, state, outgoingEdge->toName(), iid));
+            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid));
         }
     }
 }
@@ -496,10 +496,11 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Graph>& graph,
     std::vector<std::shared_ptr<IAction>>& actions,
-    std::string stateFrom,
-    std::string stateTo,
+    const std::shared_ptr<Edge>& edge,
     int iid)
 {
+    const std::string stateFrom = edge->fromName();
+    const std::string stateTo = edge->toName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
     bool mrPused = false;
@@ -545,12 +546,13 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 }
 
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
-    const std::shared_ptr<Graph>& graph, const std::string& stateFrom, const std::string& stateTo, int iid)
+    const std::shared_ptr<Graph>& graph, const std::shared_ptr<Edge>& edge, int iid)
 {
+    const std::string stateFrom = edge->fromName();
+    const std::string stateTo = edge->toName();
     const auto& baseActions = graph->getActions(stateFrom, stateTo, iid);
     std::vector<std::shared_ptr<IAction>> actions(baseActions.begin(), baseActions.end());
-    std::unique_ptr<BlockInstruction> blockInstruction =
-        prepareBaseInstructions(graph, actions, stateFrom, stateTo, iid);
+    std::unique_ptr<BlockInstruction> blockInstruction = prepareBaseInstructions(graph, actions, edge, iid);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 

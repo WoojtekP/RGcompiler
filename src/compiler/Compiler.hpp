@@ -4,6 +4,7 @@
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Graph.hpp>
+#include <graph/Edge.hpp>
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
 
@@ -40,12 +41,11 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const std::shared_ptr<Graph> &graph, const std::string &stateFrom, const std::string &stateTo, int iid);
+        const std::shared_ptr<Graph> &graph, const std::shared_ptr<Edge>& edge, int iid);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
-        std::string stateFrom,
-        std::string stateTo,
+        const std::shared_ptr<Edge>& edge,
         int iid);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
         const std::string &from,

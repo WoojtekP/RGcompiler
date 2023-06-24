@@ -20,6 +20,7 @@ private:
     std::shared_ptr<IAction> createActionComparison(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionPatternAny(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionSkip();
+    std::shared_ptr<IAction> createActionTag(const nlohmann::json& label);
     const Parser& parser_;
     const ValueAssigner& valueAssigner_;
     ExpressionFactory expressionFactory_;

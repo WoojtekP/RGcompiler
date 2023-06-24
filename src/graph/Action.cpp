@@ -119,3 +119,37 @@ bool ActionSkip::getNegated() const
 {
     return false;
 }
+
+ActionTag::ActionTag(const nlohmann::json& label)
+{
+    auto symbols = label["symbols"];
+    for (auto &symbol : symbols)
+    {
+        tag_ += symbol;
+    }
+}
+
+std::string ActionTag::toString() const
+{
+    return tag_;
+}
+
+std::string ActionTag::getLeftSide() const
+{
+    return "";
+}
+
+std::string ActionTag::getRightSide() const
+{
+    return "";
+}
+
+ActionType ActionTag::getType() const
+{
+    return ActionType::Tag;
+}
+
+bool ActionTag::getNegated() const
+{
+    return false;
+}

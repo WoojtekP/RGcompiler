@@ -66,6 +66,7 @@ public:
     std::vector<std::tuple<std::shared_ptr<Edge>, int>> getAllEdges() const;
     const std::vector<std::shared_ptr<IAction>> &getActions(std::string fromName, std::string toName, int iid) const;
     std::set<std::pair<std::shared_ptr<Edge>, int>> getEdgeWithActionChangePlayer();
+    std::set<std::pair<std::shared_ptr<Edge>, int>> getEdgeWithActionTag();
     std::string toString() const;
     std::shared_ptr<Graph> getGraphWithOptimizedPaths() const;
     int getEdgeId(std::string from, std::string to, int iid) const;

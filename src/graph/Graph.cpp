@@ -8,7 +8,6 @@
 
 #include <parser/Parser.hpp>
 
-
 Graph::~Graph() {}
 
 void Graph::addEdge(std::shared_ptr<Edge> &&edge)
@@ -51,7 +50,7 @@ const std::vector<std::tuple<std::string, std::string, int>> &Graph::getEdgeName
 std::vector<std::tuple<std::shared_ptr<Edge>, int>> Graph::getAllEdges() const
 {
     std::vector<std::tuple<std::shared_ptr<Edge>, int>> allEdges;
-    for (const auto& edges : outgoingEdgesFromNode_)
+    for (const auto &edges : outgoingEdgesFromNode_)
     {
         allEdges.insert(allEdges.end(), edges.begin(), edges.end());
     }
@@ -70,6 +69,32 @@ std::set<std::pair<std::shared_ptr<Edge>, int>> Graph::getEdgeWithActionChangePl
             for (const auto &action : edge->getActions())
             {
                 if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+                {
+                    if (nodes.find(edge->toName()) == nodes.end())
+                    {
+                        edges.insert(std::make_pair(edge, iid));
+                        nodes.insert(edge->toName());
+                    }
+                }
+            }
+        }
+    }
+
+    return edges;
+}
+
+std::set<std::pair<std::shared_ptr<Edge>, int>> Graph::getEdgeWithActionTag()
+{
+    std::set<std::string> nodes;
+    std::set<std::pair<std::shared_ptr<Edge>, int>> edges;
+
+    for (auto &node : getOuterNodes())
+    {
+        for (const auto &[edge, iid] : getOutgoingEdgesFrom(node->toString()))
+        {
+            for (const auto &action : edge->getActions())
+            {
+                if (action->getType() == ActionType::Tag)
                 {
                     if (nodes.find(edge->toName()) == nodes.end())
                     {
@@ -128,6 +153,11 @@ std::vector<std::tuple<std::string, std::string, int>> Graph::getUnambiguousPath
     while (getNumberOfOutgoingEdges(node) == 1)
     {
         const auto &[edge, iid] = getOutgoingEdgesFrom(node).back();
+
+        if (edge->getActions().front()->getType() == ActionType::Tag)
+        {
+            return path;
+        }
 
         path.push_back(std::make_tuple(edge->fromName(), edge->toName(), iid));
         if (checkPlayerChange)

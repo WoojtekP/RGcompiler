@@ -24,7 +24,7 @@ bool keeperCompletion(reasoner::GameState &state) {
     #ifndef NDEBUG
       if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
     #endif
-    state.applyMove(moves[0]);
+    state.applyMove(moves[0], cache);
 
     //state.applyAnyMove(cache);
   }
@@ -45,7 +45,7 @@ void doSimulation() {
     numMoves += moves.size();
     if (moves.size() < minMoves) minMoves = moves.size(); else
     if (moves.size() > maxMoves) maxMoves = moves.size();
-    state.applyMove(moves[randomGenerator.rand_uint(moves.size())]);
+    state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
     
     if (!keeperCompletion(state)) break;
   }

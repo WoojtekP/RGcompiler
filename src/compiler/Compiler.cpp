@@ -337,17 +337,17 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (optConditionsGeneratingMoves_ && !applyMode)
+        /* if (optConditionsGeneratingMoves_ && !applyMode)
         {
             generateVoidStateOptimizedFunction(state, function, graph);
         }
         else
+        {*/
+        for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
         {
-            for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
-            {
-                function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
-            }
+            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
         }
+        //}
         program_.addFunction(std::move(function));
     }
 }
@@ -578,15 +578,10 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         if (applyEdgeMode && actions.front()->getType() == ActionType::Tag)
         {
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false, std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)), "mr[currentMrId]"));
-
-            ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMrId++"));
-            ifInstruction->addInstruction(
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId++"));
+            blockInstruction->pushInstructionBack(
                 std::make_unique<CustomInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
-            ifInstruction->addInstruction(std::make_unique<CustomInstruction>("currentMrId--"));
-            blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
         }
         else
         {
@@ -623,10 +618,13 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         {
             blockInstruction->pushInstructionFront(
                 std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
-            blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
-            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                action->getLeftSide(), getTemporaryVariableName(temporaryVariableCnt, edgeId)));
+            if (!applyEdgeMode)
+            {
+                blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+                    getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
+                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                    action->getLeftSide(), getTemporaryVariableName(temporaryVariableCnt, edgeId)));
+            }
             temporaryVariableCnt++;
         }
         else if (action->getType() == ActionType::Comparison)
@@ -638,6 +636,19 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
+        }
+        else if (action->getType() == ActionType::Tag)
+        {
+            if (applyEdgeMode)
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        false, std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)), "mr[currentMrId]"));
+
+                ifInstruction->addInstruction(std::move(blockInstruction));
+                blockInstruction = std::make_unique<BlockInstruction>();
+                blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
         {

@@ -45,7 +45,7 @@ ActionComparison::ActionComparison(const nlohmann::json& label, const Expression
 
 std::string ActionComparison::toString() const
 {
-    return left_->toString() + " == " + right_->toString();
+    return left_->toString() + (getNegated() ? "!=" : "==") + right_->toString();
 }
 
 ActionType ActionComparison::getType() const

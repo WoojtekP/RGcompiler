@@ -255,14 +255,16 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentMrId", std::move(currentMrIdType), std::move(currentMrIdValue)));
 
-   // if (debugFlag_)
-   // {
-        program_.addVariableDeclaration(
-            std::make_unique<Variable>("verificationCache", std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
-   // }
-   std::string s1 = "std::array<std::unordered_set<move_representation, vector_hash>," + std::to_string(graph->getMaximalNodeId()) + "+ 10 >";
-  program_.addVariableDeclaration(
-            std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(s1))));
+    if (debugFlag_)
+    {
+        program_.addVariableDeclaration(std::make_unique<Variable>(
+            "verificationCache",
+            std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
+    }
+    std::string stateCacheDeclaration = "std::array<std::unordered_set<move_representation, vector_hash>," +
+                     std::to_string(graph->getMaximalNodeId()) + "+ 10 >";
+    program_.addVariableDeclaration(
+        std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
     // TODO: this is too tricky (declaring variable with type using), need proper implementation
     for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())
     {
@@ -360,9 +362,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         if (!applyMode)
         {
             std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
-            std::unique_ptr<IfInstruction> ifInstruction =
-                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                            true, cacheName + ".find(mr)", cacheName + ".end()"));
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(mr).second"));
             ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
 
             function->addInstruction(std::move(ifInstruction));
@@ -580,17 +581,16 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         }
         else
         {
-            //if (debugFlag_)
-           // {
-                std::unique_ptr<IfInstruction> ifInstruction1 = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(true, "verificationCache.find(mr)", "verificationCache.end()"));
-                std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(true, "verificationCache.at(mr)", std::to_string(graph->getNodeId(stateTo))));
+            if (debugFlag_)
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        true,
+                        "verificationCache.insert(std::make_pair(mr," + std::to_string(graph->getNodeId(stateTo)) +
+                            ")).second"));
                 ifInstruction->addInstruction(std::make_unique<CustomInstruction>("abort()"));
-                ifInstruction1->addInstruction(std::move(ifInstruction));
-                blockInstruction->pushInstructionBack(std::move(ifInstruction1));
-          //  }
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("verificationCache[mr] = " + std::to_string(graph->getNodeId(stateTo))));
+                blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
             blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("moves.push_back(mr)"));
             actions.pop_back();
         }
@@ -622,8 +622,9 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         {
             blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId++"));
 
-            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(false, stateName + functionName + "(" + stateFunctionArguments + ")"));
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    false, stateName + functionName + "(" + stateFunctionArguments + ")"));
             ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
             blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
@@ -632,8 +633,9 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         {
             if (applyEdgeMode)
             {
-                std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(false, stateName + functionName + "(" + stateFunctionArguments + ")"));
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        false, stateName + functionName + "(" + stateFunctionArguments + ")"));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
@@ -1029,9 +1031,14 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
-    std::string clearingCaches = "for (auto &us : state_cache) { us.clear();}\n verificationCache.clear();";
-    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(clearingCaches +
-        "moves.clear();\nmove_representation mr;\nrunState(currentState, moves,mr," + mainCacheName_ + ")"));
+    std::string clearingCaches = "for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
+    if (debugFlag_)
+    {
+        clearingCaches += "verificationCache.clear();\n";
+    }
+    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
+        clearingCaches + "moves.clear();\nmove_representation mr;\nrunState(currentState, moves,mr," + mainCacheName_ +
+        ")"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));

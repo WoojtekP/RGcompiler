@@ -10,16 +10,11 @@
 #include <graph/Edge.hpp>
 #include <graph/Node.hpp>
 
-
-template <typename T>
+template<typename T>
 struct ByNameComparator
 {
-    inline bool operator()(const T& lhs, const T& rhs) const
-    {
-        return lhs->toString() < rhs->toString();
-    };
+    inline bool operator()(const T &lhs, const T &rhs) const { return lhs->toString() < rhs->toString(); };
 };
-
 
 class Graph
 {
@@ -80,4 +75,6 @@ public:
     void getVariablesInPatternGraphs(std::set<std::string> &result) const;
     std::pair<std::shared_ptr<Edge>, int> getUnambiguousNotEmptyEdge(const std::string &name) const;
     int getMaximalNodeId() const;
+    void findUniqeNodesOnPaths(std::set<int> &result, const std::vector<int> &startNodes) const;
+    void uniqueDfs(int node, std::set<int> &result) const;
 };

@@ -9,7 +9,6 @@
 
 #include <nlohmann/json.hpp>
 
-
 class Parser
 {
 public:
@@ -21,6 +20,7 @@ public:
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
     nlohmann::json getEdges() const;
+    std::vector<nlohmann::json> getPragmas(const std::string& type) const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
     nlohmann::json getDestinationType(const nlohmann::json& t) const;
@@ -38,5 +38,4 @@ private:
     std::set<std::string> symbols_;
     std::set<std::string> constants_;
     std::set<std::string> variables_;
-
 };

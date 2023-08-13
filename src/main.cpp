@@ -22,9 +22,9 @@ int main(const int argc, const char **argv)
             "print-function-names",
             boost::program_options::value<bool>(&options.printOriginalNames_)->default_value(0),
             "Print original node names during execution")(
-            "show-original-node-names",
+            "preserve-original-node-names",
             boost::program_options::value<bool>(&options.preserveOriginalNames_)->default_value(0),
-            "Show original node names")(
+            "Preserve original node names")(
             "verification",
             boost::program_options::value<bool>(&options.verification_)->default_value(0),
             "Extra verification for transducer")(

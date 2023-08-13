@@ -41,6 +41,7 @@ add_executable(rg2cpp
     src/compiler/cacheContainers/StlContainerBase.cpp
     src/compiler/cacheContainers/SetContainer.cpp
     src/compiler/cacheContainers/UnorderedSetContainer.cpp
+    src/compiler/tagsHandlers/UniqueHandler.cpp
     src/compiler/Compiler.cpp)
 
 target_link_libraries(rg2cpp Boost::program_options)

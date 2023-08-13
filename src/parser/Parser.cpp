@@ -6,8 +6,8 @@
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
 
-
-Parser::Parser(std::ifstream& jsonGameFile) : parsedJson_(nlohmann::json::parse(jsonGameFile))
+Parser::Parser(std::ifstream& jsonGameFile)
+: parsedJson_(nlohmann::json::parse(jsonGameFile))
 {
     for (const auto& type : getTypeDeclarations())
     {
@@ -64,6 +64,19 @@ nlohmann::json Parser::getConstants() const
 nlohmann::json Parser::getEdges() const
 {
     return parsedJson_["edges"];
+}
+
+std::vector<nlohmann::json> Parser::getPragmas(const std::string& type) const
+{
+    std::vector<nlohmann::json> res;
+    for (const auto& pragma : parsedJson_["pragmas"])
+    {
+        if (pragma["kind"] == type)
+        {
+            res.push_back(pragma);
+        }
+    }
+    return res;
 }
 
 std::vector<std::string> Parser::getDomain(const std::string& typeIdentifier) const

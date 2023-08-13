@@ -396,6 +396,10 @@ int Graph::getNumberOfIncomingEdges(const std::string &node) const
 
 int Graph::getNodeId(std::string name) const
 {
+    if (nodeStringToInt_.find(name) == nodeStringToInt_.end())
+    {
+        return -1;
+    }
     return nodeStringToInt_.at(name);
 }
 
@@ -643,4 +647,35 @@ void Graph::getVariablesInPatternGraphs(std::set<std::string> &result) const
 int Graph::getMaximalNodeId() const
 {
     return nodeStringToInt_.size();
+}
+
+void Graph::uniqueDfs(int node, std::set<int> &result) const
+{
+    result.insert(node);
+
+    for (const auto &[edge, iid] : getOutgoingEdgesFrom(nodeIdToNode_.at(node)->getName()))
+    {
+        bool newUniqueTag = false;
+        for (const auto &action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Tag)
+            {
+                newUniqueTag = true;
+                continue;
+            }
+        }
+
+        if (!newUniqueTag)
+        {
+            uniqueDfs(nodeStringToInt_.at(edge->toName()), result);
+        }
+    }
+}
+
+void Graph::findUniqeNodesOnPaths(std::set<int> &result, const std::vector<int> &startNodes) const
+{
+    for (int node : startNodes)
+    {
+        uniqueDfs(node, result);
+    }
 }

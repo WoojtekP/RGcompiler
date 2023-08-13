@@ -56,10 +56,21 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 
 void Compiler::compile()
 {
+    handleTags();
     generateTypes();
     generateConstants();
     generateVariables(graph_);
     generateFunctions();
+}
+
+void Compiler::handleTags()
+{
+    handleUniqueTag();
+}
+
+void Compiler::handleUniqueTag()
+{
+    uniqueHandler_ = std::make_unique<UniqueHandler>(graph_, parser_);
 }
 
 void Compiler::initializeGraph()
@@ -361,7 +372,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else
         {*/
 
-        if (!applyMode)
+        if (!applyMode && !uniqueHandler_->isOnUniquePath(graph->getNodeId(state)))
         {
             std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(

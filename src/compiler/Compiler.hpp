@@ -2,6 +2,7 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
+#include <compiler/tagsHandlers/UniqueHandler.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
@@ -27,6 +28,8 @@ public:
 
 private:
     void initializeGraph();
+    void handleTags();
+    void handleUniqueTag();
     void generateTypes();
     void generateConstants();
     void generateFunctions();
@@ -114,5 +117,6 @@ private:
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;
+    std::unique_ptr<UniqueHandler> uniqueHandler_;
     ContainerChooser containerChooser_;
 };

@@ -22,7 +22,7 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions --normalizeTypes'
-  DEFAULT_RG2CPP_OPTIONS = '--opt-conditions 3 --simple-path-compression 1 --move-compression 1 --no-cycle-detection 0'
+  DEFAULT_RG2CPP_OPTIONS = '--opt-conditions 3 --simple-path-compression 1 --no-cycle-detection 0 --debug 0'
 
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):

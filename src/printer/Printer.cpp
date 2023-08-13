@@ -35,6 +35,10 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <set>" << std::endl;
     headerFile_ << "#include <string>" << std::endl;
     headerFile_ << "#include <tuple>" << std::endl;
+    //if (debug)
+    //{
+        headerFile_ << "#include <unordered_map>" << std::endl;
+    //}
     headerFile_ << "#include <unordered_set>" << std::endl;
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << std::endl;

@@ -7,7 +7,6 @@
 #include <graph/Expression.hpp>
 #include <graph/ExpressionFactory.hpp>
 
-
 enum class ActionType
 {
     Assignment,
@@ -15,7 +14,8 @@ enum class ActionType
     Comparison,
     Skip,
     PatternAny,
-    Pattern
+    Pattern,
+    Tag
 };
 
 class IAction
@@ -88,6 +88,18 @@ class ActionSkip : public IAction
 {
 public:
     ActionSkip() = default;
+    std::string toString() const override;
+    std::string getLeftSide() const override;
+    std::string getRightSide() const override;
+    ActionType getType() const override;
+    bool getNegated() const override;
+};
+
+class ActionTag : public IAction
+{
+    std::string tag_;
+public:
+    ActionTag(const nlohmann::json& label);
     std::string toString() const override;
     std::string getLeftSide() const override;
     std::string getRightSide() const override;

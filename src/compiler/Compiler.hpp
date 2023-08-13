@@ -3,6 +3,7 @@
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <graph/ActionFactory.hpp>
+#include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
@@ -12,7 +13,6 @@ struct Options
     int debug;
     int optConditions;
     bool simplePathCompression_;
-    bool moveCompression_;
     bool noCycleDetection_;
 };
 
@@ -29,7 +29,7 @@ private:
     void generateConstants();
     void generateFunctions();
     void generateVariables(const std::shared_ptr<Graph> &graph);
-    void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph);
+    void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateBoolStateFunctions(
         const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, int patternId = 0);
     std::unique_ptr<BlockInstruction> addActionPattern(
@@ -40,13 +40,13 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const std::shared_ptr<Graph> &graph, const std::string &stateFrom, const std::string &stateTo, int iid);
+        const std::shared_ptr<Graph> &graph, const std::shared_ptr<Edge> &edge, int iid, bool applyEdgeMode = false);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
-        std::string stateFrom,
-        std::string stateTo,
-        int iid);
+        const std::shared_ptr<Edge> &edge,
+        int iid,
+        bool applyEdgeMode);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
         const std::string &from,
         const std::string &to,
@@ -64,13 +64,15 @@ private:
         const std::string &cacheName,
         const std::string &prefix,
         int patternId);
-    void generateApplyEdgeFunctions(const std::shared_ptr<Graph> &graph);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
-    void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
-    void generateRunStateFunction(const std::shared_ptr<Graph> &graph);
+    //void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
+    void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
     void generateVoidStateOptimizedFunction(
-        const std::string &state, const std::unique_ptr<Function> &function, const std::shared_ptr<Graph> &graph);
+        const std::string &state,
+        const std::unique_ptr<Function> &function,
+        const std::shared_ptr<Graph> &graph,
+        bool applyMode = false);
     void generatePatternFunctions(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, int patternId = 0);
     void generatePatternReachabilityFunctions();
@@ -104,7 +106,6 @@ private:
     const bool optConditionsReachability_;
     const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;
-    const bool optConditionsMoveCompression_;
     const bool optNoCycleDetection_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
     const std::string mainCacheName_;

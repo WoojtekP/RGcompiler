@@ -1,12 +1,10 @@
 #include "ActionFactory.hpp"
 
-
 ActionFactory::ActionFactory(const Parser& parser, const ValueAssigner& valueAssigner)
 : parser_(parser)
 , valueAssigner_(valueAssigner)
 , expressionFactory_(parser, valueAssigner)
-{
-}
+{}
 
 std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label)
 {
@@ -34,6 +32,10 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     if (labelKind == "Skip")
     {
         return createActionSkip();
+    }
+    if (labelKind == "Tag")
+    {
+        return createActionTag(label);
     }
     throw std::runtime_error("[ActionFactory] Unknown type of action: " + labelKind);
 }
@@ -66,4 +68,9 @@ std::shared_ptr<IAction> ActionFactory::createActionPatternAny(const nlohmann::j
 std::shared_ptr<IAction> ActionFactory::createActionSkip()
 {
     return std::make_shared<ActionSkip>();
+}
+
+std::shared_ptr<IAction> ActionFactory::createActionTag(const nlohmann::json& label)
+{
+    return std::make_shared<ActionTag>(label);
 }

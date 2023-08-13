@@ -95,6 +95,21 @@ std::string ContainerChooser::getAdditionalData() const
 
     result += createCache(bitArrayContainers);
 
+    result += R"(struct vector_hash
+{
+  size_t operator()(const move_representation &v) const
+  {
+    int res = 0;
+    for (int x : v)
+    {
+      res ^= x;
+    }
+
+    return res;
+  }
+};
+)";
+
     return result;
 }
 

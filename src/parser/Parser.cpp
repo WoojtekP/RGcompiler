@@ -141,7 +141,7 @@ nlohmann::json Parser::findTypeOfExpression(const nlohmann::json& expression) co
     {
         throw std::runtime_error("[Parser] Illegal operation: cannot extract type from edge.");
     }
-    throw std::runtime_error("[ExpressionFactory] Unknown type of expression " + expressionKind);
+    throw std::runtime_error("[Parser] Unknown type of expression " + expressionKind);
 }
 
 nlohmann::json Parser::findTypeOfVariable(const std::string& identifier) const

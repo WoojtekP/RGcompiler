@@ -4,7 +4,6 @@
 
 #include <nlohmann/json.hpp>
 
-
 class IExpression
 {
 public:

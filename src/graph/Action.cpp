@@ -4,13 +4,11 @@
 
 #include <graph/Action.hpp>
 
-
 ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : left_(expressionFactory.createExpression(label["lhs"]))
 , right_(expressionFactory.createExpression(label["rhs"]))
 , negated_(label.count("negated") ? label["negated"].get<bool>() : false)
-{
-}
+{}
 
 bool ActionBase::getNegated() const
 {
@@ -47,7 +45,7 @@ ActionComparison::ActionComparison(const nlohmann::json& label, const Expression
 
 std::string ActionComparison::toString() const
 {
-    return left_->toString() + " == " + right_->toString();
+    return left_->toString() + (getNegated() ? "!=" : "==") + right_->toString();
 }
 
 ActionType ActionComparison::getType() const
@@ -118,6 +116,40 @@ ActionType ActionSkip::getType() const
 }
 
 bool ActionSkip::getNegated() const
+{
+    return false;
+}
+
+ActionTag::ActionTag(const nlohmann::json& label)
+{
+    auto symbols = label["symbols"];
+    for (auto &symbol : symbols)
+    {
+        tag_ += symbol;
+    }
+}
+
+std::string ActionTag::toString() const
+{
+    return tag_;
+}
+
+std::string ActionTag::getLeftSide() const
+{
+    return "";
+}
+
+std::string ActionTag::getRightSide() const
+{
+    return "";
+}
+
+ActionType ActionTag::getType() const
+{
+    return ActionType::Tag;
+}
+
+bool ActionTag::getNegated() const
 {
     return false;
 }

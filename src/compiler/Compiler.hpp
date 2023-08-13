@@ -10,10 +10,12 @@
 
 struct Options
 {
-    int debug;
     int optConditions;
     bool simplePathCompression_;
     bool noCycleDetection_;
+    bool printOriginalNames_;
+    bool preserveOriginalNames_;
+    bool verification_;
 };
 
 class Compiler
@@ -102,7 +104,9 @@ private:
     std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
-    const int debugFlag_;
+    const bool printOriginalNames_;
+    const bool preserveOriginalNames_;
+    const bool verification_;
     const bool optConditionsReachability_;
     const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;

@@ -39,7 +39,9 @@ std::shared_ptr<Edge> findComplementaryEdge(
 Compiler::Compiler(const Parser& parser, const Options& options)
 : parser_(parser)
 , valueAssigner_(parser_.getTypeDeclarations())
-, debugFlag_(options.debug)
+, printOriginalNames_(options.printOriginalNames_)
+, preserveOriginalNames_(options.preserveOriginalNames_)
+, verification_(options.verification_)
 , optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
 , optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
@@ -179,7 +181,7 @@ int Compiler::getDomain(const std::string& s)
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
 {
     Printer printer(parser_, valueAssigner_, headerFile, sourceFile);
-    printer.initializeHeaderFile(debugFlag_);
+    printer.initializeHeaderFile(printOriginalNames_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());
     printer.printSymbolValues();
@@ -255,14 +257,14 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentMrId", std::move(currentMrIdType), std::move(currentMrIdValue)));
 
-    if (debugFlag_)
+    if (verification_)
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
             "verificationCache",
             std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
     }
     std::string stateCacheDeclaration = "std::array<std::unordered_set<move_representation, vector_hash>," +
-                     std::to_string(graph->getMaximalNodeId()) + "+ 10 >";
+                                        std::to_string(graph->getMaximalNodeId()) + "+ 10 >";
     program_.addVariableDeclaration(
         std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
     // TODO: this is too tricky (declaring variable with type using), need proper implementation
@@ -311,7 +313,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
 
         std::string name = std::to_string(graph->getNodeId(state));
-        if (debugFlag_ == 2)
+        if (preserveOriginalNames_)
         {
             name = state;
         }
@@ -347,7 +349,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
         }
 
-        if (debugFlag_ == 1)
+        if (printOriginalNames_)
         {
             function->addInstruction(debugInstruction(prefix + state));
         }
@@ -434,14 +436,14 @@ void Compiler::generateBoolStateFunctions(
                                    std::to_string(graph_->getNodeId(to)) + "_" +
                                    std::to_string(graph_->getNodeId(state));
 
-        if (debugFlag_ == 2)
+        if (preserveOriginalNames_)
         {
             functionName = prefix + from + "_" + to + "_" + state;
         }
 
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
 
-        if (debugFlag_ == 1)
+        if (printOriginalNames_)
         {
             function->addInstruction(debugInstruction(functionName));
         }
@@ -514,7 +516,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     std::string prefix = "is_legal_" + patterType;
     std::string functionName = prefix + fromNode + "_" + toNode + "_" + fromNode;
 
-    if (debugFlag_ == 2)
+    if (preserveOriginalNames_)
     {
         functionName = prefix + action->getLeftSide() + "_" + action->getRightSide() + "_" + action->getLeftSide();
     }
@@ -581,7 +583,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         }
         else
         {
-            if (debugFlag_)
+            if (verification_)
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -613,7 +615,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         std::string functionName = std::to_string(graph->getNodeId(stateTo));
 
-        if (debugFlag_ == 2)
+        if (preserveOriginalNames_)
         {
             functionName = stateTo;
         }
@@ -731,7 +733,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         functionArguments = mainCacheName_ + "," + cacheName;
     }
     std::string name = std::to_string(graph_->getNodeId(stateTo));
-    if (debugFlag_ == 2)
+    if (preserveOriginalNames_)
     {
         name = stateTo;
     }
@@ -774,7 +776,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
                          std::to_string(graph_->getNodeId(to)) + "_";
 
-    if (debugFlag_ == 2)
+    if (preserveOriginalNames_)
     {
         prefix = "is_legal_" + name + from + "_" + to + "_";
     }
@@ -963,7 +965,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     for (const auto& [edge, iid] : graph->getEdgeWithActionChangePlayer())
     {
         std::string stateName = std::to_string(graph->getNodeId(edge->toName()));
-        if (debugFlag_ == 2)
+        if (preserveOriginalNames_)
         {
             stateName = edge->toName();
         }
@@ -991,7 +993,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     }
 */
     std::string stateBeginName = std::to_string(graph->getNodeId("begin"));
-    if (debugFlag_ == 2)
+    if (preserveOriginalNames_)
     {
         stateBeginName = "begin";
     }
@@ -1032,7 +1034,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
     std::string clearingCaches = "for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
-    if (debugFlag_)
+    if (verification_)
     {
         clearingCaches += "verificationCache.clear();\n";
     }
@@ -1107,7 +1109,7 @@ void Compiler::generateApplyAnyMove()
             std::string functionName = std::to_string(graph_->getNodeId(nodeName)) + "_" +
                                        std::to_string(graph_->getNodeId(nodeTo)) + "_" +
                                        std::to_string(graph_->getNodeId(nodeName));
-            if (debugFlag_ == 2)
+            if (preserveOriginalNames_)
             {
                 functionName = nodeName + "_" + nodeTo + "_" + nodeName;
             }

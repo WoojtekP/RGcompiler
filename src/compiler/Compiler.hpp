@@ -3,7 +3,6 @@
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
-#include <compiler/tagsHandlers/UniqueHandler.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>

@@ -6,6 +6,7 @@ find_package(nlohmann_json 3.10.5 REQUIRED)
 find_package(Boost 1.71.0 COMPONENTS program_options REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
+# set(CMAKE_CXX_FLAGS -g)
 
 include_directories(src)
 
@@ -41,7 +42,12 @@ add_executable(rg2cpp
     src/compiler/cacheContainers/StlContainerBase.cpp
     src/compiler/cacheContainers/SetContainer.cpp
     src/compiler/cacheContainers/UnorderedSetContainer.cpp
-    src/compiler/tagsHandlers/UniqueHandler.cpp
+    src/compiler/graphOperations/BaseOperator.cpp
+    src/compiler/graphOperations/PragmaUniqueOperator.cpp
+    src/compiler/graphOperations/GetVariableOperator.cpp
+    src/compiler/graphOperations/GenerateGraphsOperator.cpp
+    src/compiler/graphOperations/GetEdgeOperator.cpp
+    src/compiler/graphOperations/GetOptimizedGraphOperator.cpp
     src/compiler/Compiler.cpp)
 
 target_link_libraries(rg2cpp Boost::program_options)

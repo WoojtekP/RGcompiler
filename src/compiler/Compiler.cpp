@@ -50,27 +50,18 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , mainCacheName_("rgCache")
 , mainCacheType_("RgCache")
 , containerChooser_(mainCacheType_)
+, graphOperatorManager_(std::make_shared<GraphOperatorManager>())
+
 {
     initializeGraph();
 }
 
 void Compiler::compile()
 {
-    handleTags();
     generateTypes();
     generateConstants();
     generateVariables(graph_);
     generateFunctions();
-}
-
-void Compiler::handleTags()
-{
-    handleUniqueTag();
-}
-
-void Compiler::handleUniqueTag()
-{
-    uniqueHandler_ = std::make_unique<UniqueHandler>(graph_, parser_);
 }
 
 void Compiler::initializeGraph()
@@ -88,14 +79,19 @@ void Compiler::initializeGraph()
     }
 
     graph_->initialize();
+    graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(parser_);
 
-    patternReachabilityGraphs_ = graph_->generateGraphForPatterns(ActionType::Reachability);
-    patternAnyGraphs_ = graph_->generateGraphForPatterns(ActionType::PatternAny);
-    applyAnyMoveGraphs_ = graph_->generateGraphsForApplyAnyMove();
+    patternReachabilityGraphs_ =
+        graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
+    patternAnyGraphs_ =
+        graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::PatternAny);
+    applyAnyMoveGraphs_ = graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forApplyAnyMove();
 
     if (optConditionsSimplePathCompression_)
     {
-        graph_ = graph_->getGraphWithOptimizedPaths();
+        const auto& nodes = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->getNodes();
+        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
+        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(nodes);
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);
@@ -118,7 +114,9 @@ void Compiler::initializePatternGraphs(
             auto& graph = std::get<2>(patterns[i]);
 
             patterns[i] = std::make_tuple(
-                std::get<0>(patterns[i]), std::get<1>(patterns[i]), graph->getGraphWithOptimizedPaths());
+                std::get<0>(patterns[i]),
+                std::get<1>(patterns[i]),
+                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths());
         }
     }
 
@@ -127,7 +125,8 @@ void Compiler::initializePatternGraphs(
         for (const auto& [from, to, graph] : patterns)
         {
             variablesInPatternGraphs_[std::make_tuple(from, to, patternId)] = std::set<std::string>();
-            graph->getVariablesInPatternGraphs(variablesInPatternGraphs_.at({from, to, patternId}));
+            variablesInPatternGraphs_.at({from, to, patternId}) =
+                graphOperatorManager_->getOperator<GetVariableOperator>(graph)->getVariables();
             const auto& variables = variablesInPatternGraphs_.at({from, to, patternId});
             std::vector<std::pair<std::string, int>> variableAndDomain;
             for (const auto& name : variables)
@@ -372,7 +371,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else
         {*/
 
-        if (!applyMode && !uniqueHandler_->isOnUniquePath(graph->getNodeId(state)))
+        if (!applyMode &&
+            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
         {
             std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
@@ -670,7 +670,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 {
     const std::string stateFrom = edge->fromName();
     const std::string stateTo = edge->toName();
-    const auto& baseActions = graph->getActions(stateFrom, stateTo, iid);
+    const auto& baseActions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::vector<std::shared_ptr<IAction>> actions(baseActions.begin(), baseActions.end());
     std::unique_ptr<BlockInstruction> blockInstruction =
         prepareBaseInstructions(graph, actions, edge, iid, applyEdgeMode);
@@ -792,7 +792,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         prefix = "is_legal_" + name + from + "_" + to + "_";
     }
 
-    const auto& actions = graph->getActions(stateFrom, stateTo, iid);
+    const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::unique_ptr<BlockInstruction> blockInstruction =
         prepareBaseInstructions(graph, actions, stateFrom, stateTo, iid, cacheName, prefix, patternId);
     int temporaryVariableCnt = 0;
@@ -838,7 +838,7 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
-    const auto& edges = graph->getEdgeNames();
+    const auto& edges = graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgeNames();
 
     for (const auto& [stateFrom, stateTo, edgeId] : edges)
     {
@@ -853,7 +853,8 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
         }
         else if (actionBack->getType() == ActionType::Tag || stateFrom == "begin")
         {
-            const auto path = graph->getUnambiguousPathFromNode(stateTo, true);
+            const auto path =
+                graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getUnambiguousPathFromNode(stateTo, true);
 
             if (path.size())
             {
@@ -877,7 +878,7 @@ void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
     auto sw = std::make_unique<SwitchInstruction>("val");
     std::string instructionStr;
 
-    for (const auto& [stateFrom, stateTo, iid] : graph->getEdgeNames())
+    for (const auto& [stateFrom, stateTo, iid] : graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgeNames())
     {
         std::string functionName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
         bool isInstructionStrValid = false;
@@ -973,7 +974,8 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
-    for (const auto& [edge, iid] : graph->getEdgeWithActionChangePlayer())
+    for (const auto& [edge, iid] :
+         graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayer())
     {
         std::string stateName = std::to_string(graph->getNodeId(edge->toName()));
         if (preserveOriginalNames_)
@@ -988,7 +990,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
     }
     /*
-    for (const auto& [edge, iid] : graph->getEdgeWithActionTag())
+    for (const auto& [edge, iid] : graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgeWithActionTag())
     {
         std::string stateName = std::to_string(graph->getNodeId(edge->fromName()));
         if (debugFlag_ == 2)

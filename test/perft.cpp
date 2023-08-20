@@ -19,7 +19,7 @@ void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves[depth], cache);
     if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
-    state.applyMove(moves[depth][0]);
+    state.applyMove(moves[depth][0], cache);
   }
 }
 
@@ -34,7 +34,7 @@ void doPerft(reasoner::GameState &state, const uint depth) {
   if (moves[depth].size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
   for (uint i = 0; i < moves[depth].size(); i++) {
     reasoner::GameState nextState = state;
-    nextState.applyMove(moves[depth][i]);
+    nextState.applyMove(moves[depth][i], cache);
     keeperCompletion(nextState, 0);
     doPerft(nextState, depth-1);
   }

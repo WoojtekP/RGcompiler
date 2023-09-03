@@ -1,3 +1,4 @@
+#include <iostream>
 #include <string>
 
 #include <nlohmann/json.hpp>
@@ -122,11 +123,7 @@ bool ActionSkip::getNegated() const
 
 ActionTag::ActionTag(const nlohmann::json& label)
 {
-    auto symbols = label["symbols"];
-    for (auto &symbol : symbols)
-    {
-        tag_ += symbol;
-    }
+    tag_ = label["symbol"];
 }
 
 std::string ActionTag::toString() const

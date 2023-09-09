@@ -29,7 +29,8 @@ ExpressionCast::ExpressionCast(std::unique_ptr<IExpression> left, std::unique_pt
 
 std::string ExpressionCast::toString() const
 {
-    return "static_cast<" + left_->toString() + ">(" + right_->toString() + ")";
+    //  return "static_cast<" + left_->toString() + ">(" + right_->toString() + ")";
+    return right_->toString();
 }
 
 ExpressionUnaryBase::ExpressionUnaryBase(const std::string& identifier)

@@ -50,8 +50,8 @@ std::unique_ptr<IExpression> ExpressionFactory::createAccessExpression(const nlo
     auto left = createExpression(expression["lhs"]);
     auto right = createExpression(expression["rhs"]);
     const auto sourceType = parser_.getSourceType(parser_.findTypeOfExpression(expression["lhs"]));
-    const auto [minValue, maxValue] = valueAssigner_.getTypeMinMaxValues(sourceType);
-    return std::make_unique<ExpressionAccess>(std::move(left), std::move(right), minValue);
+    //const auto [minValue, maxValue] = valueAssigner_.getTypeMinMaxValues(sourceType);
+    return std::make_unique<ExpressionAccess>(std::move(left), std::move(right), 0);
 }
 
 std::unique_ptr<IExpression> ExpressionFactory::createCastExpression(const nlohmann::json& expression) const

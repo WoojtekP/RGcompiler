@@ -300,8 +300,11 @@ void Compiler::restoreAssignments(
     std::reverse(assignments.begin(), assignments.end());
     for (const auto& action : assignments)
     {
+        std::string lvalue = action->getLeftSide();
+        // lvalue = lvalue.substr(lvalue.find('(') + 1);
+        // lvalue.pop_back();
         function->addInstruction(
-            std::make_unique<AssignmentInstruction>(action->getLeftSide(), getTemporaryVariableName(cnt, edgeId)));
+            std::make_unique<AssignmentInstruction>(lvalue, getTemporaryVariableName(cnt, edgeId)));
         cnt++;
     }
 }
@@ -371,17 +374,17 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else
         {*/
 
-        if (!applyMode &&
-            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
-        {
-            std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
-            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(mr).second"));
-            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
+        // if (!applyMode &&
+        //     !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
+        // {
+        //     std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
+        //     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+        //         std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(mr).second"));
+        //     ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
 
-            function->addInstruction(std::move(ifInstruction));
-            function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
-        }
+        //     function->addInstruction(std::move(ifInstruction));
+        //     function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
+        // }
         for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
         {
             function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
@@ -572,18 +575,6 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::string stateTo = edge->toName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    bool mrPused = false;
-
-    if (actions.front()->getType() == ActionType::Tag)
-    {
-        if (!applyEdgeMode)
-        {
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
-            mrPused = true;
-        }
-    }
-
     if (actions.back()->getType() == ActionType::Assignment && actions.back()->getLeftSide() == "player")
     {
         if (applyEdgeMode)
@@ -631,35 +622,19 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             functionName = stateTo;
         }
 
-        if (applyEdgeMode && actions.front()->getType() == ActionType::Tag)
+        if (applyEdgeMode)
         {
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId++"));
-
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     false, stateName + functionName + "(" + stateFunctionArguments + ")"));
             ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
         }
         else
         {
-            if (applyEdgeMode)
-            {
-                std::unique_ptr<IfInstruction> ifInstruction =
-                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, stateName + functionName + "(" + stateFunctionArguments + ")"));
-                ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
-                blockInstruction->pushInstructionBack(std::move(ifInstruction));
-            }
             blockInstruction->pushInstructionBack(
                 std::make_unique<CustomInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
         }
-    }
-
-    if (mrPused)
-    {
-        blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
     }
 
     return blockInstruction;
@@ -683,15 +658,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
         if (action->getType() == ActionType::Assignment)
         {
+            std::string lvalue = action->getLeftSide();
+            //   lvalue = lvalue.substr(lvalue.find('(') + 1);
+            //   lvalue.pop_back();
             blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
-            if (!applyEdgeMode)
-            {
-                blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                    getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
-                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                    action->getLeftSide(), getTemporaryVariableName(temporaryVariableCnt, edgeId)));
-            }
+                std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
+            blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+                getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
+            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
             temporaryVariableCnt++;
         }
         else if (action->getType() == ActionType::Comparison)
@@ -712,9 +687,17 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false, std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)), "mr[currentMrId]"));
 
+                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
+                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
+            else
+            {
+                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
+                    "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
+                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
             }
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
@@ -804,12 +787,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
         if (action->getType() == ActionType::Assignment)
         {
+            std::string lvalue = action->getLeftSide();
+            // lvalue = lvalue.substr(lvalue.find('(') + 1);
+            // lvalue.pop_back();
             blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
+                std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
             blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
                 getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
             blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                action->getLeftSide(), getTemporaryVariableName(temporaryVariableCnt, edgeId)));
+                lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
             temporaryVariableCnt++;
         }
         else if (action->getType() == ActionType::Comparison)

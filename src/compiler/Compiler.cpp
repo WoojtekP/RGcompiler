@@ -202,7 +202,7 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printVariables(program_.getVariables());
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.endHeaderFile();
+    printer.endHeaderFile(hs_);
     printer.endSourceFile();
 }
 
@@ -247,13 +247,41 @@ void Compiler::generateConstants()
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
+    std::unique_ptr<Function> function = std::make_unique<Function>("operator==", "bool", true, true);
+
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("gs", "const GameState&"));
+
+    std::unique_ptr<Function> function2 = std::make_unique<Function>("operator()", "size_t");
+
+    function2->addArgument(
+        std::make_unique<VariableDeclarationInstruction>("gs", "const std::pair<GameState, move_representation>&"));
+    std::string cmp;
+    std::string hs;
     for (const auto& variable : parser_.getVariables())
     {
         auto valueType = generateType(variable["type"]);
         auto value = generateValue(variable["defaultValue"]);
         const std::string identifier = variable["identifier"].get<std::string>();
-        program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
+        program_.addVariableDeclaration(
+            std::make_unique<Variable>(identifier, std::move(valueType), std::move(value), true));
+        cmp += identifier + " == " + "gs." + identifier + "&&";
+        hs += "hash(std::get<0>(gs)." + identifier + ") ^";
     }
+
+    if (!cmp.empty())
+    {
+        cmp.pop_back();
+        cmp.pop_back();
+        hs.pop_back();
+    }
+
+    // program_.addVariableDeclaration()
+
+    function->addInstruction(std::make_unique<CustomInstruction>("return " + cmp));
+    hs_ = "return hash(std::get<1>(gs)) ^ " + hs;
+    // function2->addInstruction(std::make_unique<CustomInstruction>("return hash(gs.second) ^ " + hs));
+    program_.addFunction(std::move(function));
+    //program_.addFunction(std::move(function2));
 
     std::string initialState = std::to_string(graph->getNodeId("begin"));
 
@@ -273,10 +301,10 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             "verificationCache",
             std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
     }
-    std::string stateCacheDeclaration = "std::array<std::unordered_set<move_representation, vector_hash>," +
-                                        std::to_string(graph->getMaximalNodeId()) + "+ 10 >";
-    program_.addVariableDeclaration(
-        std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
+    //std::string stateCacheDeclaration = "std::unordered_set<std::pair<GameState,move_representation>, GameState>";
+
+    // program_.addVariableDeclaration(
+    //   std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
     // TODO: this is too tricky (declaring variable with type using), need proper implementation
     for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())
     {
@@ -374,17 +402,20 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else
         {*/
 
-        // if (!applyMode &&
-        //     !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
-        // {
-        //     std::string cacheName = "state_cache[" + std::to_string(graph->getNodeId(state)) + "]";
-        //     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        //         std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(mr).second"));
-        //     ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
+        if (!applyMode &&
+            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
+        {
+            std::string cacheName = "state_cache";
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    true,
+                    cacheName + ".insert(std::make_tuple(*this,mr," + std::to_string(graph->getNodeId(state)) +
+                        ")).second"));
+            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
 
-        //     function->addInstruction(std::move(ifInstruction));
-        //     function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
-        // }
+            function->addInstruction(std::move(ifInstruction));
+            // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
+        }
         for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
         {
             function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
@@ -1032,7 +1063,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
-    std::string clearingCaches = "for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
+    std::string clearingCaches = "state_cache.clear();";  //"for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
     if (verification_)
     {
         clearingCaches += "verificationCache.clear();\n";

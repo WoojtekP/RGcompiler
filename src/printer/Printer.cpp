@@ -7,7 +7,6 @@
 #include <printer/Printer.hpp>
 #include <program/Program.hpp>
 
-
 namespace
 {
 bool isNumber(const std::string& s)
@@ -17,11 +16,11 @@ bool isNumber(const std::string& s)
 }  // namespace
 
 Printer::Printer(
-    const Parser& parser,
-    const ValueAssigner& valueAssigner,
-    std::ofstream& headerFile,
-    std::ofstream& sourceFile)
-: parser_(parser), valueAssigner_(valueAssigner), headerFile_(headerFile), sourceFile_(sourceFile)
+    const Parser& parser, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile)
+: parser_(parser)
+, valueAssigner_(valueAssigner)
+, headerFile_(headerFile)
+, sourceFile_(sourceFile)
 {}
 
 void Printer::initializeHeaderFile(bool debug)
@@ -37,7 +36,7 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <tuple>" << std::endl;
     //if (debug)
     //{
-        headerFile_ << "#include <unordered_map>" << std::endl;
+    headerFile_ << "#include <unordered_map>" << std::endl;
     //}
     headerFile_ << "#include <unordered_set>" << std::endl;
     headerFile_ << "#include <vector>" << std::endl;
@@ -69,9 +68,18 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile()
+void Printer::endHeaderFile(std::string& hs)
 {
-    headerFile_ << "}  // namespace reasoner" << std::endl;
+    std::string ss = "struct hasher{";
+    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
+    ss += hs + "^ std::get<2>(gs)" + ";";
+    ss += "}};";
+    std::string stateCacheDeclaration =
+        "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher> state_cache;";
+
+    //  program_.addVariableDeclaration(
+    //  std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
+    headerFile_ << "namespace {" + ss + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
 }
 
 void Printer::endSourceFile()
@@ -190,7 +198,7 @@ void Printer::printMoveRepresentationDeclaration()
     std::string obj = R"(
 class GameState;
 
-typedef boost::container::static_vector<int, 100> move_representation;
+typedef boost::container::static_vector<int, 500> move_representation;
 
 struct Move
 {
@@ -205,12 +213,51 @@ struct Move
     {
         return mr == rhs.mr;
     }
-};)";
+};
+
+namespace
+{
+void combine(size_t& acc, size_t x)
+{
+    acc ^= x;
+}
+
+template<typename T = int>
+size_t hash(int x)
+{
+    return x;
+}
+
+template<typename T, size_t N>
+size_t hash(std::array<T, N> a)
+{
+    size_t acc = 0;
+    for (size_t i = 0; i < N; i++)
+    {
+        combine(acc, hash(a[i]));
+    }
+
+    return acc;
+}
+
+template <typename T, size_t N>
+size_t hash(const boost::container::static_vector<T, N> &v)
+{
+    size_t acc = 0;
+    for (auto x : v)
+    {
+        acc ^= x;
+    }
+    return acc;
+}
+}  // namespace
+
+)";
 
     headerFile_ << obj << std::endl << std::endl;
 }
 
-void Printer::printAdditionDataForCycleHandling(const std::string &s)
+void Printer::printAdditionDataForCycleHandling(const std::string& s)
 {
     headerFile_ << s << std::endl << std::endl;
 }

@@ -1,19 +1,19 @@
 #pragma once
 
+#include <list>
 #include <map>
 #include <memory>
-#include <list>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include <compiler/ValueAssigner.hpp>
 
-
 struct IType
 {
     IType() = default;
-    IType(const std::string &id) : identifier(id) {};
+    IType(const std::string &id)
+    : identifier(id) {};
     virtual ~IType() = default;
     virtual std::string toString() const = 0;
     virtual std::string definitionToString() const = 0;
@@ -24,7 +24,9 @@ struct IType
 struct ElementaryType : public IType
 {
     ElementaryType() = default;
-    ElementaryType(const std::string &id) : IType(id) {}
+    ElementaryType(const std::string &id)
+    : IType(id)
+    {}
     ~ElementaryType() = default;
     std::string toString() const override;
     std::string definitionToString() const override;
@@ -32,9 +34,12 @@ struct ElementaryType : public IType
 
 struct FunctionType : public IType
 {
-    FunctionType(const std::string &id) : IType(id) {};
+    FunctionType(const std::string &id)
+    : IType(id) {};
     FunctionType(std::shared_ptr<IType> src, std::shared_ptr<IType> dst, const int size)
-    : source(std::move(src)), destination(std::move(dst)), domainSize(size)
+    : source(std::move(src))
+    , destination(std::move(dst))
+    , domainSize(size)
     {}
     ~FunctionType() = default;
     std::string toString() const override;
@@ -48,8 +53,13 @@ struct FunctionType : public IType
 struct CustomType : public IType
 {
     CustomType() = default;
-    CustomType(const std::string &id) : IType(id) {}
-    CustomType(const std::string &id, const std::string &typeDef) : IType(id), typeDefinition(typeDef) {}
+    CustomType(const std::string &id)
+    : IType(id)
+    {}
+    CustomType(const std::string &id, const std::string &typeDef)
+    : IType(id)
+    , typeDefinition(typeDef)
+    {}
     ~CustomType() = default;
     std::string toString() const override;
     std::string definitionToString() const override;
@@ -67,7 +77,9 @@ struct IValue
 struct SingleValue : public IValue
 {
     SingleValue() = default;
-    SingleValue(const std::string &sym) : symbol(sym) {}
+    SingleValue(const std::string &sym)
+    : symbol(sym)
+    {}
     ~SingleValue() = default;
     std::string toString(const std::shared_ptr<IType> &, const ValueAssigner &) const override;
 
@@ -78,7 +90,8 @@ struct MapValue : public IValue
 {
     MapValue() = default;
     MapValue(std::map<std::string, std::unique_ptr<IValue>> idToValue, std::unique_ptr<IValue> defaultVal)
-    : idToValueMap(std::move(idToValue)), defaultValue(std::move(defaultVal))
+    : idToValueMap(std::move(idToValue))
+    , defaultValue(std::move(defaultVal))
     {}
     ~MapValue() = default;
     std::string toString(const std::shared_ptr<IType> &, const ValueAssigner &) const override;
@@ -91,10 +104,15 @@ struct IVariable
 {
     IVariable() = default;
     IVariable(const std::string &id, std::shared_ptr<IType> valType, bool isPublic = false)
-    : identifier(id), valueType(std::move(valType)), isPublic_(isPublic)
+    : identifier(id)
+    , valueType(std::move(valType))
+    , isPublic_(isPublic)
     {}
     IVariable(const std::string &id, std::shared_ptr<IType> valType, std::unique_ptr<IValue> val, bool isPublic = false)
-    : identifier(id), valueType(std::move(valType)), value(std::move(val)), isPublic_(isPublic)
+    : identifier(id)
+    , valueType(std::move(valType))
+    , value(std::move(val))
+    , isPublic_(isPublic)
     {}
     virtual ~IVariable() = default;
     virtual std::string toString() const = 0;
@@ -254,13 +272,14 @@ public:
 class Function : public IInstruction
 {
     bool isPublic_;
+    bool isConst_;
     std::string name_;
     std::string returnType_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
     std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
 
 public:
-    Function(std::string name, std::string returnType, bool isPublic = false);
+    Function(std::string name, std::string returnType, bool isPublic = false, bool isConst = false);
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);

@@ -1,11 +1,10 @@
 #include <algorithm>
+#include <iostream>
 #include <memory>
 #include <vector>
-#include <iostream>
 
 #include <compiler/ValueAssigner.hpp>
 #include <program/Program.hpp>
-
 
 std::string ElementaryType::toString() const
 {
@@ -46,14 +45,13 @@ std::string SingleValue::toString(const std::shared_ptr<IType> &, const ValueAss
     return symbol;
 }
 
-std::string MapValue::toString(
-    const std::shared_ptr<IType> &t, const ValueAssigner &valueAssigner) const
+std::string MapValue::toString(const std::shared_ptr<IType> &t, const ValueAssigner &valueAssigner) const
 {
     if (const FunctionType *functionType = dynamic_cast<FunctionType *>(t.get()))
     {
         const std::string sourceTypeName = functionType->source->identifier;
         const auto [minValue, maxValue] = valueAssigner.getTypeMinMaxValues(sourceTypeName);
-        const auto& symbolToValueMap = valueAssigner.getTypeToSymbolToValueMap().at(sourceTypeName);
+        const auto &symbolToValueMap = valueAssigner.getTypeToSymbolToValueMap().at(sourceTypeName);
         const std::string defaultValueString =
             (defaultValue ? defaultValue->toString(functionType->destination, valueAssigner) : "?");
         const auto size = maxValue - minValue + 1;
@@ -64,7 +62,7 @@ std::string MapValue::toString(
             values[pos - minValue] = value->toString(functionType->destination, valueAssigner);
         }
         std::string result = functionType->toString() + "{";
-        for (const auto& value : values)
+        for (const auto &value : values)
         {
             result += value + ",";
         }
@@ -86,7 +84,9 @@ std::string Variable::toString() const
 
 ReturnInstruction::ReturnInstruction() {}
 
-ReturnInstruction::ReturnInstruction(const std::string &value) : value_(value) {}
+ReturnInstruction::ReturnInstruction(const std::string &value)
+: value_(value)
+{}
 
 std::string ReturnInstruction::toString(int delimiter, int shift, bool semicolon)
 {
@@ -98,7 +98,8 @@ VariableDeclarationInstruction::VariableDeclarationInstruction(const std::string
 {}
 
 VariableDeclarationInstruction::VariableDeclarationInstruction(const std::string &name, std::string type)
-: name_(name), type_(type)
+: name_(name)
+, type_(type)
 {}
 
 std::string VariableDeclarationInstruction::toString(int delimiter, int shift, bool semicolon)
@@ -111,7 +112,8 @@ AssignmentInstruction::AssignmentInstruction(const std::string &left, const std:
 {}
 
 AssignmentInstruction::AssignmentInstruction(const std::string &left, const std::string &right, std::string type)
-: left_(std::make_unique<VariableDeclarationInstruction>(left, type)), right_(right)
+: left_(std::make_unique<VariableDeclarationInstruction>(left, type))
+, right_(right)
 {}
 
 std::string AssignmentInstruction::toString(int delimiter, int shift, bool semicolon)
@@ -120,11 +122,16 @@ std::string AssignmentInstruction::toString(int delimiter, int shift, bool semic
 }
 
 ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left)
-: left_(left), negated_(negated), onlyLeftSide_(true)
+: left_(left)
+, negated_(negated)
+, onlyLeftSide_(true)
 {}
 
 ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left, const std::string &right)
-: left_(left), right_(right), negated_(negated), onlyLeftSide_(false)
+: left_(left)
+, right_(right)
+, negated_(negated)
+, onlyLeftSide_(false)
 {}
 
 std::string ComparisonInstruction::toString(int delimiter, int shift, bool semicolon)
@@ -137,7 +144,9 @@ std::string ComparisonInstruction::toString(int delimiter, int shift, bool semic
     return addSpacesAndSemicolon(delimiter, semicolon, left_ + (negated_ ? " != " : " == ") + right_);
 }
 
-IfInstruction::IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition) : condition_(std::move(condition)) {}
+IfInstruction::IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition)
+: condition_(std::move(condition))
+{}
 
 void IfInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
 {
@@ -161,7 +170,9 @@ std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
     return result;
 }
 
-SwitchInstruction::SwitchInstruction(const std::string &condition) : condition_(condition) {}
+SwitchInstruction::SwitchInstruction(const std::string &condition)
+: condition_(condition)
+{}
 
 void SwitchInstruction::addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction)
 {
@@ -231,15 +242,20 @@ std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)
     return result;
 }
 
-CustomInstruction::CustomInstruction(std::string instruction) : instruction_(instruction) {}
+CustomInstruction::CustomInstruction(std::string instruction)
+: instruction_(instruction)
+{}
 
 std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     return addSpacesAndSemicolon(delimiter, semicolon, instruction_);
 }
 
-Function::Function(std::string name, std::string returnType, bool isPublic)
-: name_(name), returnType_(returnType), isPublic_(isPublic)
+Function::Function(std::string name, std::string returnType, bool isPublic, bool isConst)
+: name_(name)
+, returnType_(returnType)
+, isPublic_(isPublic)
+, isConst_(isConst)
 {}
 
 void Function::addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var)
@@ -260,7 +276,7 @@ bool Function::isPublic()
 std::string Function::declarationToString()
 {
     std::string argumentsList = getArgumentsList();
-    return returnType_ + " " + name_ + "(" + argumentsList + ");";
+    return returnType_ + " " + name_ + "(" + argumentsList + ")" + (isConst_ ? "const" : "") + ";";
 }
 
 std::string Function::getName()
@@ -284,7 +300,8 @@ std::string Function::toString(int delimiter, int shift, bool semicolon)
         body += instruction->toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " GameState::" + name_ + "(" + argumentsList + ")\n";
+    result += getLeadingSpaces(delimiter) + returnType_ + " GameState::" + name_ + "(" + argumentsList + ")" +
+              (isConst_ ? "const" : "") + "\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
     result += getLeadingSpaces(delimiter) + "}\n";

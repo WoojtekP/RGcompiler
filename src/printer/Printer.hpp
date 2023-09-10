@@ -9,12 +9,13 @@
 class Printer
 {
 public:
-    Printer(const Parser& parse, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile);
+    Printer(
+        const Parser& parse, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile);
     void initializeHeaderFile(bool debug);
     void initializeSourceFile();
     void initializeMainClass();
     void endMainClass();
-    void endHeaderFile();
+    void endHeaderFile(std::string& hs);
     void endSourceFile();
     void printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
@@ -24,7 +25,7 @@ public:
         const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration();
-    void printAdditionDataForCycleHandling(const std::string &s);
+    void printAdditionDataForCycleHandling(const std::string& s);
 
 private:
     const Parser& parser_;

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 
 #include <nlohmann/json.hpp>
 
@@ -109,6 +110,8 @@ std::string Parser::getSourceType(const nlohmann::json& t) const
     {
         return t["lhs"]["identifier"];
     }
+
+    //  std::cout << t << "\n";
     return "?";
 }
 
@@ -148,7 +151,7 @@ nlohmann::json Parser::findTypeOfExpression(const nlohmann::json& expression) co
     }
     if (expressionKind == "Cast")
     {
-        return findTypeOfExpression(expression["lhs"]);
+        return findTypeOfExpression(expression["rhs"]);
     }
     if (expressionKind == "EdgeName")
     {

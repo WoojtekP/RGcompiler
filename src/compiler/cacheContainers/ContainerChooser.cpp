@@ -1,6 +1,8 @@
 #include "ContainerChooser.hpp"
 
-ContainerChooser::ContainerChooser(const std::string &cacheName) : smallDomainMaxiumSize_(1000), cacheName_(cacheName)
+ContainerChooser::ContainerChooser(const std::string &cacheName)
+: smallDomainMaxiumSize_(1000)
+, cacheName_(cacheName)
 {}
 
 void ContainerChooser::add(const IdType &id, const VariableAndDomain &v, int nodeNumber)
@@ -30,19 +32,19 @@ void ContainerChooser::add(const IdType &id, const VariableAndDomain &v, int nod
     }
 
     std::unique_ptr<IContainer> container;
-    if (isDomainSmall)
+    // if (isDomainSmall)
+    // {
+    //     container = std::move(std::make_unique<BitArrayContainer>(nodeNumber, v, true, cacheName_));
+    // }
+    // else
+    // {
+    std::vector<std::string> variables;
+    for (const auto &[name, domain] : v)
     {
-        container = std::move(std::make_unique<BitArrayContainer>(nodeNumber, v, true, cacheName_));
+        variables.push_back(name);
     }
-    else
-    {
-        std::vector<std::string> variables;
-        for (const auto &[name, domain] : v)
-        {
-            variables.push_back(name);
-        }
-        container = std::make_unique<UnorderedSetContainer>(variables);
-    }
+    container = std::make_unique<UnorderedSetContainer>(variables);
+    // }
 
     idTypeToContainer_.emplace(std::make_pair(id, std::move(container)));
     idTypeToCustomDeclaration_.insert(std::make_pair(id, getCustomName(id)));

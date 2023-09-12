@@ -22,6 +22,7 @@ struct Options
 class Compiler
 {
     std::string hs_;
+    std::string hs2_;
 
 public:
     Compiler(const Parser &parser, const Options &options);

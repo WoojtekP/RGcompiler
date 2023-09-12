@@ -47,6 +47,8 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "namespace reasoner {" << std::endl;
     headerFile_ << "template<class T, std::size_t N>" << std::endl;
     headerFile_ << "using Arr = std::array<T, N>;" << std::endl;
+    headerFile_ << "struct hasher2;" << std::endl;
+
     headerFile_ << std::endl;
 }
 
@@ -68,12 +70,16 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& hs)
+void Printer::endHeaderFile(std::string& hs, std::string& hs2)
 {
     std::string ss = "struct hasher{";
     ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
     ss += hs + "^ std::get<2>(gs)" + ";";
     ss += "}};";
+    // std::string ss2 = "struct hasher2{";
+    // ss2 += "size_t operator()(const GameState& gs) const{";
+    // ss2 += "return " + hs2 + ";";
+    // ss2 += "}};";
     std::string stateCacheDeclaration =
         "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher> state_cache;";
 
@@ -131,9 +137,19 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
 }
 
 void Printer::printVariables(
-    const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix)
+    const std::vector<std::unique_ptr<IVariable>>& variables,
+    bool isPublic,
+    const std::string& prefix,
+    const std::string& xd)
 {
     headerFile_ << prefix << std::endl;
+
+    if (isPublic)
+    {
+        std::string ss = "struct hasher2{size_t operator()(const std::pair<GameState, int>& gs)const{";
+        ss += "return " + xd + ";}};";
+        headerFile_ << ss;
+    }
 
     if (!std::accumulate(
             variables.begin(), variables.end(), false, [isPublic](bool acc, const std::unique_ptr<IVariable>& f) {
@@ -164,10 +180,10 @@ void Printer::printVariables(
     headerFile_ << std::endl;
 }
 
-void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
+void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& xd)
 {
-    printVariables(variables, true, "public:");
-    printVariables(variables, false, "private:");
+    printVariables(variables, true, "public:", xd);
+    printVariables(variables, false, "private:", xd);
 }
 
 void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& functions)

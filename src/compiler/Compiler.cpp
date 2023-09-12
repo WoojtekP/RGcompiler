@@ -199,10 +199,10 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printMoveRepresentationDeclaration();
     printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
     printer.initializeMainClass();
-    printer.printVariables(program_.getVariables());
+    printer.printVariables(program_.getVariables(), hs2_);
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.endHeaderFile(hs_);
+    printer.endHeaderFile(hs_, hs2_);
     printer.endSourceFile();
 }
 
@@ -257,6 +257,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         std::make_unique<VariableDeclarationInstruction>("gs", "const std::pair<GameState, move_representation>&"));
     std::string cmp;
     std::string hs;
+
     for (const auto& variable : parser_.getVariables())
     {
         auto valueType = generateType(variable["type"]);
@@ -266,6 +267,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value), true));
         cmp += identifier + " == " + "gs." + identifier + "&&";
         hs += "hash(std::get<0>(gs)." + identifier + ") ^";
+        hs2_ += "hash(gs.first." + identifier + ") ^";
     }
 
     if (!cmp.empty())
@@ -273,6 +275,8 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         cmp.pop_back();
         cmp.pop_back();
         hs.pop_back();
+        hs2_ += "gs.second";
+        // hs2_.pop_back();
     }
 
     // program_.addVariableDeclaration()
@@ -306,12 +310,15 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     // program_.addVariableDeclaration(
     //   std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
     // TODO: this is too tricky (declaring variable with type using), need proper implementation
+
     for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
             customDeclaration,
             std::make_unique<ElementaryType>("using"),
-            std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
+            std::make_unique<SingleValue>("std::unordered_set<std::pair<GameState,int>, hasher2>")));
+
+        //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
@@ -502,14 +509,14 @@ void Compiler::generateBoolStateFunctions(
             std::unique_ptr<IfInstruction> checkCache =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     false,
-                    cacheName + "." +
-                        containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
+                    cacheName + ".count(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
+            //containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
             checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
             function->addInstruction(std::move(checkCache));
 
             function->addInstruction(std::make_unique<CustomInstruction>(
-                cacheName + "." +
-                containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
+                cacheName + ".insert(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
+            //containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         }
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
@@ -578,7 +585,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         if (containerChooser_.isInCache(typeId))
         {
             cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(typeId);
-            cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
+            // cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
         }
         else
         {
@@ -1091,6 +1098,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 
 void Compiler::generateApplyAnyMove()
 {
+    return;
     generatePatternFunctions(applyAnyMoveGraphs_, 2);
 
     auto function = std::make_unique<Function>("applyAnyMove", "bool", true);
@@ -1128,7 +1136,8 @@ void Compiler::generateApplyAnyMove()
                 {
                     cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." +
                                  containerChooser_.getFromCache({nodeName, nodeTo, 2});
-                    cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType({nodeName, nodeTo, 2}) + ")";
+                    cacheDecl += ";\n";
+                    //+ cacheName + ".reset(" + containerChooser_.getType({nodeName, nodeTo, 2}) + ")";
                 }
                 else
                 {

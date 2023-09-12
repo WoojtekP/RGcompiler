@@ -20,7 +20,6 @@ tests['ticTacToe.rbg'] = tests['ticTacToe.rg']
 tests['breakthrough.rg'] = ((10000,64.10,[50.92,49.08]), [1,22,484,11132,256036,6182818]) # 149264638
 tests['breakthrough.hrg'] = tests['breakthrough.rg']
 tests['breakthrough.rbg'] = tests['breakthrough.rg']
-tests['breakthroughWithAny.rg'] = tests['breakthrough.rg']
 
 tests['connect4.hrg'] = ((10000,21.31,[55.72,44.28]), [1,7,49,343,2401,16807]) # 117649 823536 5673234
 
@@ -37,7 +36,6 @@ tests['amazons-smart.hrg'] = tests['amazons.hrg']
 if len(games) == 0:
   games.append('ticTacToe.rg')
   games.append('ticTacToe.rbg')
-  games.append('breakthroughWithAny.rg')
   games.append('breakthrough.rg')
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')

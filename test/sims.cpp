@@ -15,14 +15,14 @@ ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 ulong sumScores[1+reasoner::PLAYERS_COUNT];
 
-void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
+void exitWithError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 bool keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper) {
     if (state.isTerminal()) return false;
     state.getAllMoves(moves, cache);
     #ifndef NDEBUG
-      if (moves.size() != 1) exitError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+      if (moves.size() != 1) exitWithError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
     #endif
     state.applyMove(moves[0], cache);
 
@@ -35,11 +35,13 @@ void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
   while (true) {
-    assert(state.getCurrentPlayer() != reasoner::keeper);
+    #ifndef NDEBUG
+      if (state.getCurrentPlayer() == reasoner::keeper) exitWithError("Keeper at the beginning of player loop");
+    #endif
     
     state.getAllMoves(moves, cache);
     #ifndef NDEBUG
-      if (moves.size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+      if (moves.size() == 0) exitWithError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
     #endif
     depth++;
     numMoves += moves.size();
@@ -57,12 +59,14 @@ void doSimulation() {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "usage: " << argv[0] << " [number of simulations]" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " [number of simulations]" << std::endl;
     return 1;
   }
 
   [[maybe_unused]] bool initialNonterminal = keeperCompletion(initial);
-  assert(initialNonterminal);
+  #ifndef NDEBUG
+    if (!initialNonterminal) exitWithError("Initial state is terminal");
+  #endif
   
   numSimulations = std::stoi(argv[1]);
   for (uint i = 0; i < numSimulations; i++) doSimulation();

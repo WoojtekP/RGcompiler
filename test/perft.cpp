@@ -13,12 +13,14 @@ std::vector<reasoner::Move> moves[MAX_DEPTH];
 uint maxDepth;
 ulong numStates, numLeaves, numTerminals;
 
-void exitError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
+void exitWithError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
 
 void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     state.getAllMoves(moves[depth], cache);
-    if (moves[depth].size() != 1) exitError("Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
+    #ifndef NDEBUG
+      if (moves[depth].size() != 1) exitWithError("Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
+    #endif
     state.applyMove(moves[depth][0], cache);
   }
 }
@@ -31,7 +33,9 @@ void doPerft(reasoner::GameState &state, const uint depth) {
     return;
   }
   state.getAllMoves(moves[depth], cache);
-  if (moves[depth].size() == 0) exitError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+  #ifndef NDEBUG
+    if (moves[depth].size() == 0) exitWithError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+  #endif
   for (uint i = 0; i < moves[depth].size(); i++) {
     reasoner::GameState nextState = state;
     nextState.applyMove(moves[depth][i], cache);
@@ -42,7 +46,7 @@ void doPerft(reasoner::GameState &state, const uint depth) {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "usage: " << argv[0] << " depth" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " depth" << std::endl;
     return 1;
   }
 

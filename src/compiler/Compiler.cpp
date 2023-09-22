@@ -723,7 +723,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)), "mr[currentMrId]"));
+                        false,
+                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " +
+                            std::to_string(graph->getEdgeId(stateFrom, stateTo, iid))));
 
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));

@@ -109,9 +109,10 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     std::vector<bool> nodesOnPathToFinalNode(graph_->getNumberOfNodes(), false);
     nodesOnPathToFinalNode[graph_->getNodeId(to)] = true;
 
-    generatePathFromNodeToNode(from, to, edges, visited, nodesOnPathToFinalNode, bannedEdges);
+    // generatePathFromNodeToNode(from, to, edges, visited, nodesOnPathToFinalNode, bannedEdges);
 
-    for (const auto &edge : edges)
+    // Temporary fix for cyclic graphs
+    for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         graph->addEdge(edge);
     }

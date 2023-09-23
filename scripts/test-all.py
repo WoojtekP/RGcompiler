@@ -25,7 +25,7 @@ tests['connect4.hrg'] = ((10000,21.31,[55.72,44.28]), [1,7,49,343,2401,16807]) #
 
 tests['hex2.rbg'] = ((1000,3.50,[50.00,50.00]), [1,4,12,24,12,0])
 
-tests['hex9.rbg'] = ((1000,107.51,[52.30,47.70]), [1,81,6480]) # 511920 39929760
+tests['hex9.rbg'] = ((1000,71.02,[53.03,46.97]), [1,81,6480]) # 511920 39929760
 
 tests['knightthrough.hrg'] = ((10000,33.64,[51.67,48.33]), [1,40,1600,63520,2521306,99598454]) # 3929482778
 
@@ -67,6 +67,9 @@ gamesOK = []
 totalStartTime = time.time()
 for game in games:
   print()
+  if game not in tests:
+    print(f'{util.ERROR} There are no tests for {game}')
+    continue
 
   print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
   startTime = time.time()
@@ -155,7 +158,7 @@ gamesError = [game for game in games if game not in gamesOK]
 
 print()
 print((HEAD_FORMATTER+RESULT_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
-print(f'Games {util.OK}: {" ".join(gamesOK)}')
+print(f'Games with {util.OK}: {" ".join(gamesOK)}')
 if len(gamesError) == 0:
   print(f'No errors.')
 else:

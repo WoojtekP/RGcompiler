@@ -18,6 +18,13 @@ void GetOptimizedGraphOperator::traverse(int node, std::vector<int> &path, std::
         return;
     }
 
+    // Paths with nodes used in reachability pattern should not be optimized
+    // TODO: Maybe it's better to keep both compressed and not compressed paths?
+    if (nodesUsedInReachability_.count(node))
+    {
+        return;
+    }
+
     visited.at(node) = true;
     int newNode = graph_->getNodeId(graph_->getOutgoingEdgesFrom(node).front().first->toName());
     traverse(newNode, path, visited);
@@ -48,6 +55,18 @@ void GetOptimizedGraphOperator::initializeNumberOfIncomingEdges()
     for (const auto &node : graph_->getAllNodes())
     {
         numberOfIncomingEdges_.insert({graph_->getNodeId(node->getName()), 0});
+    }
+}
+
+void GetOptimizedGraphOperator::initializeNodesUsedInReachabilityPattern()
+{
+    for (const auto &[edge, iid] : graph_->getAllEdges())
+    {
+        if (edge->getActions().front()->getType() == ActionType::Reachability)
+        {
+            nodesUsedInReachability_.insert(graph_->getNodeId(edge->fromName()));
+            nodesUsedInReachability_.insert(graph_->getNodeId(edge->toName()));
+        }
     }
 }
 
@@ -154,4 +173,5 @@ GetOptimizedGraphOperator::GetOptimizedGraphOperator(const std::shared_ptr<Graph
 , optimizedGraph_(nullptr)
 {
     initializeNumberOfIncomingEdges();
+    initializeNodesUsedInReachabilityPattern();
 }

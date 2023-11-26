@@ -72,7 +72,7 @@ void Printer::endMainClass()
 
 void Printer::endHeaderFile(std::string& hs, std::string& hs2)
 {
-    std::string ss = "struct hasher{";
+    std::string ss = "struct hasher3{";
     ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
     ss += hs + "^ std::get<2>(gs)" + ";";
     ss += "}};";
@@ -81,7 +81,7 @@ void Printer::endHeaderFile(std::string& hs, std::string& hs2)
     // ss2 += "return " + hs2 + ";";
     // ss2 += "}};";
     std::string stateCacheDeclaration =
-        "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher> state_cache;";
+        "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher3> state_cache;";
 
     //  program_.addVariableDeclaration(
     //  std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));

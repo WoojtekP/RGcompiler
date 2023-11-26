@@ -283,6 +283,13 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 
     function->addInstruction(std::make_unique<CustomInstruction>("return " + cmp));
     hs_ = "return hash(std::get<1>(gs)) ^ " + hs;
+
+    std::string ss = "struct {";
+    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
+    ss += hs_ + "^ std::get<2>(gs)" + ";";
+    ss += "}};";
+    program_.addVariableDeclaration(std::make_unique<Variable>(
+        "hasher", std::make_unique<ElementaryType>("using"), std::make_unique<SingleValue>(ss)));
     // function2->addInstruction(std::make_unique<CustomInstruction>("return hash(gs.second) ^ " + hs));
     program_.addFunction(std::move(function));
     //program_.addFunction(std::move(function2));
@@ -410,13 +417,13 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         {*/
 
         if (!applyMode &&
-            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->isOnUniquePath(graph->getNodeId(state)))
+            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->isOnUniquePath(graph_->getNodeId(state)))
         {
             std::string cacheName = "state_cache";
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     true,
-                    cacheName + ".insert(std::make_tuple(*this,mr," + std::to_string(graph->getNodeId(state)) +
+                    cacheName + ".insert(std::make_tuple(*this,mr," + std::to_string(graph_->getNodeId(state)) +
                         ")).second"));
             ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
 
@@ -504,18 +511,35 @@ void Compiler::generateBoolStateFunctions(
         {
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
+            function->addArgument(
+                std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                cacheName, containerChooser_.getCustomName({from, to, patternId}) + "&"));
-            std::unique_ptr<IfInstruction> checkCache =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false,
-                    cacheName + ".count(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
-            //containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
-            checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
-            function->addInstruction(std::move(checkCache));
+                cacheName,
+                "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
 
-            function->addInstruction(std::make_unique<CustomInstruction>(
-                cacheName + ".insert(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
+            if (!graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->isOnUniquePath(
+                    graph_->getNodeId(state)))
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        true,
+                        "cache.insert(std::make_tuple(*this, mr," + std::to_string(graph_->getNodeId(state)) +
+                            ")).second"));
+                ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
+
+                function->addInstruction(std::move(ifInstruction));
+                // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
+            }
+            // std::unique_ptr<IfInstruction> checkCache =
+            //     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+            //         false,
+            //         cacheName + ".count(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
+            // //containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
+            // checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
+            // function->addInstruction(std::move(checkCache));
+
+            // function->addInstruction(std::make_unique<CustomInstruction>(
+            //     cacheName + ".insert(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
             //containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         }
 
@@ -578,21 +602,26 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     std::string functionArguments;
     auto tmpBlockInstruction = std::make_unique<BlockInstruction>();
 
-    if (!optNoCycleDetection_)
-    {
-        functionArguments += mainCacheName_ + "," + cacheName;
-        std::string cacheDecl = containerChooser_.getCustomName(typeId);
-        if (containerChooser_.isInCache(typeId))
-        {
-            cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(typeId);
-            // cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
-        }
-        else
-        {
-            cacheDecl += " " + cacheName;
-        }
-        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
-    }
+    // if (!optNoCycleDetection_)
+    // {
+    functionArguments += mainCacheName_ + "," + "mr_" + cacheName + "," + cacheName;
+    //     std::string cacheDecl = containerChooser_.getCustomName(typeId);
+    //     if (containerChooser_.isInCache(typeId))
+    //     {
+    //         cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(typeId);
+    //         // cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
+    //     }
+    //     else
+    //     {
+    //         cacheDecl += " " + cacheName;
+    //     }
+    // tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
+
+    // }
+    tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
+        "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
+    tmpBlockInstruction->pushInstructionBack(
+        std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
 
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         std::make_unique<ComparisonInstruction>(action->getNegated(), functionName + "(" + functionArguments + ")"));
@@ -764,7 +793,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::string functionArguments;
     if (!optNoCycleDetection_)
     {
-        functionArguments = mainCacheName_ + "," + cacheName;
+        functionArguments = mainCacheName_ + ", mr, " + cacheName;
     }
     std::string name = std::to_string(graph_->getNodeId(stateTo));
     if (preserveOriginalNames_)
@@ -847,6 +876,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
+        }
+        else if (action->getType() == ActionType::Tag)
+        {
+            blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
+                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
         {

@@ -41,6 +41,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , valueAssigner_(parser_.getTypeDeclarations())
 , printOriginalNames_(options.printOriginalNames_)
 , preserveOriginalNames_(options.preserveOriginalNames_)
+, pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
 , verification_(options.verification_)
 , optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
 , optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
@@ -54,6 +55,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 
 {
     initializeGraph();
+    initializePragmas();
 }
 
 void Compiler::compile()
@@ -62,6 +64,32 @@ void Compiler::compile()
     generateConstants();
     generateVariables(graph_);
     generateFunctions();
+}
+
+void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::set<int>& data)
+{
+    for (const auto& pragma : parser_.getPragmas(pragmaName))
+    {
+        for (const auto& edge : pragma["edgeNames"])
+        {
+            std::string nodeName = edge["parts"][0]["identifier"];
+            auto node = graph_->getNodeIdOptional(nodeName);
+            if (node)
+            {
+                data.insert(*node);
+            }
+        }
+    }
+}
+
+void Compiler::initializePragmaDisjoint()
+{
+    initializePragmaVerticesSet("Distinct", disjoint_);
+}
+
+void Compiler::initializePragmas()
+{
+    initializePragmaDisjoint();
 }
 
 void Compiler::initializeGraph()
@@ -430,9 +458,51 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(std::move(ifInstruction));
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
         }
-        for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+
+        if (pragmaDisjointEnabled_ && disjoint_.count(graph_->getNodeId(state)))
         {
-            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
+            // For disjoint pragma there should be only two outgoing edges "if ... else ..."
+            auto vectorOfPairsEdgeAndIID = graph->getOutgoingEdgesFrom(state);
+            assert(vectorOfPairsEdgeAndIID.size() == 2);
+            auto actionsIf = vectorOfPairsEdgeAndIID[0].first->getActions();
+            auto actionsElse = vectorOfPairsEdgeAndIID[1].first->getActions();
+            assert(actionsIf.front()->getType() == ActionType::Reachability);
+            assert(actionsElse.front()->getType() == ActionType::Reachability);
+            assert(actionsIf.front()->getLeftSide() == actionsElse.front()->getLeftSide());
+            assert(actionsIf.front()->getRightSide() == actionsElse.front()->getRightSide());
+            assert(actionsIf.front()->getNegated() == !actionsElse.front()->getNegated());
+
+            auto blockInstruction = generateVoidEdgeInstruction(
+                graph, vectorOfPairsEdgeAndIID.front().first, vectorOfPairsEdgeAndIID.front().second, applyMode, true);
+
+            if (applyMode)
+            {
+                blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+            }
+            else
+            {
+                blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>()));
+            }
+
+            blockInstruction = addActionPattern(
+                actionsIf.front(),
+                graph,
+                vectorOfPairsEdgeAndIID.front().first->getLeftNode()->getName(),
+                vectorOfPairsEdgeAndIID.front().first->getRightNode()->getName(),
+                vectorOfPairsEdgeAndIID.front().second,
+                std::move(blockInstruction));
+
+            blockInstruction->pushInstructionBack(generateVoidEdgeInstruction(
+                graph, vectorOfPairsEdgeAndIID.back().first, vectorOfPairsEdgeAndIID.back().second, applyMode, true));
+
+            function->addInstruction(std::move(blockInstruction));
+        }
+        else
+        {
+            for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+            {
+                function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
+            }
         }
 
         if (applyMode)
@@ -440,7 +510,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
         }
 
-        //}
         program_.addFunction(std::move(function));
     }
 }
@@ -708,7 +777,11 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 }
 
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
-    const std::shared_ptr<Graph>& graph, const std::shared_ptr<Edge>& edge, int iid, bool applyEdgeMode)
+    const std::shared_ptr<Graph>& graph,
+    const std::shared_ptr<Edge>& edge,
+    int iid,
+    bool applyEdgeMode,
+    bool skipFirstInstruction)
 {
     const std::string stateFrom = edge->fromName();
     const std::string stateTo = edge->toName();
@@ -718,10 +791,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         prepareBaseInstructions(graph, actions, edge, iid, applyEdgeMode);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
+    auto skipFirstInstructionIter = actions.rend();
+    if (skipFirstInstruction)
+    {
+        skipFirstInstructionIter--;
+    }
 
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
+
+        if (action_iterator == skipFirstInstructionIter)
+        {
+            break;
+        }
 
         if (action->getType() == ActionType::Assignment)
         {

@@ -17,6 +17,7 @@ struct Options
     bool printOriginalNames_;
     bool preserveOriginalNames_;
     bool verification_;
+    bool pragmaDisjointEnabled_;
 };
 
 class Compiler
@@ -46,7 +47,11 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const std::shared_ptr<Graph> &graph, const std::shared_ptr<Edge> &edge, int iid, bool applyEdgeMode = false);
+        const std::shared_ptr<Graph> &graph,
+        const std::shared_ptr<Edge> &edge,
+        int iid,
+        bool applyEdgeMode = false,
+        bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
@@ -98,6 +103,9 @@ private:
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
+    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<int> &data);
+    void initializePragmaDisjoint();
+    void initializePragmas();
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
@@ -110,6 +118,7 @@ private:
     const std::string temporaryVariableNamePrefix_;
     const bool printOriginalNames_;
     const bool preserveOriginalNames_;
+    const bool pragmaDisjointEnabled_;
     const bool verification_;
     const bool optConditionsReachability_;
     const bool optConditionsGeneratingMoves_;
@@ -120,4 +129,5 @@ private:
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
+    std::set<int> disjoint_;
 };

@@ -36,7 +36,10 @@ int main(const int argc, const char **argv)
             "Enable compressing simple paths")(
             "no-cycle-detection",
             boost::program_options::value<bool>(&options.noCycleDetection_)->default_value(false),
-            "Disable detecting cycles in patterns");
+            "Disable detecting cycles in patterns")(
+            "disjoint",
+            boost::program_options::value<bool>(&options.pragmaDisjointEnabled_)->default_value(false),
+            "Is pragma disjoint enabled");
 
         boost::program_options::variables_map vm;
         boost::program_options::store(boost::program_options::parse_command_line(argc, argv, mainOptions), vm);

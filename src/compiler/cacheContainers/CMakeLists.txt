@@ -1,0 +1,13 @@
+add_library(CacheContainersLib
+    BitArrayContainer.cpp
+    BitArrayContainer.hpp
+    ContainerChooser.cpp
+    ContainerChooser.hpp
+    IContainer.hpp
+    SetContainer.cpp
+    SetContainer.hpp
+    StlContainerBase.cpp
+    StlContainerBase.hpp
+    UnorderedSetContainer.cpp
+    UnorderedSetContainer.hpp
+)

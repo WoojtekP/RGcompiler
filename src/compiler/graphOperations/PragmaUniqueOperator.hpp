@@ -6,7 +6,7 @@ class PragmaUniqueOperator : public BaseOperator
     std::set<int> nodesOnUniquePaths_;
 
     void uniqueDfs(int node, std::set<int> &result);
-    void findUniqeNodesOnPaths(const std::vector<int> &startNodes);
+    void findUniqeNodesOnPaths(const std::set<int> &startNodes);
 
 public:
     PragmaUniqueOperator(const std::shared_ptr<Graph> &graph);

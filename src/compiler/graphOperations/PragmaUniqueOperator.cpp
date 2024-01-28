@@ -23,7 +23,7 @@ void PragmaUniqueOperator::uniqueDfs(int node, std::set<int> &result)
     }
 }
 
-void PragmaUniqueOperator::findUniqeNodesOnPaths(const std::vector<int> &startNodes)
+void PragmaUniqueOperator::findUniqeNodesOnPaths(const std::set<int> &startNodes)
 {
     for (int node : startNodes)
     {
@@ -38,16 +38,19 @@ bool PragmaUniqueOperator::isOnUniquePath(int node) const
 
 void PragmaUniqueOperator::init(const Parser &parser)
 {
-    std::vector<int> uniqueNodes;
+    std::set<int> uniqueNodes;
     nodesOnUniquePaths_.clear();
 
     for (const auto &pragma : parser.getPragmas("Unique"))
     {
-        std::string nodeName = pragma["edgeName"]["parts"][0]["identifier"];
-        auto node = graph_->getNodeIdOptional(nodeName);
-        if (node)
+        for (const auto& edge : pragma["edgeNames"])
         {
-            uniqueNodes.push_back(*node);
+            std::string nodeName = edge["parts"][0]["identifier"];
+            auto node = graph_->getNodeIdOptional(nodeName);
+            if (node)
+            {
+                uniqueNodes.insert(*node);
+            }
         }
     }
 

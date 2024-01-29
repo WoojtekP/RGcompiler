@@ -103,7 +103,7 @@ private:
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
-    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<int> &data);
+    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
     void initializePragmas();
     void initializePragmaRepeat();
@@ -131,6 +131,7 @@ private:
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
-    std::set<int> disjoint_;
+    std::set<std::string> pragmaDisjointData_;
+    std::set<std::string> pragmaUniqueData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
 };

@@ -66,25 +66,20 @@ void Compiler::compile()
     generateFunctions();
 }
 
-void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::set<int>& data)
+void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::set<std::string>& data)
 {
     for (const auto& pragma : parser_.getPragmas(pragmaName))
     {
         for (const auto& edge : pragma["edgeNames"])
         {
-            std::string nodeName = edge["parts"][0]["identifier"];
-            auto node = graph_->getNodeIdOptional(nodeName);
-            if (node)
-            {
-                data.insert(*node);
-            }
+            data.insert(static_cast<std::string>(edge["parts"][0]["identifier"]));
         }
     }
 }
 
 void Compiler::initializePragmaDisjoint()
 {
-    initializePragmaVerticesSet("Distinct", disjoint_);
+    initializePragmaVerticesSet("Distinct", pragmaDisjointData_);
 }
 
 void Compiler::initializePragmaRepeat()
@@ -511,7 +506,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
         }
 
-        if (pragmaDisjointEnabled_ && disjoint_.count(graph_->getNodeId(state)))
+        if (pragmaDisjointEnabled_ && pragmaDisjointData_.count(state))
         {
             // For disjoint pragma there should be only two outgoing edges "if ... else ..."
             auto vectorOfPairsEdgeAndIID = graph->getOutgoingEdgesFrom(state);

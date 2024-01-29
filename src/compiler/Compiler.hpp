@@ -106,6 +106,8 @@ private:
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<int> &data);
     void initializePragmaDisjoint();
     void initializePragmas();
+    void initializePragmaRepeat();
+    std::string getTypeForVariable(const std::string &variableName);
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
@@ -130,4 +132,5 @@ private:
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<int> disjoint_;
+    std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
 };

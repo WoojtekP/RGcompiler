@@ -87,9 +87,22 @@ void Compiler::initializePragmaDisjoint()
     initializePragmaVerticesSet("Distinct", disjoint_);
 }
 
+void Compiler::initializePragmaRepeat()
+{
+    for (const auto& pragma : parser_.getPragmas("Repeat"))
+    {
+        std::string mainNodeName = pragma["edgeNames"][0]["parts"][0]["identifier"];
+        for (const auto& nodeName : pragma["identifiers"])
+        {
+            pragmaRepeatData_[mainNodeName].push_back(nodeName);
+        }
+    }
+}
+
 void Compiler::initializePragmas()
 {
     initializePragmaDisjoint();
+    initializePragmaRepeat();
 }
 
 void Compiler::initializeGraph()
@@ -273,6 +286,20 @@ void Compiler::generateConstants()
         playerCountConstantName, std::move(playerCountConstantType), std::move(playerCountConstantValue)));
 }
 
+//TODO This function have complexity n we need to make it constant
+std::string Compiler::getTypeForVariable(const std::string& variableName)
+{
+    for (const auto& variable : parser_.getVariables())
+    {
+        const std::string identifier = variable["identifier"].get<std::string>();
+        if (identifier == variableName)
+        {
+            return generateType(variable["type"])->toString();
+        }
+    }
+    return "";
+}
+
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
     std::unique_ptr<Function> function = std::make_unique<Function>("operator==", "bool", true, true);
@@ -354,6 +381,19 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             std::make_unique<SingleValue>("std::unordered_set<std::pair<GameState,int>, hasher2>")));
 
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
+    }
+
+    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    {
+        std::string data;
+        for (const auto nodeName : pairMainNodeNameAndNodeNames.second)
+        {
+            data += getTypeForVariable(nodeName) + ",";
+        }
+        data.pop_back();
+        program_.addVariableDeclaration(std::make_unique<Variable>(
+            "state_cache_" + pairMainNodeNameAndNodeNames.first,
+            std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
     }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
@@ -448,11 +488,23 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->isOnUniquePath(graph_->getNodeId(state)))
         {
             std::string cacheName = "state_cache";
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    true,
-                    cacheName + ".insert(std::make_tuple(*this,mr," + std::to_string(graph_->getNodeId(state)) +
-                        ")).second"));
+            std::string cacheData = "std::make_tuple(*this,mr," + std::to_string(graph_->getNodeId(state)) + ")";
+
+            if (pragmaRepeatData_.count(state))
+            {
+                cacheName = "state_cache_" + state;
+                cacheData = "std::make_tuple(";
+
+                for (const auto& nodeName : pragmaRepeatData_[state])
+                {
+                    cacheData += nodeName + ",";
+                }
+                cacheData.pop_back();
+                cacheData += ")";
+            }
+
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(" + cacheData + ").second"));
             ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
 
             function->addInstruction(std::move(ifInstruction));
@@ -1191,6 +1243,12 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
     std::string clearingCaches = "state_cache.clear();";  //"for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
+
+    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    {
+        clearingCaches += "state_cache_" + pairMainNodeNameAndNodeNames.first + ".clear();" + "\n";
+    }
+
     if (verification_)
     {
         clearingCaches += "verificationCache.clear();\n";

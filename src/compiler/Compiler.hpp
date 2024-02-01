@@ -38,7 +38,11 @@ private:
     void generateVariables(const std::shared_ptr<Graph> &graph);
     void generateVoidStateFunctions(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateBoolStateFunctions(
-        const std::string &from, const std::string &to, const std::shared_ptr<Graph> &graph, int patternId = 0);
+        const std::string &from,
+        const std::string &to,
+        const std::shared_ptr<Graph> &graph,
+        int patternId = 0,
+        bool skipStateCache = false);
     std::unique_ptr<BlockInstruction> addActionPattern(
         const std::shared_ptr<IAction> &action,
         const std::shared_ptr<Graph> &graph,
@@ -65,16 +69,19 @@ private:
         const std::string &stateFrom,
         const std::string &stateTo,
         int iid,
-        int patternId);
+        int edgeIdx);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,
+        const std::string &patternFrom,
+        const std::string &patternTo,
+        int edgeIdx,
         const std::string &stateFrom,
         const std::string &stateTo,
         int iid,
         const std::string &cacheName,
         const std::string &prefix,
-        int patternId);
+        int patternId = 0);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     //void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
@@ -103,10 +110,11 @@ private:
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
-    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<int> &data);
+    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
     void initializePragmas();
     void initializePragmaRepeat();
+    void initializePragmaUnique();
     std::string getTypeForVariable(const std::string &variableName);
 
     const Parser &parser_;
@@ -131,6 +139,8 @@ private:
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
-    std::set<int> disjoint_;
+    std::set<std::string> pragmaDisjointData_;
+    std::set<std::string> pragmaUniqueData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
+    std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
 };

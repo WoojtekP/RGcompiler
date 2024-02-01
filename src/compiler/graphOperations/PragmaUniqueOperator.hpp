@@ -14,4 +14,5 @@ public:
     void init(const Parser &parser);
     void init(const std::set<std::string> &nodes);
     bool isOnUniquePath(int node) const;
+    bool areAllNodesWithPragmaUnique(const std::set<std::string> &uniqueNodes) const;
 };

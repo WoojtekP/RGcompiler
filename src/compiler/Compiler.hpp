@@ -67,8 +67,7 @@ private:
         const std::string &from,
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
-        const std::string &stateFrom,
-        const std::string &stateTo,
+        const std::shared_ptr<Edge>& edge,
         int iid,
         int edgeIdx);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
@@ -77,8 +76,7 @@ private:
         const std::string &patternFrom,
         const std::string &patternTo,
         int edgeIdx,
-        const std::string &stateFrom,
-        const std::string &stateTo,
+        const std::shared_ptr<Edge>& edge,
         int iid,
         const std::string &cacheName,
         const std::string &prefix,

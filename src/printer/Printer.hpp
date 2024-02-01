@@ -27,7 +27,7 @@ public:
         const std::string& prefix,
         const std::string& xd);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
-    void printMoveRepresentationDeclaration();
+    void printMoveRepresentationDeclaration(const std::string& mvRepresentation);
     void printAdditionDataForCycleHandling(const std::string& s);
 
 private:

@@ -12,4 +12,6 @@ add_library(GraphOperationsLib
     GraphOperatorManager.hpp
     PragmaUniqueOperator.cpp
     PragmaUniqueOperator.hpp
+    GetTagIndexOperator.cpp
+    GetTagIndexOperator.hpp
 )

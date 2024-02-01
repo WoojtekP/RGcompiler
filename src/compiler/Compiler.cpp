@@ -702,7 +702,7 @@ void Compiler::generateBoolStateFunctions(
             for (auto& [outgoingEdge, iid] : outgoingEdges)
             {
                 function->addInstruction(
-                    generateBoolEdgeInstruction(from, to, graph, state, outgoingEdge->toName(), iid, edgeIdx++));
+                    generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++));
             }
 
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -989,13 +989,14 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::string& patternFrom,
     const std::string& patternTo,
     int edgeIdx,
-    const std::string& stateFrom,
-    const std::string& stateTo,
+    const std::shared_ptr<Edge>& edge,
     int iid,
     const std::string& cacheName,
     const std::string& prefix,
     int patternId)
 {
+    const std::string& stateFrom = edge->fromName();
+    const std::string& stateTo = edge->toName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
     std::string functionArguments;
@@ -1040,11 +1041,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     const std::string& from,
     const std::string& to,
     const std::shared_ptr<Graph>& graph,
-    const std::string& stateFrom,
-    const std::string& stateTo,
+    const std::shared_ptr<Edge>& edge,
     int iid,
     int edgeIdx)
 {
+    const std::string& stateFrom = edge->fromName();
+    const std::string& stateTo = edge->toName();
     std::string cacheName = "cache";
     std::string name;
 
@@ -1060,7 +1062,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
     const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::unique_ptr<BlockInstruction> blockInstruction =
-        prepareBaseInstructions(graph, actions, from, to, edgeIdx, stateFrom, stateTo, iid, cacheName, prefix);
+        prepareBaseInstructions(graph, actions, from, to, edgeIdx, edge, iid, cacheName, prefix);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 

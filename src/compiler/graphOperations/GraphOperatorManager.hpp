@@ -6,6 +6,7 @@
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
 #include <compiler/graphOperations/GetEdgeOperator.hpp>
 #include <compiler/graphOperations/GetOptimizedGraphOperator.hpp>
+#include <compiler/graphOperations/GetTagIndexOperator.hpp>
 #include <compiler/graphOperations/GetVariableOperator.hpp>
 #include <compiler/graphOperations/PragmaUniqueOperator.hpp>
 #include <graph/Graph.hpp>
@@ -18,7 +19,8 @@ class GraphOperatorManager
         std::shared_ptr<GetVariableOperator>,
         std::shared_ptr<GenerateGraphsOperator>,
         std::shared_ptr<GetEdgeOperator>,
-        std::shared_ptr<GetOptimizedGraphOperator>>;
+        std::shared_ptr<GetOptimizedGraphOperator>,
+        std::shared_ptr<GetTagIndexOperator>>;
 
     std::map<OperatorKeyType, Variant> operators_;
 

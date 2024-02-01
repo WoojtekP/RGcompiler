@@ -209,12 +209,10 @@ void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& funct
     }
 }
 
-void Printer::printMoveRepresentationDeclaration()
+void Printer::printMoveRepresentationDeclaration(const std::string& mvRepresentation)
 {
     std::string obj = R"(
 class GameState;
-
-typedef boost::container::static_vector<int, 500> move_representation;
 
 struct Move
 {
@@ -223,7 +221,7 @@ struct Move
     Move(void) = default;
     Move(const move_representation& mv)
     {
-        mr.assign(mv.begin(), mv.end());
+        mr = mv;
     }
     bool operator==(const Move& rhs) const
     {
@@ -266,11 +264,21 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     }
     return acc;
 }
+
+size_t hash(const std::vector<int>& v)
+{
+    size_t x = 0;
+    for (int t : v)
+    {
+        x ^= t;
+    }
+    return x;
+}
 }  // namespace
 
 )";
 
-    headerFile_ << obj << std::endl << std::endl;
+    headerFile_ << mvRepresentation << obj << std::endl << std::endl;
 }
 
 void Printer::printAdditionDataForCycleHandling(const std::string& s)

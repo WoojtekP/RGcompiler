@@ -110,6 +110,7 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmas()
 {
+    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
     initializePragmaRepeat();
@@ -239,6 +240,23 @@ int Compiler::getDomain(const std::string& s)
     return valueAssigner_.getTypeDomainSize(type);
 }
 
+std::string Compiler::getMoveRepresentation()
+{
+    int containerSize = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->containerSize();
+    if (graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition())
+    {
+        return "typedef std::array<int, " + std::to_string(containerSize) + "> move_representation;";
+    }
+
+    if (containerSize != -1)
+    {
+        return "typedef boost::container::static_vector<int, " + std::to_string(containerSize) +
+               "> move_representation;";
+    }
+
+    return "typedef std::vector<int> move_representation;";
+}
+
 void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
 {
     Printer printer(parser_, valueAssigner_, headerFile, sourceFile);
@@ -247,7 +265,7 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printTypeDeclarations(program_.getTypes());
     printer.printSymbolValues();
     printer.printConstants(program_.getConstants());
-    printer.printMoveRepresentationDeclaration();
+    printer.printMoveRepresentationDeclaration(getMoveRepresentation());
     printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
     printer.initializeMainClass();
     printer.printVariables(program_.getVariables(), hs2_);
@@ -920,9 +938,23 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             }
             else
             {
-                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
-                    "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
-                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
+                std::string tagName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
+                std::string pushTag = "mr.push_back(" + tagName + ")";
+                bool useArray =
+                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+                if (useArray)
+                {
+                    int tagPosition =
+                        graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
+                            stateFrom);
+                    assert(tagPosition != -1);
+                    pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagName;
+                }
+                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
+                if (!useArray)
+                {
+                    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
+                }
             }
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
@@ -1044,9 +1076,23 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Tag && !bSkipStateCache)
         {
-            blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
-                "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
+            std::string tagName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
+            std::string pushTag = "mr.push_back(" + tagName + ")";
+            bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+            if (useArray)
+            {
+                int tagPosition =
+                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(stateFrom);
+                assert(tagPosition != -1);
+                pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagName;
+            }
+
+            blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
+
+            if (!useArray)
+            {
+                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
+            }
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
         {

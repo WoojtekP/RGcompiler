@@ -1,6 +1,5 @@
-#include <iostream>
-
 #include <compiler/graphOperations/GetTagIndexOperator.hpp>
+
 void GetTagIndexOperator::init(const Parser& parser)
 {
     int maxSize = 0;

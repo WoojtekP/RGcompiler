@@ -82,6 +82,20 @@ void Compiler::initializePragmaDisjoint()
     initializePragmaVerticesSet("Distinct", pragmaDisjointData_);
 }
 
+void Compiler::initializePragmaUnique()
+{
+    initializePragmaVerticesSet("Unique", pragmaUniqueData_);
+
+    for (const auto& [from, to, graph] : patternReachabilityGraphs_)
+    {
+        if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
+                pragmaUniqueData_))
+        {
+            areAllNodesInPatternGraphUnique_.insert({from, to});
+        }
+    }
+}
+
 void Compiler::initializePragmaRepeat()
 {
     for (const auto& pragma : parser_.getPragmas("Repeat"))
@@ -97,6 +111,7 @@ void Compiler::initializePragmaRepeat()
 void Compiler::initializePragmas()
 {
     initializePragmaDisjoint();
+    initializePragmaUnique();
     initializePragmaRepeat();
 }
 
@@ -479,8 +494,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else
         {*/
 
-        if (!applyMode &&
-            !graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->isOnUniquePath(graph_->getNodeId(state)))
+        if (!applyMode && !pragmaUniqueData_.count(state))
         {
             std::string cacheName = "state_cache";
             std::string cacheData = "std::make_tuple(*this,mr," + std::to_string(graph_->getNodeId(state)) + ")";
@@ -599,7 +613,11 @@ void Compiler::generateVoidStateOptimizedFunction(
 }
 
 void Compiler::generateBoolStateFunctions(
-    const std::string& from, const std::string& to, const std::shared_ptr<Graph>& graph, int patternId)
+    const std::string& from,
+    const std::string& to,
+    const std::shared_ptr<Graph>& graph,
+    int patternId,
+    bool skipStateCache)
 {
     std::string name = patternIdToPrefixName[patternId];
     std::string cacheName = "cache";
@@ -627,14 +645,17 @@ void Compiler::generateBoolStateFunctions(
         {
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
-            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                cacheName,
-                "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
 
-            if (!graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->isOnUniquePath(
-                    graph_->getNodeId(state)))
+            if (!skipStateCache)
+            {
+                function->addArgument(
+                    std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
+                function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                    cacheName,
+                    "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
+            }
+
+            if (!pragmaUniqueData_.count(state) && !skipStateCache)
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -673,10 +694,11 @@ void Compiler::generateBoolStateFunctions(
         }
         else
         {
+            int edgeIdx = 0;
             for (auto& [outgoingEdge, iid] : outgoingEdges)
             {
                 function->addInstruction(
-                    generateBoolEdgeInstruction(from, to, graph, state, outgoingEdge->toName(), iid, patternId));
+                    generateBoolEdgeInstruction(from, to, graph, state, outgoingEdge->toName(), iid, edgeIdx++));
             }
 
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -697,12 +719,6 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     std::string patterType;
     int patternId = 0;
 
-    if (action->getType() == ActionType::PatternAny)
-    {
-        patterType = "any_";
-        patternId = 1;
-    }
-
     std::string fromNode = std::to_string(graph_->getNodeId(action->getLeftSide()));
     std::string toNode = std::to_string(graph_->getNodeId(action->getRightSide()));
     std::string prefix = "is_legal_" + patterType;
@@ -720,7 +736,13 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 
     // if (!optNoCycleDetection_)
     // {
-    functionArguments += mainCacheName_ + "," + "mr_" + cacheName + "," + cacheName;
+
+    bool skipStateCache = areAllNodesInPatternGraphUnique_.count({action->getLeftSide(), action->getRightSide()});
+    functionArguments += mainCacheName_;
+    if (!skipStateCache)
+    {
+        functionArguments += ",mr_" + cacheName + "," + cacheName;
+    }
     //     std::string cacheDecl = containerChooser_.getCustomName(typeId);
     //     if (containerChooser_.isInCache(typeId))
     //     {
@@ -734,10 +756,14 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     // tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
 
     // }
-    tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-        "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
-    tmpBlockInstruction->pushInstructionBack(
-        std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
+
+    if (!skipStateCache)
+    {
+        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
+            "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
+        tmpBlockInstruction->pushInstructionBack(
+            std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
+    }
 
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         std::make_unique<ComparisonInstruction>(action->getNegated(), functionName + "(" + functionArguments + ")"));
@@ -911,6 +937,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Graph>& graph,
     const std::vector<std::shared_ptr<IAction>>& actions,
+    const std::string& patternFrom,
+    const std::string& patternTo,
+    int edgeIdx,
     const std::string& stateFrom,
     const std::string& stateTo,
     int iid,
@@ -923,7 +952,12 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::string functionArguments;
     if (!optNoCycleDetection_)
     {
-        functionArguments = mainCacheName_ + ", mr, " + cacheName;
+        bool bSkipStateCache = areAllNodesInPatternGraphUnique_.count({patternFrom, patternTo});
+        functionArguments = mainCacheName_;
+        if (!bSkipStateCache)
+        {
+            functionArguments += ", mr, " + cacheName;
+        }
     }
     std::string name = std::to_string(graph_->getNodeId(stateTo));
     if (preserveOriginalNames_)
@@ -960,11 +994,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     const std::string& stateFrom,
     const std::string& stateTo,
     int iid,
-    int patternId)
+    int edgeIdx)
 {
-    std::tuple<std::string, std::string, int> typeId = {stateFrom, stateTo, patternId};
     std::string cacheName = "cache";
-    std::string name = patternIdToPrefixName[patternId];
+    std::string name;
 
     std::string prefix = "is_legal_" + name + std::to_string(graph_->getNodeId(from)) + "_" +
                          std::to_string(graph_->getNodeId(to)) + "_";
@@ -974,9 +1007,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         prefix = "is_legal_" + name + from + "_" + to + "_";
     }
 
+    bool bSkipStateCache = areAllNodesInPatternGraphUnique_.count({from, to});
+
     const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::unique_ptr<BlockInstruction> blockInstruction =
-        prepareBaseInstructions(graph, actions, stateFrom, stateTo, iid, cacheName, prefix, patternId);
+        prepareBaseInstructions(graph, actions, from, to, edgeIdx, stateFrom, stateTo, iid, cacheName, prefix);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 
@@ -1007,7 +1042,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
-        else if (action->getType() == ActionType::Tag)
+        else if (action->getType() == ActionType::Tag && !bSkipStateCache)
         {
             blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
                 "mr.push_back(" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + ")"));
@@ -1139,9 +1174,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
     auto function = std::make_unique<Function>(functionName, "void", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
-    if (!applyMode)
-    {
-    }
+
     if (applyMode)
     {
         function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "const move_representation&"));
@@ -1344,7 +1377,7 @@ void Compiler::generatePatternFunctions(
 {
     for (const auto& [from, to, graph] : patterns)
     {
-        generateBoolStateFunctions(from, to, graph, patternId);
+        generateBoolStateFunctions(from, to, graph, patternId, areAllNodesInPatternGraphUnique_.count({from, to}));
     }
 }
 

@@ -43,7 +43,7 @@ void PragmaUniqueOperator::init(const Parser &parser)
 
     for (const auto &pragma : parser.getPragmas("Unique"))
     {
-        for (const auto& edge : pragma["edgeNames"])
+        for (const auto &edge : pragma["edgeNames"])
         {
             std::string nodeName = edge["parts"][0]["identifier"];
             auto node = graph_->getNodeIdOptional(nodeName);
@@ -79,3 +79,16 @@ void PragmaUniqueOperator::init(const std::set<std::string> &nodes)
 PragmaUniqueOperator::PragmaUniqueOperator(const std::shared_ptr<Graph> &graph)
 : BaseOperator(graph)
 {}
+
+bool PragmaUniqueOperator::areAllNodesWithPragmaUnique(const std::set<std::string> &uniqueNodes) const
+{
+    for (const auto &node : graph_->getAllNodes())
+    {
+        if (!uniqueNodes.count(node->getName()))
+        {
+            return false;
+        }
+    }
+
+    return true;
+}

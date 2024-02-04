@@ -79,7 +79,7 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
 
 void Compiler::initializePragmaDisjoint()
 {
-    initializePragmaVerticesSet("Distinct", pragmaDisjointData_);
+    graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->init(parser_);
 }
 
 void Compiler::initializePragmaUnique()
@@ -452,6 +452,19 @@ std::string Compiler::getTemporaryVariableName(int idx, int edgeId)
     return temporaryVariableNamePrefix_ + std::to_string(edgeId) + "_" + std::to_string(idx);
 }
 
+bool Compiler::nodeInThisEdge(const std::shared_ptr<Edge>& edge, const std::string& nodeName) const
+{
+    for (const auto& node : edge->getInnerNodes())
+    {
+        if (nodeName == node->getName())
+        {
+            return true;
+        }
+    }
+
+    return nodeName == edge->getRightNode()->getName();
+}
+
 void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, bool applyMode)
 {
     for (auto& node : graph->getOuterNodes())
@@ -538,43 +551,30 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
         }
 
-        if (pragmaDisjointEnabled_ && pragmaDisjointData_.count(state))
+        if (pragmaDisjointEnabled_ &&
+            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state))
         {
-            // For disjoint pragma there should be only two outgoing edges "if ... else ..."
-            auto vectorOfPairsEdgeAndIID = graph->getOutgoingEdgesFrom(state);
-            assert(vectorOfPairsEdgeAndIID.size() == 2);
-            auto actionsIf = vectorOfPairsEdgeAndIID[0].first->getActions();
-            auto actionsElse = vectorOfPairsEdgeAndIID[1].first->getActions();
-            assert(actionsIf.front()->getType() == ActionType::Reachability);
-            assert(actionsElse.front()->getType() == ActionType::Reachability);
-            assert(actionsIf.front()->getLeftSide() == actionsElse.front()->getLeftSide());
-            assert(actionsIf.front()->getRightSide() == actionsElse.front()->getRightSide());
-            assert(actionsIf.front()->getNegated() == !actionsElse.front()->getNegated());
-
-            auto blockInstruction = generateVoidEdgeInstruction(
-                graph, vectorOfPairsEdgeAndIID.front().first, vectorOfPairsEdgeAndIID.front().second, applyMode, true);
-
-            if (applyMode)
+            auto vectorOfNodeNames =
+                graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->getNodeNames(state);
+            bool disjointExhaustive =
+                graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isExhaustive(state);
+            int cnt = 0;
+            for (const auto& nodeName : vectorOfNodeNames)
             {
-                blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+                for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                {
+                    if (nodeInThisEdge(outgoingEdge, nodeName))
+                    {
+                        function->addInstruction(generateVoidEdgeInstruction(
+                            graph,
+                            outgoingEdge,
+                            iid,
+                            applyMode,
+                            true,
+                            disjointExhaustive && ++cnt == vectorOfNodeNames.size()));
+                    }
+                }
             }
-            else
-            {
-                blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>()));
-            }
-
-            blockInstruction = addActionPattern(
-                actionsIf.front(),
-                graph,
-                vectorOfPairsEdgeAndIID.front().first->getLeftNode()->getName(),
-                vectorOfPairsEdgeAndIID.front().first->getRightNode()->getName(),
-                vectorOfPairsEdgeAndIID.front().second,
-                std::move(blockInstruction));
-
-            blockInstruction->pushInstructionBack(generateVoidEdgeInstruction(
-                graph, vectorOfPairsEdgeAndIID.back().first, vectorOfPairsEdgeAndIID.back().second, applyMode, true));
-
-            function->addInstruction(std::move(blockInstruction));
         }
         else
         {
@@ -732,7 +732,8 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     const std::string& stateFrom,
     const std::string& stateTo,
     int iid,
-    std::unique_ptr<BlockInstruction> blockInstruction)
+    std::unique_ptr<BlockInstruction> blockInstruction,
+    std::unique_ptr<CustomInstruction> returnInstruction)
 {
     std::string patterType;
     int patternId = 0;
@@ -787,6 +788,10 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         std::make_unique<ComparisonInstruction>(action->getNegated(), functionName + "(" + functionArguments + ")"));
 
     ifInstruction->addInstruction(std::move(blockInstruction));
+    if (returnInstruction)
+    {
+        ifInstruction->addInstruction(std::move(returnInstruction));
+    }
     tmpBlockInstruction->pushInstructionBack(std::move(ifInstruction));
     return std::move(tmpBlockInstruction);
 }
@@ -872,6 +877,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const std::shared_ptr<Edge>& edge,
     int iid,
     bool applyEdgeMode,
+    bool addReturn,
     bool skipFirstInstruction)
 {
     const std::string stateFrom = edge->fromName();
@@ -917,6 +923,18 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     action->getNegated(), action->getLeftSide(), action->getRightSide()));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
+
+            if (addReturn)
+            {
+                if (applyEdgeMode)
+                {
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("return false;"));
+                }
+                else
+                {
+                    ifInstruction->addInstruction(std::make_unique<CustomInstruction>("return"));
+                }
+            }
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
@@ -959,7 +977,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
         {
-            blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));
+            std::unique_ptr<CustomInstruction> returnInstruction = nullptr;
+            if (addReturn)
+            {
+                if (applyEdgeMode)
+                {
+                    returnInstruction = std::make_unique<CustomInstruction>("return false");
+                }
+                else
+                {
+                    returnInstruction = std::make_unique<CustomInstruction>("return");
+                }
+            }
+            blockInstruction = addActionPattern(
+                action, graph, stateFrom, stateTo, iid, std::move(blockInstruction), std::move(returnInstruction));
         }
     }
 

@@ -49,12 +49,14 @@ private:
         const std::string &stateFrom,
         const std::string &stateTo,
         int iid,
-        std::unique_ptr<BlockInstruction> blockInstruction);
+        std::unique_ptr<BlockInstruction> blockInstruction,
+        std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
         int iid,
         bool applyEdgeMode = false,
+        bool addReturn = false,
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
@@ -117,6 +119,7 @@ private:
     void initializePragmaRepeat();
     void initializePragmaUnique();
     std::string getTypeForVariable(const std::string &variableName);
+    bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
     const ValueAssigner valueAssigner_;
@@ -140,7 +143,6 @@ private:
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
-    std::set<std::string> pragmaDisjointData_;
     std::set<std::string> pragmaUniqueData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;

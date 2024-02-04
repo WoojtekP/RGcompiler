@@ -8,6 +8,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <compiler/ValueAssigner.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Node.hpp>
 
@@ -35,12 +36,14 @@ class Graph
     // {NodeFrom name, NodeTo name, internal id} to edge id
     std::map<std::tuple<std::string, std::string, int>, int> edgeNameToId_;
     std::map<int, std::shared_ptr<Edge>> edgeIdToEdge_;
+    int maxNodeId_ = 0;
 
     void insertToEdgeIdToEdge(const std::shared_ptr<Edge> &edge, int iid);
-    void insertToNodeIdToNode(const std::shared_ptr<Node> &node);
+    void assignNodeId(const std::shared_ptr<Node> &node, const int nodeId);
     void initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
-    void initializeNodeIdToNode();
+    void initializeNodeIdToNode(const ValueAssigner& valueAssigner);
     void initializeAllNodes();
+    void initializeOuterNodes();
     int getNodeId(const std::shared_ptr<Node> &node);
     int getEdgeId(const std::shared_ptr<Edge> &edge, int iid);
     template<typename Map, typename Key>
@@ -56,7 +59,7 @@ class Graph
 
 public:
     ~Graph();
-    void initialize();
+    void initialize(const ValueAssigner& valueAssigner);
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
     bool empty() const;

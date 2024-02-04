@@ -69,19 +69,18 @@ const std::vector<std::shared_ptr<Node>> &Graph::getAllNodes() const
 
 int Graph::getNodeId(const std::shared_ptr<Node> &node)
 {
-    nodeNameToId_.insert({node->getName(), static_cast<int>(nodeNameToId_.size())});
-    return nodeNameToId_[node->getName()];
+    return nodeNameToId_.at(node->getName());
 }
 
-void Graph::insertToNodeIdToNode(const std::shared_ptr<Node> &node)
+void Graph::assignNodeId(const std::shared_ptr<Node> &node, const int nodeId)
 {
-    nodeIdToNode_.insert({getNodeId(node), node});
+    nodeNameToId_.insert({node->getName(), nodeId});
+    nodeIdToNode_.insert({nodeId, node});
 }
 
 int Graph::getEdgeId(const std::shared_ptr<Edge> &edge, int iid)
 {
-    size_t shift = nodeNameToId_.size();
-    edgeNameToId_.insert({{edge->fromName(), edge->toName(), iid}, static_cast<int>(shift + edgeNameToId_.size())});
+    edgeNameToId_.insert({{edge->fromName(), edge->toName(), iid}, static_cast<int>(maxNodeId_ + edgeNameToId_.size())});
     return edgeNameToId_[{edge->fromName(), edge->toName(), iid}];
 }
 
@@ -90,25 +89,53 @@ void Graph::insertToEdgeIdToEdge(const std::shared_ptr<Edge> &edge, int iid)
     edgeIdToEdge_.insert({getEdgeId(edge, iid), edge});
 }
 
-void Graph::initializeNodeIdToNode()
+void Graph::initializeNodeIdToNode(const ValueAssigner& valueAssigner)
 {
-    for (auto &&edge : edges_)
+    nodeNameToId_.clear();
+    nodeIdToNode_.clear();
+    int nextNodeId = 1;
+    for (auto &&node : allNodes_)
     {
-        insertToNodeIdToNode(edge->getRightNode());
-        insertToNodeIdToNode(edge->getLeftNode());
-        for (const auto &innerNode : edge->getInnerNodes())
+        assignNodeId(node, nextNodeId);
+        if (const auto binding = node->getBinding())
         {
-            insertToNodeIdToNode(innerNode);
+            const auto generatorSize = valueAssigner.getTypeRange(binding->getTypeName());
+            nextNodeId += generatorSize;
+        }
+        else
+        {
+            ++nextNodeId;
         }
     }
+    maxNodeId_ = nextNodeId - 1;
 }
 
 void Graph::initializeAllNodes()
 {
-    for (auto &[id, node] : nodeIdToNode_)
+    std::set<std::shared_ptr<Node>, ByNameComparator<std::shared_ptr<Node>>> allNodes;
+
+    for (auto &&edge : edges_)
     {
-        allNodes_.push_back(node);
+        allNodes.insert(edge->getLeftNode());
+        allNodes.insert(edge->getRightNode());
+        for (const auto &innerNode : edge->getInnerNodes())
+        {
+            allNodes.insert(innerNode);
+        }
     }
+    allNodes_ = {allNodes.begin(), allNodes.end()};
+}
+
+void Graph::initializeOuterNodes()
+{
+    std::set<std::shared_ptr<Node>, ByNameComparator<std::shared_ptr<Node>>> outerNodes;
+
+    for (auto &&edge : edges_)
+    {
+        outerNodes.insert(edge->getLeftNode());
+        outerNodes.insert(edge->getRightNode());
+    }
+    outerNodes_ = {outerNodes.begin(), outerNodes.end()};
 }
 
 void Graph::initializeEdgeIdToEdgeAndOutgoingEdgesFromNode()
@@ -142,19 +169,11 @@ void Graph::initializeEdgeIdToEdgeAndOutgoingEdgesFromNode()
     }
 }
 
-void Graph::initialize()
+void Graph::initialize(const ValueAssigner& valueAssigner)
 {
-    std::set<std::shared_ptr<Node>, ByNameComparator<std::shared_ptr<Node>>> outerNodes;
-
-    for (auto &&edge : edges_)
-    {
-        outerNodes.insert(edge->getLeftNode());
-        outerNodes.insert(edge->getRightNode());
-    }
-    outerNodes_.insert(outerNodes_.end(), outerNodes.begin(), outerNodes.end());
-
-    initializeNodeIdToNode();
+    initializeOuterNodes();
     initializeAllNodes();
+    initializeNodeIdToNode(valueAssigner);
     initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
 }
 
@@ -201,10 +220,10 @@ std::optional<std::shared_ptr<Edge>> Graph::getEdgeOptional(
 
 int Graph::getMaximalNodeId() const
 {
-    return nodeNameToId_.size();
+    return maxNodeId_;
 }
 
 int Graph::getNumberOfNodes() const
 {
-    return nodeNameToId_.size();
+    return maxNodeId_;
 }

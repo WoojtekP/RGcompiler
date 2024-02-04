@@ -70,7 +70,7 @@ void GetOptimizedGraphOperator::initializeNodesUsedInReachabilityPattern()
     }
 }
 
-std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths()
+std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(const ValueAssigner& valueAssigner)
 {
     if (optimizedGraph_)
     {
@@ -163,7 +163,7 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths()
             std::make_shared<Edge>(graph_->getNode(firstNode), graph_->getNode(lastNode), actions, innerNodes)));
     }
 
-    newGraph->initialize();
+    newGraph->initialize(valueAssigner);
     optimizedGraph_ = newGraph;
     return newGraph;
 }

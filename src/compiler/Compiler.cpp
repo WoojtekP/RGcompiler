@@ -131,7 +131,7 @@ void Compiler::initializeGraph()
             std::vector<std::shared_ptr<IAction>> {actionFactory.createAction(edge["label"])}));
     }
 
-    graph_->initialize();
+    graph_->initialize(valueAssigner_);
     graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(parser_);
 
     patternReachabilityGraphs_ =
@@ -143,7 +143,7 @@ void Compiler::initializeGraph()
     if (optConditionsSimplePathCompression_)
     {
         const auto& nodes = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->getNodes();
-        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
+        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(valueAssigner_);
         graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(nodes);
     }
 
@@ -157,7 +157,7 @@ void Compiler::initializePatternGraphs(
 {
     for (const auto& [from, to, graph] : patterns)
     {
-        graph->initialize();
+        graph->initialize(valueAssigner_);
     }
 
     if (optConditionsSimplePathCompression_)
@@ -169,7 +169,7 @@ void Compiler::initializePatternGraphs(
             patterns[i] = std::make_tuple(
                 std::get<0>(patterns[i]),
                 std::get<1>(patterns[i]),
-                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths());
+                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(valueAssigner_));
         }
     }
 

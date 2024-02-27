@@ -141,7 +141,7 @@ for game in games:
         print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
         print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     else:
-      print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, elapsedInstr, statesCount/elapsedTime, sims/elapsedTime))
+      print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, statesCount/elapsedTime, sims/elapsedTime))
       sumSimsTime += elapsedTime
 
   ######## Perft ########

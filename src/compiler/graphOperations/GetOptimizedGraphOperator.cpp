@@ -5,6 +5,7 @@ void GetOptimizedGraphOperator::traverse(int node, std::vector<int> &path, std::
     const auto &action = graph_->getEdge(graph_->getNode(path.back())->getName(), graph_->getNode(node)->getName(), 0)
                              ->getActions()
                              .back();
+
     path.push_back(node);
     if (graph_->getOutgoingEdgesFrom(node).size() != 1 ||
         numberOfIncomingEdges_.at(graph_->getNodeId(graph_->getNode(node)->getName())) != 1)
@@ -14,13 +15,6 @@ void GetOptimizedGraphOperator::traverse(int node, std::vector<int> &path, std::
 
     // There is only one incoming edge for "node" therefor iid should be equal to 0
     if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
-    {
-        return;
-    }
-
-    // Paths with nodes used in reachability pattern should not be optimized
-    // TODO: Maybe it's better to keep both compressed and not compressed paths?
-    if (nodesUsedInReachability_.count(node))
     {
         return;
     }
@@ -97,7 +91,6 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths()
             {
                 int nextNodeId = graph_->getNodeId(edge->toName());
                 std::vector<int> path {nodeId};
-
                 traverse(nextNodeId, path, visited);
 
                 paths.push_back(path);

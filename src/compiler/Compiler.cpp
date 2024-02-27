@@ -131,7 +131,6 @@ void Compiler::initializeGraph()
     }
 
     graph_->initialize();
-    graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(parser_);
 
     patternReachabilityGraphs_ =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
@@ -141,9 +140,7 @@ void Compiler::initializeGraph()
 
     if (optConditionsSimplePathCompression_)
     {
-        const auto& nodes = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->getNodes();
         graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
-        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(nodes);
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);

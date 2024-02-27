@@ -1,6 +1,7 @@
 #include <queue>
 
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
+
 std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forPatterns(
     ActionType actionType) const
 {
@@ -103,18 +104,23 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 {
     std::shared_ptr<Graph> graph = std::make_shared<Graph>();
 
-    std::vector<std::shared_ptr<Edge>> edges;
+    std::set<int> visited;
+    std::set<int> nodesInPatternGraph;
 
-    std::vector<bool> visited(graph_->getAllEdges().size(), false);
-    std::vector<bool> nodesOnPathToFinalNode(graph_->getNumberOfNodes(), false);
-    nodesOnPathToFinalNode[graph_->getNodeId(to)] = true;
+    generatePathFromNodeToNode(
+        graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
 
-    // generatePathFromNodeToNode(from, to, edges, visited, nodesOnPathToFinalNode, bannedEdges);
-
-    // Temporary fix for cyclic graphs
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
-        graph->addEdge(edge);
+        // We should work on not optimized graph
+        assert(edge->getActions().size() == 1);
+
+        if (nodesInPatternGraph.count(graph_->getNodeId(edge->fromName())) &&
+            nodesInPatternGraph.count(graph_->getNodeId(edge->toName())) &&
+            bannedEdges.find(graph_->getEdgeId(edge->fromName(), edge->toName(), iid)) == bannedEdges.end())
+        {
+            graph->addEdge(edge);
+        }
     }
 
     return graph;
@@ -151,40 +157,35 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
 }
 
 bool GenerateGraphsOperator::generatePathFromNodeToNode(
-    std::string node,
-    std::string finalNode,
-    std::vector<std::shared_ptr<Edge>> &edges,
-    std::vector<bool> &visited,
-    std::vector<bool> &onPathToFinalNode,
+    int node,
+    int finalNode,
+    std::set<int> &visited,
+    std::set<int> &nodesInPatternGraph,
     const std::set<int> &bannedEdges) const
 {
     if (node == finalNode)
     {
+        nodesInPatternGraph.insert(node);
         return true;
     }
 
+    if (visited.count(node))
+    {
+        return nodesInPatternGraph.find(node) != nodesInPatternGraph.end();
+    }
+
+    visited.insert(node);
     bool havePathToFinalNode = false;
 
     for (const auto &[edge, iid] : graph_->getOutgoingEdgesFrom(node))
     {
-        int edgeId = graph_->getEdgeId(edge->fromName(), edge->toName(), iid);
-        int edgeShiftedId = edgeId - graph_->getNumberOfNodes();
-
-        if (bannedEdges.find(edgeId) != bannedEdges.end())
+        if (bannedEdges.find(graph_->getEdgeId(edge->fromName(), edge->toName(), iid)) != bannedEdges.end())
         {
             continue;
         }
 
-        if (!visited[edgeShiftedId])
-        {
-            visited[edgeShiftedId] = true;
-            if (generatePathFromNodeToNode(edge->toName(), finalNode, edges, visited, onPathToFinalNode, bannedEdges))
-            {
-                havePathToFinalNode = true;
-                edges.push_back(edge);
-            }
-        }
-        else if (onPathToFinalNode[graph_->getNodeId(edge->toName())])
+        if (generatePathFromNodeToNode(
+                graph_->getNodeId(edge->toName()), finalNode, visited, nodesInPatternGraph, bannedEdges))
         {
             havePathToFinalNode = true;
         }
@@ -192,7 +193,7 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
 
     if (havePathToFinalNode)
     {
-        onPathToFinalNode[graph_->getNodeId(node)] = true;
+        nodesInPatternGraph.insert(node);
     }
 
     return havePathToFinalNode;

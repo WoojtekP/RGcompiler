@@ -27,6 +27,11 @@ bool Binding::operator==(const Binding &rhs) const
     return variableName_ == rhs.variableName_ && iteratedType_ == rhs.iteratedType_;
 }
 
+bool Binding::operator!=(const Binding &rhs) const
+{
+    return !this->operator==(rhs);
+}
+
 const std::string& Binding::getVariableName() const
 {
     return variableName_;

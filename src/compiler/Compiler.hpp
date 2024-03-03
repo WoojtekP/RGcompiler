@@ -116,6 +116,7 @@ private:
     void initializePragmaRepeat();
     void initializePragmaUnique();
     std::string getTypeForVariable(const std::string &variableName);
+    std::string getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge);
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;

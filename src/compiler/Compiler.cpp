@@ -43,8 +43,6 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , preserveOriginalNames_(options.preserveOriginalNames_)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
 , verification_(options.verification_)
-, optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
-, optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
@@ -515,13 +513,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        /* if (optConditionsGeneratingMoves_ && !applyMode)
-        {
-            generateVoidStateOptimizedFunction(state, function, graph);
-        }
-        else
-        {*/
-
         if (!applyMode && !pragmaUniqueData_.count(state))
         {
             std::string cacheName = "state_cache";
@@ -697,14 +688,10 @@ void Compiler::generateBoolStateFunctions(
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
 
-        if (outgoingEdges.empty() ||
-            (optConditionsReachability_ && isAnyPairOfEdgesComplementary(outgoingEdges) && patternId == 0))
+        if (outgoingEdges.empty())
         {
-            if (patternId == 2)
-            {
-                function->addInstruction(
-                    std::make_unique<CustomInstruction>("currentState = " + std::to_string(graph_->getNodeId(state))));
-            }
+            function->addInstruction(
+                std::make_unique<CustomInstruction>("currentState = " + std::to_string(graph_->getNodeId(state))));
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
         else

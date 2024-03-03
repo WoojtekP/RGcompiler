@@ -11,7 +11,6 @@
 
 struct Options
 {
-    int optConditions;
     bool simplePathCompression_;
     bool noCycleDetection_;
     bool printOriginalNames_;
@@ -134,8 +133,6 @@ private:
     const bool preserveOriginalNames_;
     const bool pragmaDisjointEnabled_;
     const bool verification_;
-    const bool optConditionsReachability_;
-    const bool optConditionsGeneratingMoves_;
     const bool optConditionsSimplePathCompression_;
     const bool optNoCycleDetection_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};

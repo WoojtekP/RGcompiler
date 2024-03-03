@@ -42,17 +42,17 @@ bool Graph::empty() const
     return edges_.empty();
 }
 
-const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getAllEdges() const
+const EdgesWithIID &Graph::getAllEdges() const
 {
     return edgesWithIID_;
 }
 
-const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getOutgoingEdgesFrom(const std::string &from) const
+const EdgesWithIID &Graph::getOutgoingEdgesFrom(const std::string &from) const
 {
     return getOutgoingEdgesFrom(nodeNameToId_.at(from));
 }
 
-const std::vector<std::pair<std::shared_ptr<Edge>, int>> &Graph::getOutgoingEdgesFrom(int from) const
+const EdgesWithIID &Graph::getOutgoingEdgesFrom(int from) const
 {
     return outgoingEdgesFromNode_.at(from);
 }

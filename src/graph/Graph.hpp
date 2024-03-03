@@ -11,6 +11,8 @@
 #include <graph/Edge.hpp>
 #include <graph/Node.hpp>
 
+using EdgesWithIID = std::vector<std::pair<std::shared_ptr<Edge>, int>>;
+
 template<typename T>
 struct ByNameComparator
 {
@@ -21,7 +23,7 @@ class Graph
 {
     std::vector<std::shared_ptr<Edge>> edges_;
     // Pair of edge and its internal id
-    std::vector<std::pair<std::shared_ptr<Edge>, int>> edgesWithIID_;
+    EdgesWithIID edgesWithIID_;
     std::map<int, std::shared_ptr<Node>> nodeIdToNode_;
     std::map<std::string, int> nodeNameToId_;
     // Visible nodes
@@ -29,7 +31,7 @@ class Graph
     // Visible nodes and nodes hidden in edges
     std::vector<std::shared_ptr<Node>> allNodes_;
     // NodeId to vector of outgoing edges {edge , internal id}
-    std::map<int, std::vector<std::pair<std::shared_ptr<Edge>, int>>> outgoingEdgesFromNode_;
+    std::map<int, EdgesWithIID> outgoingEdgesFromNode_;
     // {NodeFrom name, NodeTo name, internal id} to edge id
     std::map<std::tuple<std::string, std::string, int>, int> edgeNameToId_;
     std::map<int, std::shared_ptr<Edge>> edgeIdToEdge_;
@@ -61,9 +63,9 @@ public:
     std::string toString() const;
     const std::vector<std::shared_ptr<Node>> &getOuterNodes() const;
     const std::vector<std::shared_ptr<Node>> &getAllNodes() const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(const std::string &from) const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(int from) const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getAllEdges() const;
+    const EdgesWithIID &getOutgoingEdgesFrom(const std::string &from) const;
+    const EdgesWithIID &getOutgoingEdgesFrom(int from) const;
+    const EdgesWithIID &getAllEdges() const;
     int getEdgeId(const std::string &from, const std::string &to, int iid) const;
     int getNodeId(const std::string &name) const;
     std::shared_ptr<Edge> getEdge(const std::string &from, const std::string &to, int iid) const;

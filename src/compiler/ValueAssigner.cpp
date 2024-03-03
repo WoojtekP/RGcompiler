@@ -4,6 +4,9 @@
 
 #include <nlohmann/json.hpp>
 
+#include <graph/Node.hpp>
+#include <graph/Edge.hpp>
+
 namespace
 {
 bool isNumber(const std::string& s)
@@ -21,11 +24,6 @@ bool isValueReserved(
     });
 }
 }  // namespace
-
-ValueAssigner::ValueAssigner(const nlohmann::json& types)
-{
-    assignValuesToSymbols(types);
-}
 
 const TypeToSymbolToValueMap& ValueAssigner::getTypeToSymbolToValueMap() const
 {
@@ -54,7 +52,17 @@ int ValueAssigner::getTypeDomainSize(const std::string& identifier) const
     return getSymbolToValueMapForType(identifier).size();
 }
 
-void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
+int ValueAssigner::getBaseValueForTag(const std::string& tag) const
+{
+    const auto tagToValueIt = tagToBaseValue_.find(tag);
+    if (tagToValueIt == tagToBaseValue_.end())
+    {
+        throw std::runtime_error("[ValueAssigner] Unknown tag: " + tag);
+    }
+    return tagToValueIt->second;
+}
+
+void ValueAssigner::assignValuesForSymbols(const nlohmann::json& types)
 {
     typeToSymbolToValue_.clear();
 
@@ -63,6 +71,41 @@ void ValueAssigner::assignValuesToSymbols(const nlohmann::json& types)
     assignValuesForPlayers(reservedValuesPerType, types);
     assignValuesForSharedSymbols(reservedValuesPerType, types);
     assignValuesForRemainingSymbols(reservedValuesPerType, types);
+}
+
+void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
+{
+    tagToBaseValue_.clear();
+
+    int nextTagValue = 0;
+    for (const auto& [edge, iid] : edges)
+    {
+        for (const auto action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Tag)
+            {
+                const auto leftBinding = edge->getLeftNode()->getBinding();
+                const auto rightBinding = edge->getRightNode()->getBinding();
+                const auto tag = action->toString();
+
+                if (leftBinding && leftBinding->getVariableName() == tag)
+                {
+                    nextTagValue = assignValueForTagFromBinding(leftBinding, nextTagValue);
+                }
+                else if (rightBinding && rightBinding->getVariableName() == tag)
+                {
+                    nextTagValue = assignValueForTagFromBinding(rightBinding, nextTagValue);
+                }
+                else
+                {
+                    if (tagToBaseValue_.emplace(tag, nextTagValue).second)
+                    {
+                        ++nextTagValue;
+                    }
+                }
+            }
+        }
+    }
 }
 
 const SymbolToValueMap& ValueAssigner::getSymbolToValueMapForType(const std::string& identifier) const
@@ -186,4 +229,15 @@ void ValueAssigner::assignValuesForRemainingSymbols(
             }
         }
     }
+}
+
+int ValueAssigner::assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue)
+{
+    const auto tagString = binding->toTagStringId();
+    if (tagToBaseValue_.emplace(tagString, nextTagValue).second)
+    {
+        const auto typeRange = getTypeRange(binding->getTypeName());
+        return nextTagValue + typeRange + 1;
+    }
+    return nextTagValue;
 }

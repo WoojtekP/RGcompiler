@@ -7,7 +7,7 @@
 
 namespace
 {
-bool isAnyPairOfEdgesComplementary(const std::vector<std::pair<std::shared_ptr<Edge>, int>>& edges)
+bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
 {
     for (const auto& [edgeA, iid] : edges)
     {
@@ -23,7 +23,7 @@ bool isAnyPairOfEdgesComplementary(const std::vector<std::pair<std::shared_ptr<E
 }
 
 std::shared_ptr<Edge> findComplementaryEdge(
-    const std::shared_ptr<Edge>& edge, const std::vector<std::pair<std::shared_ptr<Edge>, int>>& edges)
+    const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
 {
     for (const auto& [outgoingEdge, iid] : edges)
     {
@@ -38,7 +38,6 @@ std::shared_ptr<Edge> findComplementaryEdge(
 
 Compiler::Compiler(const Parser& parser, const Options& options)
 : parser_(parser)
-, valueAssigner_(parser_.getTypeDeclarations())
 , printOriginalNames_(options.printOriginalNames_)
 , preserveOriginalNames_(options.preserveOriginalNames_)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
@@ -54,7 +53,9 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , graphOperatorManager_(std::make_shared<GraphOperatorManager>())
 
 {
+    valueAssigner_.assignValuesForSymbols(parser_.getTypeDeclarations());
     initializeGraph();
+    valueAssigner_.assignValuesForTags(graph_->getAllEdges());
     initializePragmas();
 }
 
@@ -940,13 +941,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Tag)
         {
+            const auto tagName = action->toString();
+            const auto tagValueStr = std::to_string(valueAssigner_.getBaseValueForTag(tagName));
             if (applyEdgeMode)
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false,
-                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " +
-                            std::to_string(graph->getEdgeId(stateFrom, stateTo, iid))));
+                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
 
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
@@ -956,8 +958,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             }
             else
             {
-                std::string tagName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
-                std::string pushTag = "mr.push_back(" + tagName + ")";
+                std::string pushTag = "mr.push_back(" + tagValueStr + ")";
                 bool useArray =
                     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
                 if (useArray)
@@ -966,7 +967,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                         graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
                             stateFrom);
                     assert(tagPosition != -1);
-                    pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagName;
+                    pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagValueStr;
                 }
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
                 if (!useArray)
@@ -1107,15 +1108,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Tag && !bSkipStateCache)
         {
-            std::string tagName = std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
-            std::string pushTag = "mr.push_back(" + tagName + ")";
+            const auto tagName = action->toString();
+            const auto tagValueStr = std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+            std::string pushTag = "mr.push_back(" + tagValueStr + ")";
             bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
             if (useArray)
             {
                 int tagPosition =
                     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(stateFrom);
                 assert(tagPosition != -1);
-                pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagName;
+                pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagValueStr;
             }
 
             blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));

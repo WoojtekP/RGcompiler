@@ -122,7 +122,7 @@ private:
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
-    const ValueAssigner valueAssigner_;
+    ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;

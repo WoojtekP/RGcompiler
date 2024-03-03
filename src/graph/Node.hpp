@@ -18,6 +18,7 @@ public:
     const std::string& getVariableName() const;
     const std::string& getTypeName() const;
     bool operator==(const Binding &rhs) const;
+    bool operator!=(const Binding &rhs) const;
 };
 
 class Node

@@ -14,7 +14,7 @@ class GetOptimizedGraphOperator : public BaseOperator
     std::shared_ptr<Graph> optimizedGraph_;
 
     void traverseCycle(int node, std::vector<int> &path, std::map<int, bool> &visited) const;
-    void traverse(int node, std::vector<int> &path, std::map<int, bool> &visited) const;
+    void traverse(const std::shared_ptr<Edge> &edge, std::vector<int> &path, std::map<int, bool> &visited) const;
     void initializeNumberOfIncomingEdges();
     void initializeNodesUsedInReachabilityPattern();
 

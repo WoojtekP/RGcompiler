@@ -690,8 +690,6 @@ void Compiler::generateBoolStateFunctions(
 
         if (outgoingEdges.empty())
         {
-            function->addInstruction(
-                std::make_unique<CustomInstruction>("currentState = " + std::to_string(graph_->getNodeId(state))));
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
         else

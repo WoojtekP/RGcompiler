@@ -125,6 +125,8 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths()
     std::map<std::pair<std::string, std::string>, int> countRepetitions;
     for (const auto &path : paths)
     {
+        assert(!path.empty());
+
         int firstNode = path.front();
         int lastNode = path.back();
 
@@ -154,6 +156,7 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths()
     }
 
     newGraph->initialize();
+
     optimizedGraph_ = newGraph;
     return newGraph;
 }

@@ -196,7 +196,12 @@ std::optional<int> Graph::getEdgeIdOptional(const std::string &from, const std::
 std::optional<std::shared_ptr<Edge>> Graph::getEdgeOptional(
     const std::string &from, const std::string &to, int iid) const
 {
-    return getOptional(edgeIdToEdge_, edgeNameToId_.at(std::make_tuple(from, to, iid)));
+    auto edgeId = getOptional(edgeNameToId_, std::make_tuple(from, to, iid));
+    if (edgeId)
+    {
+        return getOptional(edgeIdToEdge_, *edgeId);
+    }
+    return std::nullopt;
 }
 
 int Graph::getMaximalNodeId() const

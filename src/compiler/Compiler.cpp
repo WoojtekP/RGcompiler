@@ -563,6 +563,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                     }
                 }
             }
+
+            // In case if somone put illegal description of disjoin
+            assert(vectorOfNodeNames.size() == cnt);
         }
         else
         {

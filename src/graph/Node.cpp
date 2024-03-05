@@ -65,6 +65,12 @@ std::string Node::getName() const
     return toString();
 }
 
+// TODO: it's a temporary solution: use the same name in all places
+std::string Node::getAlternativeName() const
+{
+    return binding_.has_value() ? name_ + binding_->toTagStringId() : name_;
+}
+
 const std::optional<Binding>& Node::getBinding() const
 {
     return binding_;

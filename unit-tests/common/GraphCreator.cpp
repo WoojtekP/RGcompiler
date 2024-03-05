@@ -33,6 +33,23 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
     return std::make_shared<ActionAssignment>(label, expressionFactory);
 }
 
+std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide)
+{
+    Parser* parser = nullptr;
+    ValueAssigner valueAssigner(nlohmann::json(
+        {{{"kind", "TypeDeclaration"},
+          {"identifier", "Player"},
+          {"type", {{"kind", "Set"}, {"identifiers", {"white", "black"}}}}}}));
+    ExpressionFactory expressionFactory(*parser, valueAssigner);
+    nlohmann::json label = {
+        {"kind", "Reachability"},
+        {"lhs", {{"kind", "EdgeName"}, {"parts", {{{"kind", "Literal"}, {"identifier", leftSide}}}}}},
+        {"rhs", {{"kind", "EdgeName"}, {"parts", {{{"kind", "Literal"}, {"identifier", rightSide}}}}}},
+        {"negated", false}};
+
+    return std::make_shared<ActionReachability>(label, expressionFactory);
+}
+
 void addEdge(
     std::shared_ptr<Graph>& graph,
     const std::string& fromNodeName,

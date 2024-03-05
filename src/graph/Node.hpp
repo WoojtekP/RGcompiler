@@ -30,6 +30,7 @@ public:
     Node(const nlohmann::json &t);
     std::string toString() const;
     std::string getName() const;
+    std::string getAlternativeName() const;
     const std::optional<Binding>& getBinding() const;
     bool operator==(const Node &rhs) const;
 };

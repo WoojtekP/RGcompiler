@@ -71,7 +71,22 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
     {
         for (const auto& edge : pragma["edgeNames"])
         {
-            data.insert(static_cast<std::string>(edge["parts"][0]["identifier"]));
+            const auto parts = edge["parts"];
+            if (parts.size() == 1)
+            {
+                data.insert(parts[0]["identifier"].get<std::string>());
+            }
+            else if (parts.size() == 2)
+            {
+                const auto nodeName = parts[0]["identifier"].get<std::string>();
+                const auto generatorVariable = parts[1]["identifier"].get<std::string>();
+                const auto generatorType = parts[1]["type"]["identifier"].get<std::string>();
+                data.insert(nodeName + "(" + generatorVariable + ":" + generatorType + ")");
+            }
+            else
+            {
+                throw std::runtime_error("Unhandled number of parts in @unique pragma: " + std::to_string(parts.size()));
+            }
         }
     }
 }
@@ -514,8 +529,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        // TODO: fix usage of cache for @unique nodes with generators
-        if (!applyMode && !pragmaUniqueData_.count(state))
+        if (!applyMode && !pragmaUniqueData_.count(node->getAlternativeName()))
         {
             std::string cacheName, cacheData;
 
@@ -680,7 +694,7 @@ void Compiler::generateBoolStateFunctions(
                     "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
             }
 
-            if (!pragmaUniqueData_.count(state) && !skipStateCache)
+            if (!pragmaUniqueData_.count(node->getAlternativeName()) && !skipStateCache)
             {
                 auto nodeId = std::to_string(graph_->getNodeId(state));
                 if (const auto binding = node->getBinding())

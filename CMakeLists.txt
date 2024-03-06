@@ -29,3 +29,5 @@ message(STATUS "Debug flags: ${CMAKE_CXX_FLAGS_DEBUG}")
 
 include_directories(src)
 add_subdirectory(src)
+include_directories(unit-tests)
+add_subdirectory(unit-tests)

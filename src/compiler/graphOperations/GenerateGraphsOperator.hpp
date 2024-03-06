@@ -9,11 +9,10 @@ class GenerateGraphsOperator : public BaseOperator
         std::string from, std::string to, const std::set<int> &bannedEdges = std::set<int>()) const;
     std::vector<std::string> nodesToPlayerChangeOrEnd(const std::string &nodeName) const;
     bool generatePathFromNodeToNode(
-        std::string node,
-        std::string finalNode,
-        std::vector<std::shared_ptr<Edge>> &edges,
-        std::vector<bool> &visited,
-        std::vector<bool> &onPathToFinalNode,
+        int node,
+        int finalNode,
+        std::set<int> &visited,
+        std::set<int> &nodesInPatternGraph,
         const std::set<int> &bannedEdges) const;
 
 public:

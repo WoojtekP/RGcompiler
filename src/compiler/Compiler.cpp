@@ -42,8 +42,6 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , preserveOriginalNames_(options.preserveOriginalNames_)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
 , verification_(options.verification_)
-, optConditionsReachability_(options.optConditions == 1 || options.optConditions == 3)
-, optConditionsGeneratingMoves_(options.optConditions == 2 || options.optConditions == 3)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
@@ -132,7 +130,6 @@ void Compiler::initializeGraph()
     }
 
     graph_->initialize(valueAssigner_);
-    graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(parser_);
 
     patternReachabilityGraphs_ =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
@@ -142,9 +139,7 @@ void Compiler::initializeGraph()
 
     if (optConditionsSimplePathCompression_)
     {
-        const auto& nodes = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->getNodes();
         graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(valueAssigner_);
-        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(nodes);
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);
@@ -519,13 +514,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        /* if (optConditionsGeneratingMoves_ && !applyMode)
-        {
-            generateVoidStateOptimizedFunction(state, function, graph);
-        }
-        else
-        {*/
-
         if (!applyMode && !pragmaUniqueData_.count(state))
         {
             std::string cacheName = "state_cache";
@@ -576,6 +564,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                     }
                 }
             }
+
+            // In case if somone put illegal description of disjoin
+            assert(vectorOfNodeNames.size() == cnt);
         }
         else
         {
@@ -701,14 +692,8 @@ void Compiler::generateBoolStateFunctions(
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
 
-        if (outgoingEdges.empty() ||
-            (optConditionsReachability_ && isAnyPairOfEdgesComplementary(outgoingEdges) && patternId == 0))
+        if (outgoingEdges.empty())
         {
-            if (patternId == 2)
-            {
-                function->addInstruction(
-                    std::make_unique<CustomInstruction>("currentState = " + std::to_string(graph_->getNodeId(state))));
-            }
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
         else

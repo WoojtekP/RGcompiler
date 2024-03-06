@@ -28,9 +28,6 @@ int main(const int argc, const char **argv)
             "verification",
             boost::program_options::value<bool>(&options.verification_)->default_value(0),
             "Extra verification for transducer")(
-            "opt-conditions",
-            boost::program_options::value<int>(&options.optConditions)->default_value(0),
-            "Optimizing complementary conditions:\n 0 - off\n 1 - checking reachability\n 2 - generating moves\n 3 - all")(
             "simple-path-compression",
             boost::program_options::value<bool>(&options.simplePathCompression_)->default_value(false),
             "Enable compressing simple paths")(
@@ -38,7 +35,7 @@ int main(const int argc, const char **argv)
             boost::program_options::value<bool>(&options.noCycleDetection_)->default_value(false),
             "Disable detecting cycles in patterns")(
             "disjoint",
-            boost::program_options::value<bool>(&options.pragmaDisjointEnabled_)->default_value(false),
+            boost::program_options::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
             "Is pragma disjoint enabled");
 
         boost::program_options::variables_map vm;

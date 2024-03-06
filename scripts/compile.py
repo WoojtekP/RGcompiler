@@ -38,7 +38,7 @@ print(FORMATTER.format("ast:",elapsedTime))
 # Generate cpp files
 startTime = time.time()
 os.chdir(cfg.BUILD_TEST_DIR)
-run(f'../{cfg.BUILD_DIR}/src/rg2cpp --file {game_basename}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS}')
+run(f'../{cfg.BUILD_DIR}/src/rg2cpp --file {game_basename}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS} {cfg.DEBUG_RG2CPP_OPTIONS}')
 elapsedTime = time.time() - startTime
 print(FORMATTER.format("rg2cpp:",elapsedTime))
 

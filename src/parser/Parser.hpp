@@ -13,6 +13,8 @@ class Parser
 {
 public:
     Parser(std::ifstream& jsonGameFile);
+    Parser(const nlohmann::json& parsedJson);
+
     bool isSymbol(const std::string& token) const;
     bool isConstant(const std::string& token) const;
     bool isVariable(const std::string& token) const;

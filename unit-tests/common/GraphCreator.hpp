@@ -5,6 +5,7 @@
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <graph/Graph.hpp>
 
+// TODO Improve base fixture and common function
 namespace GraphCreator
 {
 class GraphFixture : public ::testing::Test

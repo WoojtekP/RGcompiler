@@ -12,12 +12,10 @@ std::shared_ptr<Node> createNode(const std::string& nodeName)
 
 std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, const std::string& rightSide)
 {
-    // std::ifstream jsonEmptyFile;
-    // Temporary solution that may end up in crash, as there was no time to pepare proper initializig of Parser
-    Parser* parser = nullptr;
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    Parser parser(parsedJson);
     ValueAssigner valueAssigner;
-    ;
-    ExpressionFactory expressionFactory(*parser, valueAssigner);
+    ExpressionFactory expressionFactory(parser, valueAssigner);
     nlohmann::json label = {
         {"lhs",
          {{"kind", "Cast"},
@@ -33,9 +31,10 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
 
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide)
 {
-    Parser* parser = nullptr;
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    Parser parser(parsedJson);
     ValueAssigner valueAssigner;
-    ExpressionFactory expressionFactory(*parser, valueAssigner);
+    ExpressionFactory expressionFactory(parser, valueAssigner);
     nlohmann::json label = {
         {"kind", "Reachability"},
         {"lhs", {{"kind", "EdgeName"}, {"parts", {{{"kind", "Literal"}, {"identifier", leftSide}}}}}},

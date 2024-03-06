@@ -7,8 +7,8 @@
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
 
-Parser::Parser(std::ifstream& jsonGameFile)
-: parsedJson_(nlohmann::json::parse(jsonGameFile))
+Parser::Parser(const nlohmann::json& parsedJson)
+: parsedJson_(parsedJson)
 {
     for (const auto& type : getTypeDeclarations())
     {
@@ -31,6 +31,10 @@ Parser::Parser(std::ifstream& jsonGameFile)
         variables_.insert(variable["identifier"].get<std::string>());
     }
 }
+
+Parser::Parser(std::ifstream& jsonGameFile)
+: Parser(nlohmann::json::parse(jsonGameFile))
+{}
 
 bool Parser::isSymbol(const std::string& identifier) const
 {

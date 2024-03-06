@@ -8,8 +8,11 @@
 
 #include <nlohmann/json.hpp>
 
+#include <compiler/ValueAssigner.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Node.hpp>
+
+using EdgesWithIID = std::vector<std::pair<std::shared_ptr<Edge>, int>>;
 
 template<typename T>
 struct ByNameComparator
@@ -21,7 +24,7 @@ class Graph
 {
     std::vector<std::shared_ptr<Edge>> edges_;
     // Pair of edge and its internal id
-    std::vector<std::pair<std::shared_ptr<Edge>, int>> edgesWithIID_;
+    EdgesWithIID edgesWithIID_;
     std::map<int, std::shared_ptr<Node>> nodeIdToNode_;
     std::map<std::string, int> nodeNameToId_;
     // Visible nodes
@@ -29,16 +32,18 @@ class Graph
     // Visible nodes and nodes hidden in edges
     std::vector<std::shared_ptr<Node>> allNodes_;
     // NodeId to vector of outgoing edges {edge , internal id}
-    std::map<int, std::vector<std::pair<std::shared_ptr<Edge>, int>>> outgoingEdgesFromNode_;
+    std::map<int, EdgesWithIID> outgoingEdgesFromNode_;
     // {NodeFrom name, NodeTo name, internal id} to edge id
     std::map<std::tuple<std::string, std::string, int>, int> edgeNameToId_;
     std::map<int, std::shared_ptr<Edge>> edgeIdToEdge_;
+    int maxNodeId_ = 0;
 
     void insertToEdgeIdToEdge(const std::shared_ptr<Edge> &edge, int iid);
-    void insertToNodeIdToNode(const std::shared_ptr<Node> &node);
+    void assignNodeId(const std::shared_ptr<Node> &node, const int nodeId);
     void initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
-    void initializeNodeIdToNode();
+    void initializeNodeIdToNode(const ValueAssigner& valueAssigner);
     void initializeAllNodes();
+    void initializeOuterNodes();
     int getNodeId(const std::shared_ptr<Node> &node);
     int getEdgeId(const std::shared_ptr<Edge> &edge, int iid);
     template<typename Map, typename Key>
@@ -54,16 +59,16 @@ class Graph
 
 public:
     ~Graph();
-    void initialize();
+    void initialize(const ValueAssigner& valueAssigner);
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
     bool empty() const;
     std::string toString() const;
     const std::vector<std::shared_ptr<Node>> &getOuterNodes() const;
     const std::vector<std::shared_ptr<Node>> &getAllNodes() const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(const std::string &from) const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getOutgoingEdgesFrom(int from) const;
-    const std::vector<std::pair<std::shared_ptr<Edge>, int>> &getAllEdges() const;
+    const EdgesWithIID &getOutgoingEdgesFrom(const std::string &from) const;
+    const EdgesWithIID &getOutgoingEdgesFrom(int from) const;
+    const EdgesWithIID &getAllEdges() const;
     int getEdgeId(const std::string &from, const std::string &to, int iid) const;
     int getNodeId(const std::string &name) const;
     std::shared_ptr<Edge> getEdge(const std::string &from, const std::string &to, int iid) const;

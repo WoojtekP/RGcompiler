@@ -14,9 +14,10 @@ TEST_F(GraphFixture, TestSimplePath1)
     addEdge(graph_, "5", "7", createAssignmentAction("val", "6"));
     addEdge(graph_, "3", "7", createAssignmentAction("val", "7"));
 
-    graph_->initialize();
+    graph_->initialize(valueAssigner_);
 
-    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
+    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+        valueAssigner_);
 
     EXPECT_TRUE(graph->getEdgeOptional("1", "3", 0));
     EXPECT_TRUE(graph->getEdgeOptional("3", "6", 0));
@@ -34,9 +35,10 @@ TEST_F(GraphFixture, TestSimplePathAssingToPlayer)
     addEdge(graph_, "6", "7", createAssignmentAction("player", "6"));
     addEdge(graph_, "7", "8", createAssignmentAction("val", "7"));
 
-    graph_->initialize();
+    graph_->initialize(valueAssigner_);
 
-    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
+    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+        valueAssigner_);
 
     EXPECT_TRUE(graph->getEdgeOptional("1", "3", 0));
     EXPECT_TRUE(graph->getEdgeOptional("3", "5", 0));
@@ -63,9 +65,10 @@ TEST_F(GraphFixture, TestSimplePathWithCycles)
     addEdge(graph_, "b1", "c1", createAssignmentAction("val", "9"));
     addEdge(graph_, "c1", "a1", createAssignmentAction("val", "10"));
 
-    graph_->initialize();
+    graph_->initialize(valueAssigner_);
 
-    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths();
+    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+        valueAssigner_);
 
     EXPECT_TRUE(graph->getEdgeOptional("1", "1", 0));
     EXPECT_TRUE(graph->getEdgeOptional("1", "3", 0));

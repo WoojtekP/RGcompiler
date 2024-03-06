@@ -17,6 +17,11 @@ std::string Binding::toString() const
     return "__bind__" + variableName_;
 }
 
+std::string Binding::toTagStringId() const
+{
+    return "(" + variableName_ + ":" + iteratedType_ + ")";
+}
+
 bool Binding::operator==(const Binding &rhs) const
 {
     return variableName_ == rhs.variableName_ && iteratedType_ == rhs.iteratedType_;

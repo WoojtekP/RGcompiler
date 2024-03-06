@@ -15,10 +15,8 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
     // std::ifstream jsonEmptyFile;
     // Temporary solution that may end up in crash, as there was no time to pepare proper initializig of Parser
     Parser* parser = nullptr;
-    ValueAssigner valueAssigner(nlohmann::json(
-        {{{"kind", "TypeDeclaration"},
-          {"identifier", "Player"},
-          {"type", {{"kind", "Set"}, {"identifiers", {"white", "black"}}}}}}));
+    ValueAssigner valueAssigner;
+    ;
     ExpressionFactory expressionFactory(*parser, valueAssigner);
     nlohmann::json label = {
         {"lhs",
@@ -36,10 +34,7 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide)
 {
     Parser* parser = nullptr;
-    ValueAssigner valueAssigner(nlohmann::json(
-        {{{"kind", "TypeDeclaration"},
-          {"identifier", "Player"},
-          {"type", {{"kind", "Set"}, {"identifiers", {"white", "black"}}}}}}));
+    ValueAssigner valueAssigner;
     ExpressionFactory expressionFactory(*parser, valueAssigner);
     nlohmann::json label = {
         {"kind", "Reachability"},

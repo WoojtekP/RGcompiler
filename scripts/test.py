@@ -30,8 +30,6 @@ tests['hex9.rbg'] = ((1000,71.02,[53.03,46.97]), [1,81,6480]) # 511920 39929760
 tests['knightthrough.hrg'] = ((10000,33.64,[51.67,48.33]), [1,40,1600,63520,2521306,99598454]) # 3929482778
 
 tests['amazons.hrg'] = ((200,71.46,[50.10,49.90]), [1,2176]) # 4307152
-tests['amazons-naive.hrg'] = tests['amazons.hrg']
-tests['amazons-smart.hrg'] = tests['amazons.hrg']
 
 if "all" in games:
   games = []
@@ -72,9 +70,15 @@ gamesOK = []
 totalStartTime = time.time()
 for game in games:
   print()
-  if game not in tests:
-    print(f'{util.ERROR} There are no tests for {game}')
-    continue
+  if game in tests:
+    gameRef = game
+  else:
+    nameExt = game.split('.')
+    baseName = game.split('-')[0]
+    gameRef = baseName + '.' + nameExt[1]
+    if gameRef not in tests:
+      print(f'Not matched tests for game {game}')
+      continue
 
   ######## Compile ########
   print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
@@ -110,9 +114,9 @@ for game in games:
   isOK = True
 
   ######## Sims ########
-  sims = tests[game][0][0]
-  avgDepth = tests[game][0][1]
-  avgScores = tests[game][0][2]
+  sims = tests[gameRef][0][0]
+  avgDepth = tests[gameRef][0][1]
+  avgScores = tests[gameRef][0][2]
   print(HEAD_FORMATTER.format(f'{game} sims {sims:}:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
@@ -139,7 +143,7 @@ for game in games:
   if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   ######## Perft ########
-  expectedPerft = tests[game][1]
+  expectedPerft = tests[gameRef][1]
   for depth in range(len(expectedPerft)):
     print(HEAD_FORMATTER.format(f'{game} perft {depth}:'),end='',flush=True)
     startTime = time.time()

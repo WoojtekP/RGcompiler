@@ -10,6 +10,7 @@ namespace GraphCreator
 class GraphFixture : public ::testing::Test
 {
 public:
+    ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     GraphFixture()

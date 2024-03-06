@@ -4,6 +4,7 @@
 #include <memory>
 #include <set>
 
+#include <compiler/ValueAssigner.hpp>
 #include <compiler/graphOperations/BaseOperator.hpp>
 
 class GetOptimizedGraphOperator : public BaseOperator
@@ -20,5 +21,5 @@ class GetOptimizedGraphOperator : public BaseOperator
 
 public:
     GetOptimizedGraphOperator(const std::shared_ptr<Graph> &graph);
-    std::shared_ptr<Graph> getGraphWithOptimizedPaths();
+    std::shared_ptr<Graph> getGraphWithOptimizedPaths(const ValueAssigner& valueAssigner);
 };

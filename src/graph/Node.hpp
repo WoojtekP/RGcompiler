@@ -14,6 +14,7 @@ class Binding
 public:
     Binding(const std::string& variableName, const std::string& iteratedType);
     std::string toString() const;
+    std::string toTagStringId() const;
     const std::string& getVariableName() const;
     const std::string& getTypeName() const;
     bool operator==(const Binding &rhs) const;

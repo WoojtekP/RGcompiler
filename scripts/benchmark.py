@@ -37,6 +37,9 @@ tests['connect4.hrg'] =     (200_000, 8)
 tests['amazons-smart.hrg'] =  (1000, 1)
 tests['ticTacToe.rg'] =  (1_000_000, 9)
 
+# tests['breakthrough-withSentinel.rg'] = tests['breakthrough.rg']
+# tests['breakthrough-new.rg'] = tests['breakthrough.rg']
+
 if "all" in games:
   games = []
   games.append('ticTacToe.rg')
@@ -73,6 +76,15 @@ gamesOK = []
 
 for game in games:
   print()
+  if game in tests:
+    gameRef = game
+  else:
+    nameExt = game.split('.')
+    baseName = game.split('-')[0]
+    gameRef = baseName + '.' + nameExt[1]
+    if gameRef not in tests:
+      print(f'Not matched tests for game {game}')
+      continue
   
   ######## Compile ########
   if not args.skipcompilation:
@@ -105,7 +117,7 @@ for game in games:
     sumGCCTime += elapsedTime
   
   ######## Sims ########
-  sims = tests[game][0]
+  sims = tests[gameRef][0]
   print(HEAD_FORMATTER.format(f'{game} sims {sims}:'),end='',flush=True)
   startTime = time.time()
   if usePerf:
@@ -129,11 +141,11 @@ for game in games:
         print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
         print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     else:
-      print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, elapsedInstr, statesCount/elapsedTime, sims/elapsedTime))
+      print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, statesCount/elapsedTime, sims/elapsedTime))
       sumSimsTime += elapsedTime
 
   ######## Perft ########
-  depth = tests[game][1]
+  depth = tests[gameRef][1]
   print(HEAD_FORMATTER.format(f'{game} perft {depth}:'),end='',flush=True)
   startTime = time.time()
   if usePerf:

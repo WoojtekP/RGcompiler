@@ -18,7 +18,7 @@ TEST_F(GraphFixture, GenerateGraphOperatorTest1)
     addEdge(graph_, "8", "b", createAssignmentAction("val", "9"));
     addEdge(graph_, "b", "9", createAssignmentAction("val", "9"));
 
-    graph_->initialize();
+    graph_->initialize(valueAssigner_);
 
     auto patternReachabilityGraphs =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
@@ -29,7 +29,7 @@ TEST_F(GraphFixture, GenerateGraphOperatorTest1)
     EXPECT_EQ(std::get<1>(pattern), "b");
 
     auto graph = std::get<2>(pattern);
-    graph->initialize();
+    graph->initialize(valueAssigner_);
 
     EXPECT_FALSE(graph->getEdgeOptional("1", "2", 0));
     EXPECT_FALSE(graph->getEdgeOptional("2", "a", 0));

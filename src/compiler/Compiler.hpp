@@ -113,10 +113,12 @@ private:
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
+    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::shared_ptr<Node>> &data);
     void initializePragmaDisjoint();
     void initializePragmas();
     void initializePragmaRepeat();
     void initializePragmaUnique();
+    void initializePragmaSimpleApply();
     std::string getTypeForVariable(const std::string &variableName);
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
@@ -141,6 +143,7 @@ private:
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
+    std::set<std::shared_ptr<Node>> pragmaSimpleApplyData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
 };

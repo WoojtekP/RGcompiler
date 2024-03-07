@@ -22,8 +22,7 @@ bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
     return false;
 }
 
-std::shared_ptr<Edge> findComplementaryEdge(
-    const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
+std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
 {
     for (const auto& [outgoingEdge, iid] : edges)
     {
@@ -76,6 +75,17 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
     }
 }
 
+void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::set<std::shared_ptr<Node>>& data)
+{
+    for (const auto& pragma : parser_.getPragmas(pragmaName))
+    {
+        for (const auto& edge : pragma["edgeNames"])
+        {
+            data.insert(std::make_shared<Node>(edge["parts"]));
+        }
+    }
+}
+
 void Compiler::initializePragmaDisjoint()
 {
     graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->init(parser_);
@@ -107,12 +117,23 @@ void Compiler::initializePragmaRepeat()
     }
 }
 
+void Compiler::initializePragmaSimpleApply()
+{
+    initializePragmaVerticesSet("SimpleApply", pragmaSimpleApplyData_);
+
+    for (auto node : pragmaSimpleApplyData_)
+    {
+        std::cout << "node " << node->toString() << "\n";
+    }
+}
+
 void Compiler::initializePragmas()
 {
     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
     initializePragmaRepeat();
+    initializePragmaSimpleApply();
 }
 
 void Compiler::initializeGraph()
@@ -139,7 +160,8 @@ void Compiler::initializeGraph()
 
     if (optConditionsSimplePathCompression_)
     {
-        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(valueAssigner_);
+        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+            valueAssigner_);
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);
@@ -164,7 +186,8 @@ void Compiler::initializePatternGraphs(
             patterns[i] = std::make_tuple(
                 std::get<0>(patterns[i]),
                 std::get<1>(patterns[i]),
-                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(valueAssigner_));
+                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(
+                    valueAssigner_));
         }
     }
 
@@ -932,8 +955,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false,
-                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
+                        false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
 
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));

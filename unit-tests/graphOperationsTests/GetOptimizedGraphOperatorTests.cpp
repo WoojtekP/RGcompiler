@@ -80,3 +80,27 @@ TEST_F(GraphFixture, TestSimplePathWithCycles)
         graph->getEdgeOptional("a1", "a1", 0) || graph->getEdgeOptional("c1", "c1", 0) ||
         graph->getEdgeOptional("b1", "b1", 0));
 }
+
+TEST_F(GraphFixture, TestSimplePathBreakthrough)
+{
+    addEdge(graph_, "1", "2", createAssignmentAction("val", "1"));
+    addEdge(graph_, "1", "3", createAssignmentAction("val", "2"));
+    addEdge(graph_, "1", "4", createAssignmentAction("val", "3"));
+    addEdge(graph_, "2", "5", createAssignmentAction("val", "4"));
+    addEdge(graph_, "5", "6", createAssignmentAction("val", "5"));
+    addEdge(graph_, "3", "7", createAssignmentAction("val", "6"));
+    addEdge(graph_, "7", "6", createAssignmentAction("val", "7"));
+    addEdge(graph_, "6", "8", createAssignmentAction("val", "7"));
+    addEdge(graph_, "4", "9", createAssignmentAction("val", "7"));
+    addEdge(graph_, "9", "8", createAssignmentAction("val", "7"));
+
+    graph_->initialize(valueAssigner_);
+
+    auto graph = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+        valueAssigner_);
+
+    EXPECT_TRUE(graph->getEdgeOptional("1", "6", 0));
+    EXPECT_TRUE(graph->getEdgeOptional("1", "6", 1));
+    EXPECT_TRUE(graph->getEdgeOptional("6", "8", 0));
+    EXPECT_TRUE(graph->getEdgeOptional("1", "8", 0));
+}

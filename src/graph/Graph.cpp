@@ -80,7 +80,8 @@ void Graph::assignNodeId(const std::shared_ptr<Node> &node, const int nodeId)
 
 int Graph::getEdgeId(const std::shared_ptr<Edge> &edge, int iid)
 {
-    edgeNameToId_.insert({{edge->fromName(), edge->toName(), iid}, static_cast<int>(maxNodeId_ + edgeNameToId_.size())});
+    edgeNameToId_.insert(
+        {{edge->fromName(), edge->toName(), iid}, static_cast<int>(maxNodeId_ + edgeNameToId_.size())});
     return edgeNameToId_[{edge->fromName(), edge->toName(), iid}];
 }
 
@@ -89,7 +90,7 @@ void Graph::insertToEdgeIdToEdge(const std::shared_ptr<Edge> &edge, int iid)
     edgeIdToEdge_.insert({getEdgeId(edge, iid), edge});
 }
 
-void Graph::initializeNodeIdToNode(const ValueAssigner& valueAssigner)
+void Graph::initializeNodeIdToNode(const ValueAssigner &valueAssigner)
 {
     nodeNameToId_.clear();
     nodeIdToNode_.clear();
@@ -169,7 +170,7 @@ void Graph::initializeEdgeIdToEdgeAndOutgoingEdgesFromNode()
     }
 }
 
-void Graph::initialize(const ValueAssigner& valueAssigner)
+void Graph::initialize(const ValueAssigner &valueAssigner)
 {
     initializeOuterNodes();
     initializeAllNodes();
@@ -185,6 +186,11 @@ int Graph::getNodeId(const std::string &name) const
 int Graph::getEdgeId(const std::string &from, const std::string &to, int iid) const
 {
     return edgeNameToId_.at(std::tuple(from, to, iid));
+}
+
+std::shared_ptr<Edge> Graph::getEdge(int edgeId) const
+{
+    return edgeIdToEdge_.at(edgeId);
 }
 
 std::shared_ptr<Edge> Graph::getEdge(const std::string &from, const std::string &to, int iid) const

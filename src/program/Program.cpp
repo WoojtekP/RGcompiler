@@ -174,9 +174,9 @@ SwitchInstruction::SwitchInstruction(const std::string &condition)
 : condition_(condition)
 {}
 
-void SwitchInstruction::addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction)
+void SwitchInstruction::addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction, bool breakAfter)
 {
-    instructions_.push_back(std::make_pair(val, std::move(instruction)));
+    instructions_.push_back({val, std::move(instruction), breakAfter});
 }
 
 void SwitchInstruction::addDefaultInstruction(std::unique_ptr<IInstruction> &&instruction)
@@ -192,10 +192,14 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
     result += getLeadingSpaces(delimiter) + "{\n";
 
     int newDelimiter = delimiter + shift;
-    for (const auto &[val, instruction] : instructions_)
+    for (const auto &[val, instruction, breakAfter] : instructions_)
     {
         result += getLeadingSpaces(newDelimiter) + "case " + std::to_string(val) + ":\n";
         result += instruction->toString(newDelimiter + shift, shift, true) + "\n";
+        if (breakAfter)
+        {
+            result += "break;\n";
+        }
     }
 
     if (default_)

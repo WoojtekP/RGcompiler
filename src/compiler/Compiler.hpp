@@ -50,6 +50,7 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
+    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -57,6 +58,8 @@ private:
         bool applyEdgeMode = false,
         bool addReturn = false,
         bool skipFirstInstruction = false);
+    std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
+        const PairListOfActionsToTagAndListOfActionsToPlayer &listOfActions);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
@@ -113,7 +116,6 @@ private:
     int getNumberOfPlayers();
     int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
-    void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::shared_ptr<Node>> &data);
     void initializePragmaDisjoint();
     void initializePragmas();
     void initializePragmaRepeat();
@@ -143,7 +145,7 @@ private:
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
-    std::set<std::shared_ptr<Node>> pragmaSimpleApplyData_;
+    std::set<std::string> pragmaSimpleApplyData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
 };

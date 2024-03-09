@@ -75,17 +75,6 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
     }
 }
 
-void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::set<std::shared_ptr<Node>>& data)
-{
-    for (const auto& pragma : parser_.getPragmas(pragmaName))
-    {
-        for (const auto& edge : pragma["edgeNames"])
-        {
-            data.insert(std::make_shared<Node>(edge["parts"]));
-        }
-    }
-}
-
 void Compiler::initializePragmaDisjoint()
 {
     graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->init(parser_);
@@ -119,16 +108,18 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    initializePragmaVerticesSet("SimpleApply", pragmaSimpleApplyData_);
-
-    for (auto node : pragmaSimpleApplyData_)
+    for (const auto& pragma : parser_.getPragmas("SimpleApply"))
     {
-        std::cout << "node " << node->toString() << "\n";
+        for (const auto& edge : pragma["edgeNames"])
+        {
+            pragmaSimpleApplyData_.insert(Node(edge["parts"]).toString());
+        }
     }
 }
 
 void Compiler::initializePragmas()
 {
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->init(&valueAssigner_);
     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
@@ -591,6 +582,13 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // In case if somone put illegal description of disjoin
             assert(vectorOfNodeNames.size() == cnt);
         }
+        else if (applyMode && pragmaSimpleApplyData_.count(node->toString()))
+        {
+            auto actionList =
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->getActionList(node);
+            std::cout << state << " " << actionList.first.size() << ":\n";
+            function->addInstruction(generateVoidEdgeInstruction(actionList));
+        }
         else
         {
             for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
@@ -606,6 +604,63 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 
         program_.addFunction(std::move(function));
     }
+}
+
+std::unique_ptr<BlockInstruction> Compiler::getAssignments(const std::vector<int>& edges) const
+{
+    std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+    for (int edgeId : edges)
+    {
+        auto edge = graph_->getEdge(edgeId);
+        for (const auto& action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Assignment)
+            {
+                blockInstruction->pushInstructionBack(
+                    std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
+            }
+        }
+    }
+
+    return std::move(blockInstruction);
+}
+
+std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
+    const PairListOfActionsToTagAndListOfActionsToPlayer& listOfActions)
+{
+    std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+
+    if (!listOfActions.first.empty())
+    {
+        auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
+        for (const auto& [tagId, actionList] : listOfActions.first)
+        {
+            std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(actionList);
+            int lastEdgeId = actionList.back();
+            auto lastEdge = graph_->getEdge(lastEdgeId);
+            auto actions = lastEdge->getActions();
+            blockInstructionTmp->pushInstructionBack(
+                prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
+
+            sw->addCaseInstruction(tagId, std::move(blockInstructionTmp), true);
+        }
+        blockInstruction->pushInstructionFront(std::move(sw));
+        blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+    }
+
+    if (!listOfActions.second.empty())
+    {
+        std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(listOfActions.second);
+        int lastEdgeId = listOfActions.second.back();
+        auto lastEdge = graph_->getEdge(lastEdgeId);
+        auto actions = lastEdge->getActions();
+
+        blockInstructionTmp->pushInstructionBack(
+            prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
+        blockInstruction->pushInstructionFront(std::move(blockInstructionTmp));
+    }
+
+    return std::move(blockInstruction);
 }
 
 void Compiler::generateVoidStateOptimizedFunction(

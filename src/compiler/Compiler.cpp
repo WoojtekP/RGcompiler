@@ -630,6 +630,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActions.first.empty())
     {
+        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
         auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
         for (const auto& [tagId, actionList] : listOfActions.first)
         {
@@ -642,12 +644,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
             sw->addCaseInstruction(tagId, std::move(blockInstructionTmp), true);
         }
-        blockInstruction->pushInstructionFront(std::move(sw));
+        ifInstruction->addInstruction(std::move(sw));
+        blockInstruction->pushInstructionFront(std::move(ifInstruction));
         blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+        blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
     }
 
     if (!listOfActions.second.empty())
     {
+        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
         std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(listOfActions.second);
         int lastEdgeId = listOfActions.second.back();
         auto lastEdge = graph_->getEdge(lastEdgeId);
@@ -655,7 +661,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
         blockInstructionTmp->pushInstructionBack(
             prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
-        blockInstruction->pushInstructionFront(std::move(blockInstructionTmp));
+        ifInstruction->addInstruction(std::move(blockInstructionTmp));
+        blockInstruction->pushInstructionFront(std::move(ifInstruction));
     }
 
     return std::move(blockInstruction);

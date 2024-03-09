@@ -1,9 +1,12 @@
+#include <iostream>
+
 #include <compiler/graphOperations/GetOptimizedGraphOperator.hpp>
 
 void GetOptimizedGraphOperator::traverse(
     const std::shared_ptr<Edge> &edge, std::vector<int> &path, std::map<int, bool> &visited) const
 {
     int nextNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+    //std::cout << "* " << graph_->getNode(nextNodeId)->getName() << "\n";
     path.push_back(nextNodeId);
 
     // If this node have more than one outgoing or incoming edges then it can't form simple path
@@ -64,7 +67,7 @@ void GetOptimizedGraphOperator::initializeNodesUsedInReachabilityPattern()
     }
 }
 
-std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(const ValueAssigner& valueAssigner)
+std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(const ValueAssigner &valueAssigner)
 {
     if (optimizedGraph_)
     {
@@ -89,8 +92,11 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(con
             for (const auto &[edge, iid] : graph_->getOutgoingEdgesFrom(nodeId))
             {
                 std::vector<int> path {nodeId};
+                //std::cout << "for edge  " << edge->getLeftNode()->getName() << " " << edge->getRightNode()->getName()
+                // << "\n";
                 traverse(edge, path, visited);
-
+                //std::cout << "add path " << graph_->getNode(path.front())->getName() << " "
+                //<< graph_->getNode(path.back())->getName() << "\n";
                 paths.push_back(path);
 
                 int lastNode = path.back();

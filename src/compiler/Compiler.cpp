@@ -640,14 +640,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             auto lastEdge = graph_->getEdge(lastEdgeId);
             auto actions = lastEdge->getActions();
             blockInstructionTmp->pushInstructionBack(
-                prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
+                prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true, true));
 
-            sw->addCaseInstruction(tagId, std::move(blockInstructionTmp), true);
+            sw->addCaseInstruction(tagId, std::move(blockInstructionTmp));
         }
+        sw->addDefaultInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
         ifInstruction->addInstruction(std::move(sw));
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
         blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
-        blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
     }
 
     if (!listOfActions.second.empty())
@@ -870,7 +870,8 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::vector<std::shared_ptr<IAction>>& actions,
     const std::shared_ptr<Edge>& edge,
     int iid,
-    bool applyEdgeMode)
+    bool applyEdgeMode,
+    bool simpleApplyEdgeMode)
 {
     const std::string stateFrom = edge->fromName();
     const std::string stateTo = edge->toName();
@@ -925,11 +926,19 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         if (applyEdgeMode)
         {
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false, stateName + functionName + "(" + stateFunctionArguments + ")"));
-            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
-            blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            if (simpleApplyEdgeMode)
+            {
+                blockInstruction->pushInstructionBack(
+                    std::make_unique<ReturnInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
+            }
+            else
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        false, stateName + functionName + "(" + stateFunctionArguments + ")"));
+                ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
+                blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
         }
         else
         {

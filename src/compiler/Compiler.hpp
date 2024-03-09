@@ -65,7 +65,8 @@ private:
         std::vector<std::shared_ptr<IAction>> &actions,
         const std::shared_ptr<Edge> &edge,
         int iid,
-        bool applyEdgeMode);
+        bool applyEdgeMode,
+        bool simpleApplyEdgeMode = false);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
         const std::string &from,
         const std::string &to,

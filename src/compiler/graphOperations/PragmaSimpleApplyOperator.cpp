@@ -85,9 +85,47 @@ void PragmaSimpleApplyOperator::dfs(
     }
 }
 
-void PragmaSimpleApplyOperator::init(ValueAssigner* valueAssigner)
+void PragmaSimpleApplyOperator::init(ValueAssigner* valueAssigner, const Parser& parser)
 {
     valueAssigner_ = valueAssigner;
+    for (const auto& pragma : parser.getPragmas("SimpleApply"))
+    {
+        for (const auto& edge : pragma["edgeNames"])
+        {
+            simpeApplyNodeNames_.insert(Node(edge["parts"]).toString());
+        }
+    }
+
+    for (const auto& [edge, iid] : graph_->getAllEdges())
+    {
+        if (!simpeApplyNodeNames_.count(edge->getLeftNode()->getName()) &&
+            simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+        {
+            mainNodeNames_.insert(edge->getRightNode()->getName());
+        }
+        else if (simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+        {
+            for (const auto& action : edge->getActions())
+            {
+                if (action->getType() == ActionType::Tag ||
+                    (action->getType() == ActionType::Assignment && action->getLeftSide() == "player"))
+                {
+                    mainNodeNames_.insert(edge->getRightNode()->getName());
+                    break;
+                }
+            }
+        }
+    }
+}
+
+bool PragmaSimpleApplyOperator::isSimpleApply(const std::string& nodeName) const
+{
+    return simpeApplyNodeNames_.count(nodeName);
+}
+
+bool PragmaSimpleApplyOperator::isMainSimpleApply(const std::string& nodeName) const
+{
+    return mainNodeNames_.count(nodeName);
 }
 
 PragmaSimpleApplyOperator::PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph)

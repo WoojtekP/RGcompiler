@@ -108,18 +108,11 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    for (const auto& pragma : parser_.getPragmas("SimpleApply"))
-    {
-        for (const auto& edge : pragma["edgeNames"])
-        {
-            pragmaSimpleApplyData_.insert(Node(edge["parts"]).toString());
-        }
-    }
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->init(&valueAssigner_, parser_);
 }
 
 void Compiler::initializePragmas()
 {
-    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->init(&valueAssigner_);
     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
@@ -481,9 +474,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
     {
         const std::string state = node->toString();
         std::string prefix = "state_";
+        bool isSimpleApply = false;
         if (applyMode)
         {
             prefix = "apply_state_";
+            isSimpleApply =
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->isSimpleApply(node->getName());
         }
 
         std::string name = std::to_string(graph->getNodeId(state));
@@ -555,7 +551,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
 
         if (pragmaDisjointEnabled_ &&
-            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state))
+            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state) && !isSimpleApply)
         {
             auto vectorOfNodeNames =
                 graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->getNodeNames(state);
@@ -582,7 +578,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // In case if somone put illegal description of disjoin
             assert(vectorOfNodeNames.size() == cnt);
         }
-        else if (applyMode && pragmaSimpleApplyData_.count(node->toString()))
+        else if (
+            applyMode &&
+            graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->isMainSimpleApply(node->getName()))
         {
             auto actionList =
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->getActionList(node);

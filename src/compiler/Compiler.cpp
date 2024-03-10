@@ -699,7 +699,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
             sw->addCaseInstruction(tagId, std::move(blockInstructionTmp));
         }
-        sw->addDefaultInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
+
+        std::unique_ptr<BlockInstruction> blockDefaultInstruction = std::make_unique<BlockInstruction>();
+        blockDefaultInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+        blockDefaultInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+        sw->addDefaultInstruction(std::move(blockDefaultInstruction));
 
         auto vecOfAssignments = getAssignmentsList(listOfActions.first.front().second, commonPrefixSize);
 
@@ -710,11 +714,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         for (const auto& action : vecOfAssignments)
         {
             std::string lvalue = action->getLeftSide();
-            blockInstructionAssignments->pushInstructionFront(
+            blockInstructionAssignments->pushInstructionBack(
                 std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
-            blockInstructionAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+            blockInstructionAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
                 getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
-            blockInstructionRevertAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+            blockInstructionRevertAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
                 lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
             temporaryVariableCnt++;
         }
@@ -723,7 +727,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments));
 
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
-        blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
     }
 
     if (!listOfActions.second.empty())

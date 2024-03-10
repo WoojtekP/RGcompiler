@@ -1,6 +1,5 @@
-#include <iostream>
-
 #include <compiler/graphOperations/PragmaSimpleApplyOperator.hpp>
+
 std::pair<std::vector<TagAndListOfEdges>, std::vector<int>> PragmaSimpleApplyOperator::getActionList(
     const std::shared_ptr<Node>& node) const
 {
@@ -38,35 +37,26 @@ void PragmaSimpleApplyOperator::dfs(
     {
         edgesOnPath.push_back(graph_->getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid));
         bool endSearch = false;
-        std::cout << edge->getLeftNode()->getName() << " " << edge->getRightNode()->getName() << "\n";
 
         for (const auto& action : edge->getActions())
         {
             if (action->getType() == ActionType::Tag)
             {
-                std::cout << "1\n";
                 int tagId = valueAssigner_->getBaseValueForTag(action->toString());
                 if (visitedTags.insert(tagId).second)
                 {
-                    std::cout << "12\n";
-                    std::cout << edge->getRightNode()->getName() << "\n";
-
                     actionList.push_back({tagId, edgesOnPath});
                 }
                 endSearch = true;
             }
             else if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
             {
-                std::cout << "2\n";
-
                 edgesOnPathToPlayerChange = edgesOnPath;
                 endSearch = true;
             }
 
             if (endSearch)
             {
-                std::cout << "3\n";
-
                 break;
             }
         }

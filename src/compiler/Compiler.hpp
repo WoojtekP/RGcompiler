@@ -50,7 +50,10 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
-    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges) const;
+    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    std::vector<std::shared_ptr<IAction>> getAssignmentsList(
+        const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,

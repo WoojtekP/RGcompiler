@@ -15,5 +15,5 @@ public:
     void init(const Parser &parser);
     bool allTagsInSamePosition() const;
     int containerSize() const;
-    int getTagPositionForNode(const std::string &node) const;
+    int getTagPositionForNode(const std::string &nodeName) const;
 };

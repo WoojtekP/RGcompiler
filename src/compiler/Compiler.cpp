@@ -22,8 +22,7 @@ bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
     return false;
 }
 
-std::shared_ptr<Edge> findComplementaryEdge(
-    const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
+std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
 {
     for (const auto& [outgoingEdge, iid] : edges)
     {
@@ -85,7 +84,8 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
             }
             else
             {
-                throw std::runtime_error("Unhandled number of parts in @unique pragma: " + std::to_string(parts.size()));
+                throw std::runtime_error(
+                    "Unhandled number of parts in @unique pragma: " + std::to_string(parts.size()));
             }
         }
     }
@@ -154,7 +154,8 @@ void Compiler::initializeGraph()
 
     if (optConditionsSimplePathCompression_)
     {
-        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(valueAssigner_);
+        graph_ = graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
+            valueAssigner_);
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);
@@ -179,7 +180,8 @@ void Compiler::initializePatternGraphs(
             patterns[i] = std::make_tuple(
                 std::get<0>(patterns[i]),
                 std::get<1>(patterns[i]),
-                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(valueAssigner_));
+                graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(
+                    valueAssigner_));
         }
     }
 
@@ -607,8 +609,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 
         if (const auto binding = node->getBinding())
         {
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
         }
         program_.addFunction(std::move(function));
     }
@@ -703,8 +705,7 @@ void Compiler::generateBoolStateFunctions(
                 }
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        true,
-                        "cache.insert(std::make_tuple(*this, mr, " + nodeId + ")).second"));
+                        true, "cache.insert(std::make_tuple(*this, mr, " + nodeId + ")).second"));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
 
                 function->addInstruction(std::move(ifInstruction));
@@ -734,8 +735,7 @@ void Compiler::generateBoolStateFunctions(
             int edgeIdx = 0;
             for (auto& [outgoingEdge, iid] : outgoingEdges)
             {
-                function->addInstruction(
-                    generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++));
+                function->addInstruction(generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++));
             }
 
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -743,8 +743,8 @@ void Compiler::generateBoolStateFunctions(
 
         if (const auto binding = node->getBinding())
         {
-            function->addArgument(
-                std::make_unique<VariableDeclarationInstruction>(binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
+            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+                binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
         }
         program_.addFunction(std::move(function));
     }
@@ -923,9 +923,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         skipFirstInstructionIter--;
     }
 
+    std::vector<std::shared_ptr<Node>> nodes = {edge->getLeftNode()};
+    nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
+    assert(nodes.size() == baseActions.size());
+    nodes.push_back(edge->getRightNode());
+    std::reverse(nodes.begin(), nodes.end());
+    auto nodeIt = nodes.begin();
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
+        nodeIt++;
 
         if (action_iterator == skipFirstInstructionIter)
         {
@@ -982,10 +989,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     const auto tagMaxValue = tagBaseValue + maxValue;
                     const auto lowerBoundValueStr = std::to_string(tagBaseValue);
                     const auto upperBoundValueStr = std::to_string(tagMaxValue);
-                    const auto tagInRangeExpression = "mr[currentMrId] >= " + lowerBoundValueStr + " && mr[currentMrId] <= " + upperBoundValueStr;
+                    const auto tagInRangeExpression =
+                        "mr[currentMrId] >= " + lowerBoundValueStr + " && mr[currentMrId] <= " + upperBoundValueStr;
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false,
-                        "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
+                        false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
                     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
                         binding->getVariableName(), "mr[currentMrId] - " + lowerBoundValueStr, "const auto"));
@@ -993,8 +1000,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 else
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false,
-                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
+                        false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
                 }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
@@ -1010,7 +1016,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 {
                     int tagPosition =
                         graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
-                            stateFrom);
+                            (*nodeIt)->getName());
                     assert(tagPosition != -1);
                     pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagValueStr;
                 }
@@ -1174,8 +1180,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
-        }
-        else if (action->getType() == ActionType::Tag && !bSkipStateCache)
+        }  // Ignore tags in patterns
+        /*else if (action->getType() == ActionType::Tag && !bSkipStateCache)
         {
             const auto tagValueStr = getTagValueString(action, edge);
             std::string pushTag;
@@ -1197,7 +1203,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             {
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
             }
-        }
+        }*/
         else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
         {
             blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));

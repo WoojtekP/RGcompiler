@@ -19,6 +19,12 @@ void GetOptimizedGraphOperator::traverse(
         return;
     }
 
+    // Break in case of bindings
+    if (edge->getRightNode()->getBinding())
+    {
+        return;
+    }
+
     visited.at(nextNodeId) = true;
     traverse(graph_->getOutgoingEdgesFrom(nextNodeId).back().first, path, visited);
 }
@@ -64,7 +70,7 @@ void GetOptimizedGraphOperator::initializeNodesUsedInReachabilityPattern()
     }
 }
 
-std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(const ValueAssigner& valueAssigner)
+std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(const ValueAssigner &valueAssigner)
 {
     if (optimizedGraph_)
     {

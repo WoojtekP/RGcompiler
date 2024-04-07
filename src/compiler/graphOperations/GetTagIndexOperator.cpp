@@ -31,20 +31,26 @@ void GetTagIndexOperator::init(const Parser& parser)
     bool allNodesHaveTagIndexMax = true;
     for (auto& [edge, iid] : graph_->getAllEdges())
     {
+        std::vector<std::shared_ptr<Node>> fromNodes = {edge->getLeftNode()};
+        fromNodes.insert(fromNodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
+        auto fromNodeIt = fromNodes.begin();
+        assert(fromNodes.size() == edge->getActions().size());
+
         for (const auto& action : edge->getActions())
         {
             if (action->getType() == ActionType::Tag)
             {
-                if (!nodesWithTagIndexMax.count(edge->fromName()))
+                if (!nodesWithTagIndexMax.count((*fromNodeIt)->getName()))
                 {
                     allNodesHaveTagIndexMax = false;
                 }
 
-                if (!nodeNameToTagPosition_.count(edge->fromName()))
+                if (!nodeNameToTagPosition_.count((*fromNodeIt)->getName()))
                 {
                     allTagsInSamePosition_ = false;
                 }
             }
+            fromNodeIt++;
         }
     }
 
@@ -63,13 +69,13 @@ int GetTagIndexOperator::containerSize() const
     return containerSize_;
 }
 
-int GetTagIndexOperator::getTagPositionForNode(const std::string& node) const
+int GetTagIndexOperator::getTagPositionForNode(const std::string& nodeName) const
 {
-    if (!nodeNameToTagPosition_.count(node))
+    if (!nodeNameToTagPosition_.count(nodeName))
     {
         return -1;
     }
-    return nodeNameToTagPosition_.at(node);
+    return nodeNameToTagPosition_.at(nodeName);
 }
 
 GetTagIndexOperator::GetTagIndexOperator(const std::shared_ptr<Graph>& graph)

@@ -38,11 +38,25 @@ void PragmaSimpleApplyOperator::dfs(
         edgesOnPath.push_back(graph_->getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid));
         bool endSearch = false;
 
+        std::vector<std::shared_ptr<Node>> toNodes = edge->getInnerNodes();
+        toNodes.push_back(edge->getRightNode());
+        auto toNodeIt = toNodes.begin();
+        assert(toNodes.size() == edge->getActions().size());
         for (const auto& action : edge->getActions())
         {
+            std::string tagVal;
             if (action->getType() == ActionType::Tag)
             {
-                int tagId = valueAssigner_->getBaseValueForTag(action->toString());
+                if (!(*toNodeIt)->getBinding())
+                {
+                    tagVal = action->toString();
+                }
+                else
+                {
+                    tagVal = (*toNodeIt)->getBinding()->toTagStringId();
+                }
+
+                int tagId = valueAssigner_->getBaseValueForTag(tagVal);
                 if (visitedTags.insert(tagId).second)
                 {
                     actionList.push_back({tagId, edgesOnPath});
@@ -59,6 +73,7 @@ void PragmaSimpleApplyOperator::dfs(
             {
                 break;
             }
+            toNodeIt++;
         }
 
         if (!endSearch)

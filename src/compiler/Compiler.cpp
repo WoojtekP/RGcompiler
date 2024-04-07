@@ -1035,7 +1035,14 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         if (const auto binding = edge->getRightNode()->getBinding())
         {
-            stateFunctionArguments += "," + binding->getVariableName();
+            if (simpleApplyEdgeMode)
+            {
+                stateFunctionArguments += "," + getVariableValueFromTagString(edge);
+            }
+            else
+            {
+                stateFunctionArguments += "," + binding->getVariableName();
+            }
         }
 
         std::string functionName = std::to_string(graph->getNodeId(stateTo));
@@ -1149,6 +1156,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
+                std::cout << "dla noda " << edge->getRightNode()->getName() << "\n";
                 const auto binding = edge->getRightNode()->getBinding();
                 if (binding && binding->getVariableName() == action->toString())
                 {
@@ -1825,6 +1833,7 @@ int Compiler::getNumberOfPlayers()
 std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge)
 {
     const auto binding = edge->getRightNode()->getBinding();
+
     if (binding && binding->getVariableName() == action->toString())
     {
         const auto tagName = binding->toTagStringId();
@@ -1832,4 +1841,11 @@ std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, 
     }
     const auto tagName = action->toString();
     return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+}
+
+std::string Compiler::getVariableValueFromTagString(const std::shared_ptr<Edge>& edge) const
+{
+    const auto binding = edge->getRightNode()->getBinding();
+    assert(binding);
+    return "mr[currentMrId-1] -" + std::to_string(valueAssigner_.getBaseValueForTag(binding->toTagStringId()));
 }

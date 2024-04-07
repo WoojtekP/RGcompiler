@@ -1230,14 +1230,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     // TODO: this is temporary solution, does not work with path compression
     const auto leftBinding = edge->getLeftNode()->getBinding();
     const auto rightBinding = edge->getRightNode()->getBinding();
-    if (rightBinding && leftBinding != rightBinding && !applyEdgeMode)
+    if (rightBinding && leftBinding != rightBinding)
     {
-        auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
-        loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
-        loopInstruction->addInstruction(std::move(blockInstruction));
-        auto result = std::make_unique<BlockInstruction>();
-        result->pushInstructionBack(std::move(loopInstruction));
-        return result;
+        const auto firstAction = actions.front();
+        const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
+        // TODO: this condition is not sufficient for some games
+        if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
+        {
+            auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
+            loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
+            loopInstruction->addInstruction(std::move(blockInstruction));
+            auto result = std::make_unique<BlockInstruction>();
+            result->pushInstructionBack(std::move(loopInstruction));
+            return result;
+        }
     }
 
     return blockInstruction;
@@ -1832,12 +1838,17 @@ int Compiler::getNumberOfPlayers()
 
 std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge)
 {
-    const auto binding = edge->getRightNode()->getBinding();
-
-    if (binding && binding->getVariableName() == action->toString())
+    const auto leftBinding = edge->getLeftNode()->getBinding();
+    if (leftBinding && leftBinding->getVariableName() == action->toString())
     {
-        const auto tagName = binding->toTagStringId();
-        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + binding->getVariableName();
+        const auto tagName = leftBinding->toTagStringId();
+        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + leftBinding->getVariableName();
+    }
+    const auto rightBinding = edge->getRightNode()->getBinding();
+    if (rightBinding && rightBinding->getVariableName() == action->toString())
+    {
+        const auto tagName = rightBinding->toTagStringId();
+        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + rightBinding->getVariableName();
     }
     const auto tagName = action->toString();
     return std::to_string(valueAssigner_.getBaseValueForTag(tagName));

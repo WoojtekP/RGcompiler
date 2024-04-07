@@ -5,6 +5,7 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <program/Program.hpp>
+#include "Program.hpp"
 
 std::string ElementaryType::toString() const
 {
@@ -212,6 +213,47 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
 
     return result;
 }
+
+RangeLoopInstruction::RangeLoopInstruction(const std::string &variableName)
+: variableName_(variableName) {}
+
+void RangeLoopInstruction::setRange(const std::vector<std::string>& range)
+{
+    range_ = range;
+}
+
+void RangeLoopInstruction::addToRange(const std::string &rangeElement)
+{
+    range_.push_back(rangeElement);
+}
+
+void RangeLoopInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
+{
+    instructions_.push_back(std::move(instruction));
+}
+
+std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semicolon)
+{
+    std::string result = "";
+    result += getLeadingSpaces(delimiter) + "for (const auto& " + variableName_ + " : {";
+    for (const auto& value : range_)
+    {
+        result += value + ",";
+    }
+    if (result.back() == ',')
+    {
+        result.pop_back();
+    }
+    result += "})\n";
+    result += getLeadingSpaces(delimiter) + "{\n";
+    for (const auto& instruction : instructions_)
+    {
+        result += instruction->toString(shift, shift, semicolon);
+    }
+    result += getLeadingSpaces(delimiter) + "}\n";
+    return result;
+}
+
 
 BlockInstruction::BlockInstruction() {}
 

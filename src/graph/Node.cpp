@@ -27,6 +27,11 @@ bool Binding::operator==(const Binding &rhs) const
     return variableName_ == rhs.variableName_ && iteratedType_ == rhs.iteratedType_;
 }
 
+bool Binding::operator!=(const Binding &rhs) const
+{
+    return !this->operator==(rhs);
+}
+
 const std::string& Binding::getVariableName() const
 {
     return variableName_;
@@ -58,6 +63,12 @@ std::string Node::toString() const
 std::string Node::getName() const
 {
     return toString();
+}
+
+// TODO: it's a temporary solution: use the same name in all places
+std::string Node::getAlternativeName() const
+{
+    return binding_.has_value() ? name_ + binding_->toTagStringId() : name_;
 }
 
 const std::optional<Binding>& Node::getBinding() const

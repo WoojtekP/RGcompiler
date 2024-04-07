@@ -18,6 +18,7 @@ public:
     const std::string& getVariableName() const;
     const std::string& getTypeName() const;
     bool operator==(const Binding &rhs) const;
+    bool operator!=(const Binding &rhs) const;
 };
 
 class Node
@@ -29,6 +30,7 @@ public:
     Node(const nlohmann::json &t);
     std::string toString() const;
     std::string getName() const;
+    std::string getAlternativeName() const;
     const std::optional<Binding>& getBinding() const;
     bool operator==(const Node &rhs) const;
 };

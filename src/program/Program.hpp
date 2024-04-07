@@ -254,9 +254,20 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
-class LoopInstruction : public IInstruction
+class RangeLoopInstruction : public IInstruction
 {
-    // TODO: implement!
+    const std::string variableName_;
+    std::vector<std::string> range_;
+    std::vector<std::unique_ptr<IInstruction>> instructions_;
+
+public:
+    RangeLoopInstruction(const std::string &variableName);
+
+    void setRange(const std::vector<std::string>& range);
+    void addToRange(const std::string& rangeElement);
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
 class CustomInstruction : public IInstruction

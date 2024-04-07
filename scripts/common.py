@@ -21,7 +21,7 @@ class cfg:
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions --normalizeTypes --addExplicitCasts'
+  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions --normalizeTypes --addExplicitCasts --skipSelfAssignments'
   DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes' # Auto-optimization
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 1 --disjoint 1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 0 --verification 0'

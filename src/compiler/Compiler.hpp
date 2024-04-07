@@ -74,8 +74,7 @@ private:
         const std::string &from,
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
-        const std::string &stateFrom,
-        const std::string &stateTo,
+        const std::shared_ptr<Edge>& edge,
         int iid,
         int edgeIdx);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
@@ -84,8 +83,7 @@ private:
         const std::string &patternFrom,
         const std::string &patternTo,
         int edgeIdx,
-        const std::string &stateFrom,
-        const std::string &stateTo,
+        const std::shared_ptr<Edge>& edge,
         int iid,
         const std::string &cacheName,
         const std::string &prefix,
@@ -126,6 +124,7 @@ private:
     void initializePragmaUnique();
     void initializePragmaSimpleApply();
     std::string getTypeForVariable(const std::string &variableName);
+    std::string getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge);
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;

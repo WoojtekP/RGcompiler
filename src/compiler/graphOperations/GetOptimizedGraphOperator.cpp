@@ -20,6 +20,12 @@ void GetOptimizedGraphOperator::traverse(
         return;
     }
 
+    // Break in case of bindings
+    if (edge->getRightNode()->getBinding())
+    {
+        return;
+    }
+
     visited.at(nextNodeId) = true;
     traverse(graph_->getOutgoingEdgesFrom(nextNodeId).back().first, path, visited);
 }

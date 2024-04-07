@@ -16,4 +16,6 @@ add_library(GraphOperationsLib
     GetTagIndexOperator.hpp
     PragmaDisjointOperator.cpp
     PragmaDisjointOperator.hpp
+    PragmaSimpleApplyOperator.cpp
+    PragmaSimpleApplyOperator.hpp
 )

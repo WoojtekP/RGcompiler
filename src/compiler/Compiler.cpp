@@ -122,12 +122,18 @@ void Compiler::initializePragmaRepeat()
     }
 }
 
+void Compiler::initializePragmaSimpleApply()
+{
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->init(&valueAssigner_, parser_);
+}
+
 void Compiler::initializePragmas()
 {
     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
     initializePragmaRepeat();
+    initializePragmaSimpleApply();
 }
 
 void Compiler::initializeGraph()
@@ -484,9 +490,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
     {
         const std::string state = node->toString();
         std::string prefix = "state_";
+        bool isSimpleApply = false;
         if (applyMode)
         {
             prefix = "apply_state_";
+            isSimpleApply =
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->isSimpleApply(node->getName());
         }
 
         std::string name = std::to_string(graph->getNodeId(state));
@@ -567,7 +576,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
 
         if (pragmaDisjointEnabled_ &&
-            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state))
+            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state) && !isSimpleApply)
         {
             auto vectorOfNodeNames =
                 graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->getNodeNames(state);
@@ -594,6 +603,15 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // In case if somone put illegal description of disjoin
             assert(vectorOfNodeNames.size() == cnt);
         }
+        else if (
+            applyMode &&
+            graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->isMainSimpleApply(node->getName()))
+        {
+            auto actionList =
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->getActionList(node);
+            std::cout << state << " " << actionList.first.size() << ":\n";
+            function->addInstruction(generateVoidEdgeInstruction(actionList));
+        }
         else
         {
             for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
@@ -614,6 +632,149 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
         program_.addFunction(std::move(function));
     }
+}
+
+int Compiler::getCommonPrefixSize(const std::vector<TagAndListOfEdges>& tagsAndEdges) const
+{
+    auto& firstVec = tagsAndEdges.front().second;
+    int commonPrefixSize = firstVec.size();
+    auto it = tagsAndEdges.begin();
+    for (++it; it != tagsAndEdges.end(); it++)
+    {
+        auto& curVec = it->second;
+        auto firstVecIt = firstVec.begin();
+        auto curVecIt = curVec.begin();
+        int cnt = 0;
+        while (firstVecIt != firstVec.end() && curVecIt != curVec.end())
+        {
+            if (*curVecIt != *firstVecIt)
+            {
+                break;
+            }
+            cnt++;
+            firstVecIt++;
+            curVecIt++;
+        }
+
+        commonPrefixSize = std::min(commonPrefixSize, cnt);
+    }
+
+    return commonPrefixSize;
+}
+
+std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
+    const std::vector<int>& edges, int commonPrefixSize) const
+{
+    std::vector<std::shared_ptr<IAction>> assignmentList;
+    auto lastIt = edges.begin();
+    assert(commonPrefixSize <= edges.size());
+    std::advance(lastIt, commonPrefixSize);
+    for (auto it = edges.begin(); it != lastIt; it++)
+    {
+        int edgeId = *it;
+        auto edge = graph_->getEdge(edgeId);
+        for (const auto& action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Assignment)
+            {
+                assignmentList.push_back(action);
+            }
+        }
+    }
+
+    return assignmentList;
+}
+
+std::unique_ptr<BlockInstruction> Compiler::getAssignments(const std::vector<int>& edges, int commonPrefixSize) const
+{
+    std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+    auto it = edges.begin();
+    std::advance(it, commonPrefixSize);
+    for (it; it != edges.end(); it++)
+    {
+        int edgeId = *it;
+        auto edge = graph_->getEdge(edgeId);
+        for (const auto& action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Assignment)
+            {
+                blockInstruction->pushInstructionBack(
+                    std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
+            }
+        }
+    }
+
+    return std::move(blockInstruction);
+}
+
+std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
+    const PairListOfActionsToTagAndListOfActionsToPlayer& listOfActions)
+{
+    std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+
+    if (!listOfActions.first.empty())
+    {
+        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
+        auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
+        int commonPrefixSize = getCommonPrefixSize(listOfActions.first);
+        for (const auto& [tagId, actionList] : listOfActions.first)
+        {
+            std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(actionList, commonPrefixSize);
+            int lastEdgeId = actionList.back();
+            auto lastEdge = graph_->getEdge(lastEdgeId);
+            auto actions = lastEdge->getActions();
+            blockInstructionTmp->pushInstructionBack(
+                prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true, true));
+
+            sw->addCaseInstruction(tagId, std::move(blockInstructionTmp));
+        }
+
+        std::unique_ptr<BlockInstruction> blockDefaultInstruction = std::make_unique<BlockInstruction>();
+        blockDefaultInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+        blockDefaultInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+        sw->addDefaultInstruction(std::move(blockDefaultInstruction));
+
+        auto vecOfAssignments = getAssignmentsList(listOfActions.first.front().second, commonPrefixSize);
+
+        std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
+        std::unique_ptr<BlockInstruction> blockInstructionRevertAssignments = std::make_unique<BlockInstruction>();
+        int edgeId = listOfActions.first.front().second.front();
+        int temporaryVariableCnt = 0;
+        for (const auto& action : vecOfAssignments)
+        {
+            std::string lvalue = action->getLeftSide();
+            blockInstructionAssignments->pushInstructionBack(
+                std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
+            blockInstructionAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
+            blockInstructionRevertAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+                lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
+            temporaryVariableCnt++;
+        }
+        ifInstruction->addInstruction(std::move(blockInstructionAssignments));
+        ifInstruction->addInstruction(std::move(sw));
+        ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments));
+
+        blockInstruction->pushInstructionFront(std::move(ifInstruction));
+    }
+
+    if (!listOfActions.second.empty())
+    {
+        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
+        std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(listOfActions.second);
+        int lastEdgeId = listOfActions.second.back();
+        auto lastEdge = graph_->getEdge(lastEdgeId);
+        auto actions = lastEdge->getActions();
+
+        blockInstructionTmp->pushInstructionBack(
+            prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
+        ifInstruction->addInstruction(std::move(blockInstructionTmp));
+        blockInstruction->pushInstructionFront(std::move(ifInstruction));
+    }
+
+    return std::move(blockInstruction);
 }
 
 void Compiler::generateVoidStateOptimizedFunction(
@@ -825,7 +986,8 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::vector<std::shared_ptr<IAction>>& actions,
     const std::shared_ptr<Edge>& edge,
     int iid,
-    bool applyEdgeMode)
+    bool applyEdgeMode,
+    bool simpleApplyEdgeMode)
 {
     const std::string stateFrom = edge->fromName();
     const std::string stateTo = edge->toName();
@@ -873,7 +1035,14 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         if (const auto binding = edge->getRightNode()->getBinding())
         {
-            stateFunctionArguments += "," + binding->getVariableName();
+            if (simpleApplyEdgeMode)
+            {
+                stateFunctionArguments += "," + getVariableValueFromTagString(edge);
+            }
+            else
+            {
+                stateFunctionArguments += "," + binding->getVariableName();
+            }
         }
 
         std::string functionName = std::to_string(graph->getNodeId(stateTo));
@@ -885,11 +1054,19 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         if (applyEdgeMode)
         {
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false, stateName + functionName + "(" + stateFunctionArguments + ")"));
-            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
-            blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            if (simpleApplyEdgeMode)
+            {
+                blockInstruction->pushInstructionBack(
+                    std::make_unique<ReturnInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
+            }
+            else
+            {
+                std::unique_ptr<IfInstruction> ifInstruction =
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        false, stateName + functionName + "(" + stateFunctionArguments + ")"));
+                ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
+                blockInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
         }
         else
         {
@@ -942,8 +1119,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         if (action->getType() == ActionType::Assignment)
         {
             std::string lvalue = action->getLeftSide();
-            //   lvalue = lvalue.substr(lvalue.find('(') + 1);
-            //   lvalue.pop_back();
             blockInstruction->pushInstructionFront(
                 std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
             blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
@@ -981,6 +1156,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
+                std::cout << "dla noda " << edge->getRightNode()->getName() << "\n";
                 const auto binding = edge->getRightNode()->getBinding();
                 if (binding && binding->getVariableName() == action->toString())
                 {
@@ -1657,6 +1833,7 @@ int Compiler::getNumberOfPlayers()
 std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge)
 {
     const auto binding = edge->getRightNode()->getBinding();
+
     if (binding && binding->getVariableName() == action->toString())
     {
         const auto tagName = binding->toTagStringId();
@@ -1664,4 +1841,11 @@ std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, 
     }
     const auto tagName = action->toString();
     return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+}
+
+std::string Compiler::getVariableValueFromTagString(const std::shared_ptr<Edge>& edge) const
+{
+    const auto binding = edge->getRightNode()->getBinding();
+    assert(binding);
+    return "mr[currentMrId-1] -" + std::to_string(valueAssigner_.getBaseValueForTag(binding->toTagStringId()));
 }

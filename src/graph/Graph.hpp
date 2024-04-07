@@ -41,7 +41,7 @@ class Graph
     void insertToEdgeIdToEdge(const std::shared_ptr<Edge> &edge, int iid);
     void assignNodeId(const std::shared_ptr<Node> &node, const int nodeId);
     void initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
-    void initializeNodeIdToNode(const ValueAssigner& valueAssigner);
+    void initializeNodeIdToNode(const ValueAssigner &valueAssigner);
     void initializeAllNodes();
     void initializeOuterNodes();
     int getNodeId(const std::shared_ptr<Node> &node);
@@ -59,7 +59,7 @@ class Graph
 
 public:
     ~Graph();
-    void initialize(const ValueAssigner& valueAssigner);
+    void initialize(const ValueAssigner &valueAssigner);
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
     bool empty() const;
@@ -72,6 +72,20 @@ public:
     int getEdgeId(const std::string &from, const std::string &to, int iid) const;
     int getNodeId(const std::string &name) const;
     std::shared_ptr<Edge> getEdge(const std::string &from, const std::string &to, int iid) const;
+    std::shared_ptr<Edge> getEdge(int edgeId) const;
+    int getEdgeIID(int edgeId) const
+    {
+        for (auto &[edge, iid] : edgesWithIID_)
+        {
+            if (getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid))
+            {
+                return iid;
+            }
+        }
+
+        return -1;
+    }
+
     std::shared_ptr<Node> getNode(int nodeid) const;
     std::optional<int> getEdgeIdOptional(const std::string &from, const std::string &to, int iid) const;
     std::optional<int> getNodeIdOptional(const std::string &name) const;

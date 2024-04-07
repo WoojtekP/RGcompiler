@@ -50,6 +50,10 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
+    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    std::vector<std::shared_ptr<IAction>> getAssignmentsList(
+        const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -57,17 +61,20 @@ private:
         bool applyEdgeMode = false,
         bool addReturn = false,
         bool skipFirstInstruction = false);
+    std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
+        const PairListOfActionsToTagAndListOfActionsToPlayer &listOfActions);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
         const std::shared_ptr<Edge> &edge,
         int iid,
-        bool applyEdgeMode);
+        bool applyEdgeMode,
+        bool simpleApplyEdgeMode = false);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
         const std::string &from,
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
-        const std::shared_ptr<Edge>& edge,
+        const std::shared_ptr<Edge> &edge,
         int iid,
         int edgeIdx);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
@@ -76,7 +83,7 @@ private:
         const std::string &patternFrom,
         const std::string &patternTo,
         int edgeIdx,
-        const std::shared_ptr<Edge>& edge,
+        const std::shared_ptr<Edge> &edge,
         int iid,
         const std::string &cacheName,
         const std::string &prefix,
@@ -115,8 +122,11 @@ private:
     void initializePragmas();
     void initializePragmaRepeat();
     void initializePragmaUnique();
+    void initializePragmaSimpleApply();
     std::string getTypeForVariable(const std::string &variableName);
-    std::string getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge);
+    std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
+    std::string getVariableValueFromTagString(const std::shared_ptr<Edge> &edge) const;
+
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
@@ -140,6 +150,7 @@ private:
     ContainerChooser containerChooser_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
+    std::set<std::string> pragmaSimpleApplyData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
 };

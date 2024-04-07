@@ -9,6 +9,7 @@
 #include <compiler/graphOperations/GetTagIndexOperator.hpp>
 #include <compiler/graphOperations/GetVariableOperator.hpp>
 #include <compiler/graphOperations/PragmaDisjointOperator.hpp>
+#include <compiler/graphOperations/PragmaSimpleApplyOperator.hpp>
 #include <compiler/graphOperations/PragmaUniqueOperator.hpp>
 #include <graph/Graph.hpp>
 
@@ -22,7 +23,8 @@ class GraphOperatorManager
         std::shared_ptr<GetEdgeOperator>,
         std::shared_ptr<GetOptimizedGraphOperator>,
         std::shared_ptr<GetTagIndexOperator>,
-        std::shared_ptr<PragmaDisjointOperator>>;
+        std::shared_ptr<PragmaDisjointOperator>,
+        std::shared_ptr<PragmaSimpleApplyOperator>>;
 
     std::map<OperatorKeyType, Variant> operators_;
 

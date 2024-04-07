@@ -4,6 +4,7 @@ void GetOptimizedGraphOperator::traverse(
     const std::shared_ptr<Edge> &edge, std::vector<int> &path, std::map<int, bool> &visited) const
 {
     int nextNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+
     path.push_back(nextNodeId);
 
     // If this node have more than one outgoing or incoming edges then it can't form simple path
@@ -96,7 +97,6 @@ std::shared_ptr<Graph> GetOptimizedGraphOperator::getGraphWithOptimizedPaths(con
             {
                 std::vector<int> path {nodeId};
                 traverse(edge, path, visited);
-
                 paths.push_back(path);
 
                 int lastNode = path.back();

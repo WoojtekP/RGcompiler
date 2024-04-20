@@ -33,6 +33,13 @@ std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, c
     }
     return nullptr;
 }
+
+std::string getValueInRangeExpressionString(const std::string variable, const int lower, const int upper)
+{
+    const auto lowerLimitValueStr = std::to_string(lower);
+    const auto upperLimitValueStr = std::to_string(upper);
+    return variable + " >= " + lowerLimitValueStr + " && " + variable + " <= " + upperLimitValueStr;
+}
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
@@ -609,7 +616,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         {
             auto actionList =
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_)->getActionList(node);
-            std::cout << state << " " << actionList.first.size() << ":\n";
             function->addInstruction(generateVoidEdgeInstruction(actionList));
         }
         else
@@ -716,25 +722,42 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     {
         std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
             std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
-        auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
+
+        const std::string actionVariable = "currentAction";
+        ifInstruction->addInstruction(std::make_unique<AssignmentInstruction>(actionVariable, "mr[currentMrId++]", "const auto"));
+
         int commonPrefixSize = getCommonPrefixSize(listOfActions.first);
-        for (const auto& [tagId, actionList] : listOfActions.first)
+        // TODO: use if-else for bindings and switch-case for single tags (it might be a little bit faster)
+        std::unique_ptr<IfInstruction> actionsSwitch;
+        for (auto it = listOfActions.first.rbegin(); it != listOfActions.first.rend(); it++)
         {
+            const auto [tagId, actionList] = *it;
+            const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(tagId);
+            const auto condition = (minValue != maxValue)
+                                       ? getValueInRangeExpressionString(actionVariable, minValue, maxValue)
+                                       : (actionVariable + "==" + std::to_string(minValue));
+            auto actionCheck = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, condition));
+
             std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(actionList, commonPrefixSize);
             int lastEdgeId = actionList.back();
             auto lastEdge = graph_->getEdge(lastEdgeId);
             auto actions = lastEdge->getActions();
             blockInstructionTmp->pushInstructionBack(
                 prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true, true));
-
-            sw->addCaseInstruction(tagId, std::move(blockInstructionTmp));
+            actionCheck->addInstruction(std::move(blockInstructionTmp));
+            if (actionsSwitch)
+            {
+                actionCheck->addElseInstruction(std::move(actionsSwitch));
+            }
+            else
+            {
+                std::unique_ptr<BlockInstruction> blockDefaultInstruction = std::make_unique<BlockInstruction>();
+                blockDefaultInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+                blockDefaultInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+                actionCheck->addElseInstruction(std::move(blockDefaultInstruction));
+            }
+            actionsSwitch = std::move(actionCheck);
         }
-
-        std::unique_ptr<BlockInstruction> blockDefaultInstruction = std::make_unique<BlockInstruction>();
-        blockDefaultInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
-        blockDefaultInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
-        sw->addDefaultInstruction(std::move(blockDefaultInstruction));
-
         auto vecOfAssignments = getAssignmentsList(listOfActions.first.front().second, commonPrefixSize);
 
         std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
@@ -753,7 +776,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             temporaryVariableCnt++;
         }
         ifInstruction->addInstruction(std::move(blockInstructionAssignments));
-        ifInstruction->addInstruction(std::move(sw));
+        ifInstruction->addInstruction(std::move(actionsSwitch));
         ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments));
 
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
@@ -1156,22 +1179,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
-                std::cout << "dla noda " << edge->getRightNode()->getName() << "\n";
                 const auto binding = edge->getRightNode()->getBinding();
                 if (binding && binding->getVariableName() == action->toString())
                 {
-                    const auto tagBaseValue = valueAssigner_.getBaseValueForTag(binding->toTagStringId());
-                    const auto [minValue, maxValue] = valueAssigner_.getTypeMinMaxValues(binding->getTypeName());
-                    const auto tagMaxValue = tagBaseValue + maxValue;
-                    const auto lowerBoundValueStr = std::to_string(tagBaseValue);
-                    const auto upperBoundValueStr = std::to_string(tagMaxValue);
-                    const auto tagInRangeExpression =
-                        "mr[currentMrId] >= " + lowerBoundValueStr + " && mr[currentMrId] <= " + upperBoundValueStr;
+                    const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
+                    const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
                     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                        binding->getVariableName(), "mr[currentMrId] - " + lowerBoundValueStr, "const auto"));
+                        binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
                 }
                 else
                 {

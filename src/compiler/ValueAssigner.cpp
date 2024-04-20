@@ -54,8 +54,13 @@ int ValueAssigner::getTypeDomainSize(const std::string& identifier) const
 
 int ValueAssigner::getBaseValueForTag(const std::string& tag) const
 {
-    const auto tagToValueIt = tagToBaseValue_.find(tag);
-    if (tagToValueIt == tagToBaseValue_.end())
+    return getRangeValueForTag(tag).first;
+}
+
+std::pair<int, int> ValueAssigner::getRangeValueForTag(const std::string& tag) const
+{
+    const auto tagToValueIt = tagToValues_.find(tag);
+    if (tagToValueIt == tagToValues_.end())
     {
         throw std::runtime_error("[ValueAssigner] Unknown tag: " + tag);
     }
@@ -75,7 +80,7 @@ void ValueAssigner::assignValuesForSymbols(const nlohmann::json& types)
 
 void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
 {
-    tagToBaseValue_.clear();
+    tagToValues_.clear();
 
     int nextTagValue = 0;
     for (const auto& [edge, iid] : edges)
@@ -98,10 +103,7 @@ void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
                 }
                 else
                 {
-                    if (tagToBaseValue_.emplace(tag, nextTagValue).second)
-                    {
-                        ++nextTagValue;
-                    }
+                    nextTagValue = assignValueForSimpleTag(tag, nextTagValue);
                 }
             }
         }
@@ -234,10 +236,22 @@ void ValueAssigner::assignValuesForRemainingSymbols(
 int ValueAssigner::assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue)
 {
     const auto tagString = binding->toTagStringId();
-    if (tagToBaseValue_.emplace(tagString, nextTagValue).second)
+    if (tagToValues_.count(tagString))
     {
-        const auto typeRange = getTypeRange(binding->getTypeName());
-        return nextTagValue + typeRange + 1;
+        return nextTagValue;
+    }
+    const auto [minTypeValue, maxTypeValue] = getTypeMinMaxValues(binding->getTypeName());
+    const auto minTagValue = nextTagValue + minTypeValue;
+    const auto maxTagValue = nextTagValue + maxTypeValue;
+    tagToValues_.emplace(tagString, std::make_pair(minTagValue, maxTagValue));
+    return maxTagValue + 1;
+}
+
+int ValueAssigner::assignValueForSimpleTag(const std::string& tag, int nextTagValue)
+{
+    if (tagToValues_.emplace(tag, std::make_pair(nextTagValue, nextTagValue)).second)
+    {
+        return nextTagValue + 1;
     }
     return nextTagValue;
 }

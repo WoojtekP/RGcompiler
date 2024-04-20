@@ -4,7 +4,7 @@
 
 #include <compiler/graphOperations/BaseOperator.hpp>
 
-using TagAndListOfEdges = std::pair<int, std::vector<int>>;
+using TagAndListOfEdges = std::pair<std::string, std::vector<int>>;
 using PairListOfActionsToTagAndListOfActionsToPlayer = std::pair<std::vector<TagAndListOfEdges>, std::vector<int>>;
 
 class PragmaSimpleApplyOperator : public BaseOperator
@@ -17,7 +17,7 @@ class PragmaSimpleApplyOperator : public BaseOperator
     void dfs(
         int node,
         std::vector<int>& edgesOnPath,
-        std::set<int>& visitedTags,
+        std::set<std::string>& visitedTags,
         std::set<int>& visitedNodes,
         std::vector<TagAndListOfEdges>& actionList,
         std::vector<int>& edgesOnPathToPlayerChange) const;

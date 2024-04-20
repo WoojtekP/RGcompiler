@@ -230,11 +230,13 @@ class IfInstruction : public IInstruction
 {
     std::unique_ptr<ComparisonInstruction> condition_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
+    std::unique_ptr<IInstruction> elseInstruction_;
 
 public:
     IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition);
 
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+    void addElseInstruction(std::unique_ptr<IInstruction> &&instruction);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };

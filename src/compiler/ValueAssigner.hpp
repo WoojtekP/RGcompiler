@@ -13,6 +13,7 @@ class Binding;
 class Edge;
 
 using SymbolToValueMap = std::map<std::string, int>;
+using SymbolToValueRangeMap = std::map<std::string, std::pair<int, int>>;
 using TypeToSymbolToValueMap = std::map<std::string, SymbolToValueMap>;
 using EdgesWithIID = std::vector<std::pair<std::shared_ptr<Edge>, int>>;
 
@@ -24,6 +25,7 @@ public:
     int getTypeRange(const std::string& identifier) const;
     int getTypeDomainSize(const std::string& identifier) const;
     int getBaseValueForTag(const std::string& tag) const;
+    std::pair<int, int> getRangeValueForTag(const std::string& tag) const;
     void assignValuesForSymbols(const nlohmann::json& types);
     void assignValuesForTags(const EdgesWithIID& edgesWithIid);
 
@@ -36,7 +38,8 @@ private:
     void assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     void assignValuesForRemainingSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     int assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue);
+    int assignValueForSimpleTag(const std::string& tag, int nextTagValue);
 
     TypeToSymbolToValueMap typeToSymbolToValue_;
-    SymbolToValueMap tagToBaseValue_;
+    SymbolToValueRangeMap tagToValues_;
 };

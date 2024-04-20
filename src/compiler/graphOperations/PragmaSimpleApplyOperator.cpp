@@ -6,7 +6,7 @@ std::pair<std::vector<TagAndListOfEdges>, std::vector<int>> PragmaSimpleApplyOpe
     assert(valueAssigner_);
     std::vector<int> edgesOnPath;
     std::vector<int> edgesOnPathToPlayerChange;
-    std::set<int> visitedTags;
+    std::set<std::string> visitedTags;
     std::set<int> visitedNodes;
     std::vector<TagAndListOfEdges> actionList;
 
@@ -23,7 +23,7 @@ std::pair<std::vector<TagAndListOfEdges>, std::vector<int>> PragmaSimpleApplyOpe
 void PragmaSimpleApplyOperator::dfs(
     int node,
     std::vector<int>& edgesOnPath,
-    std::set<int>& visitedTags,
+    std::set<std::string>& visitedTags,
     std::set<int>& visitedNodes,
     std::vector<TagAndListOfEdges>& actionList,
     std::vector<int>& edgesOnPathToPlayerChange) const
@@ -56,10 +56,9 @@ void PragmaSimpleApplyOperator::dfs(
                     tagVal = (*toNodeIt)->getBinding()->toTagStringId();
                 }
 
-                int tagId = valueAssigner_->getBaseValueForTag(tagVal);
-                if (visitedTags.insert(tagId).second)
+                if (visitedTags.insert(tagVal).second)
                 {
-                    actionList.push_back({tagId, edgesOnPath});
+                    actionList.push_back({tagVal, edgesOnPath});
                 }
                 endSearch = true;
             }

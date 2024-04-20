@@ -154,6 +154,11 @@ void IfInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
     instructions_.push_back(std::move(instruction));
 }
 
+void IfInstruction::addElseInstruction(std::unique_ptr<IInstruction> &&instruction)
+{
+    elseInstruction_ = std::move(instruction);
+}
+
 std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result;
@@ -168,6 +173,21 @@ std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
 
     result += getLeadingSpaces(delimiter) + "}\n";
 
+    if (elseInstruction_)
+    {
+        if (dynamic_cast<IfInstruction*>(elseInstruction_.get()) != nullptr)
+        {
+            result += getLeadingSpaces(delimiter) + "else ";
+            result += elseInstruction_->toString(delimiter, shift, true);
+            result += getLeadingSpaces(delimiter) + "\n";
+        }
+        else
+        {
+            result += getLeadingSpaces(delimiter) + "else {\n";
+            result += elseInstruction_->toString(delimiter + shift, shift, true);
+            result += getLeadingSpaces(delimiter) + "\n" + getLeadingSpaces(delimiter) + "}\n";
+        }
+    }
     return result;
 }
 

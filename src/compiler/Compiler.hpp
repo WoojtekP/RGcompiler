@@ -17,6 +17,7 @@ struct Options
     bool preserveOriginalNames_;
     bool verification_;
     bool pragmaDisjointEnabled_;
+    int game_;
 };
 
 class Compiler
@@ -50,7 +51,12 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
-    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    std::unique_ptr<BlockInstruction> getAssignments(
+        const std::vector<int> &edges,
+        const std::string &currentTagFromVector = "",
+        const std::string &fullTagName = "",
+        const std::string &minVal = "",
+        int commonPrefixSize = 0) const;
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
         const std::vector<int> &edges, int commonPrefixSize = 0) const;
     int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
@@ -62,7 +68,7 @@ private:
         bool addReturn = false,
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const PairListOfActionsToTagAndListOfActionsToPlayer &listOfActions);
+        const std::vector<TagAndListOfEdges> &listOfActionsToTags, const std::vector<int> &listOfActionsToPlayerChange);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
@@ -132,6 +138,7 @@ private:
     const Parser &parser_;
     ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
+    std::shared_ptr<Graph> unoptimizedGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
@@ -144,6 +151,7 @@ private:
     const bool verification_;
     const bool optConditionsSimplePathCompression_;
     const bool optNoCycleDetection_;
+    int game_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;

@@ -1,124 +1,132 @@
+#include <iostream>
+
 #include <compiler/graphOperations/PragmaSimpleApplyOperator.hpp>
 
-std::pair<std::vector<TagAndListOfEdges>, std::vector<int>> PragmaSimpleApplyOperator::getActionList(
+const std::vector<TagAndListOfEdges>& PragmaSimpleApplyOperator::getActionListToTags(
     const std::shared_ptr<Node>& node) const
 {
-    assert(valueAssigner_);
-    std::vector<int> edgesOnPath;
-    std::vector<int> edgesOnPathToPlayerChange;
-    std::set<std::string> visitedTags;
-    std::set<int> visitedNodes;
-    std::vector<TagAndListOfEdges> actionList;
-
-    dfs(graph_->getNodeId(node->toString()),
-        edgesOnPath,
-        visitedTags,
-        visitedNodes,
-        actionList,
-        edgesOnPathToPlayerChange);
-
-    return {actionList, edgesOnPathToPlayerChange};
+    return mapOfListOfEdgesToTagFromNode_.at(node->getName());
 }
 
-void PragmaSimpleApplyOperator::dfs(
-    int node,
-    std::vector<int>& edgesOnPath,
-    std::set<std::string>& visitedTags,
-    std::set<int>& visitedNodes,
-    std::vector<TagAndListOfEdges>& actionList,
-    std::vector<int>& edgesOnPathToPlayerChange) const
+const std::vector<PragmaSimpleApplyOperator::EdgeId>& PragmaSimpleApplyOperator::getActionListToPlayerChange(
+    const std::shared_ptr<Node>& node) const
 {
-    if (!visitedNodes.insert(node).second)
-    {
-        return;
-    }
-
-    for (const auto& [edge, iid] : graph_->getOutgoingEdgesFrom(node))
-    {
-        edgesOnPath.push_back(graph_->getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid));
-        bool endSearch = false;
-
-        std::vector<std::shared_ptr<Node>> toNodes = edge->getInnerNodes();
-        toNodes.push_back(edge->getRightNode());
-        auto toNodeIt = toNodes.begin();
-        assert(toNodes.size() == edge->getActions().size());
-        for (const auto& action : edge->getActions())
-        {
-            std::string tagVal;
-            if (action->getType() == ActionType::Tag)
-            {
-                if (!(*toNodeIt)->getBinding())
-                {
-                    tagVal = action->toString();
-                }
-                else
-                {
-                    tagVal = (*toNodeIt)->getBinding()->toTagStringId();
-                }
-
-                if (visitedTags.insert(tagVal).second)
-                {
-                    actionList.push_back({tagVal, edgesOnPath});
-                }
-                endSearch = true;
-            }
-            else if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
-            {
-                edgesOnPathToPlayerChange = edgesOnPath;
-                endSearch = true;
-            }
-
-            if (endSearch)
-            {
-                break;
-            }
-            toNodeIt++;
-        }
-
-        if (!endSearch)
-        {
-            dfs(graph_->getNodeId(edge->getRightNode()->getName()),
-                edgesOnPath,
-                visitedTags,
-                visitedNodes,
-                actionList,
-                edgesOnPathToPlayerChange);
-        }
-
-        edgesOnPath.pop_back();
-    }
+    return mapOfListOfEdgesToPlayerChangeFromNode_.at(node->getName());
 }
 
-void PragmaSimpleApplyOperator::init(ValueAssigner* valueAssigner, const Parser& parser)
+void PragmaSimpleApplyOperator::init(ValueAssigner* valueAssigner, const Parser& parser, int gameFlag)
 {
     valueAssigner_ = valueAssigner;
-    for (const auto& pragma : parser.getPragmas("SimpleApply"))
+    // for (const auto& pragma : parser.getPragmas("SimpleApply"))
+    // {
+    //     for (const auto& edge : pragma["edgeNames"])
+    //     {
+    //         simpeApplyNodeNames_.insert(Node(edge["parts"]).toString());
+    //     }
+    // }
+
+    // for (const auto& [edge, iid] : graph_->getAllEdges())
+    // {
+    //     if (!simpeApplyNodeNames_.count(edge->getLeftNode()->getName()) &&
+    //         simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+    //     {
+    //         mainNodeNames_.insert(edge->getRightNode()->getName());
+    //     }
+    //     else if (simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+    //     {
+    //         for (const auto& action : edge->getActions())
+    //         {
+    //             if (action->getType() == ActionType::Tag ||
+    //                 (action->getType() == ActionType::Assignment && action->getLeftSide() == "player"))
+    //             {
+    //                 mainNodeNames_.insert(edge->getRightNode()->getName());
+    //                 break;
+    //             }
+    //         }
+    //     }
+    // }
+
+    //parsing should be done here, but we dont know yet how file to be parsed should looks like
+
+    if (gameFlag == 1)
     {
-        for (const auto& edge : pragma["edgeNames"])
-        {
-            simpeApplyNodeNames_.insert(Node(edge["parts"]).toString());
-        }
+        ParsedSingleSimpleApplyData d1("chooseX", {"chooseX__bind__coordX", "chooseY"}, "coordX");
+        ParsedSingleSimpleApplyData d2("chooseY", {"chooseY__bind__coordY", "check"}, "coordY");
+        ParsedSingleSimpleApplyData d3("check", {"set", "endmove", "checkwin"});
+        updateStateForData(d1);
+        updateStateForData(d2);
+        updateStateForData(d3);
+        mainNodeNames_.insert("chooseX");
+        mainNodeNames_.insert("chooseY");
+        mainNodeNames_.insert("check");
+    }
+    else if (gameFlag == 2)
+    {
+        ParsedSingleSimpleApplyData d1(
+            "selectPos",
+            {"selectedPos__bind__position",
+             "setPos__bind__position",
+             "setFinished",
+             "checkOwn",
+             "forward",
+             "selectDirection"},
+            "position");
+        ParsedSingleSimpleApplyData d2("selectDirection", {"directionForward", "moved"}, "F");
+        ParsedSingleSimpleApplyData d3(
+            "selectDirection", {"directionLeft", "directionLeftChecked", "directionOK", "moved"}, "L");
+        ParsedSingleSimpleApplyData d4(
+            "selectDirection", {"directionRight", "directionRightChecked", "directionOK", "moved"}, "R");
+        ParsedSingleSimpleApplyData d5("moved", {"done", "wincheck"});
+        updateStateForData(d1);
+        updateStateForData(d2);
+        updateStateForData(d3);
+        updateStateForData(d4);
+        updateStateForData(d5);
+
+        mainNodeNames_.insert("selectPos");
+        mainNodeNames_.insert("selectDirection");
+        mainNodeNames_.insert("moved");
+    }
+}
+
+void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData)
+{
+    std::vector<int> edges;
+    std::string lastNodeName = parsedSingleSimpleApplyData.nodeName_;
+    std::string fullTag = parsedSingleSimpleApplyData.tagName_;
+    if (!mapOfListOfEdgesToTagFromNode_.count(parsedSingleSimpleApplyData.nodeName_))
+    {
+        mapOfListOfEdgesToTagFromNode_[parsedSingleSimpleApplyData.nodeName_] = {};
+    }
+    if (!mapOfListOfEdgesToPlayerChangeFromNode_.count(parsedSingleSimpleApplyData.nodeName_))
+    {
+        mapOfListOfEdgesToPlayerChangeFromNode_[parsedSingleSimpleApplyData.nodeName_] = {};
     }
 
-    for (const auto& [edge, iid] : graph_->getAllEdges())
+    for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
-        if (!simpeApplyNodeNames_.count(edge->getLeftNode()->getName()) &&
-            simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+        assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
+        edges.push_back(graph_->getEdgeId(lastNodeName, currentNodeName, 0));
+        auto edge = graph_->getEdge(edges.back());
+        if (edge->getLeftNode()->getBinding() &&
+            edge->getLeftNode()->getBinding()->getVariableName() == parsedSingleSimpleApplyData.tagName_)
         {
-            mainNodeNames_.insert(edge->getRightNode()->getName());
+            fullTag = edge->getLeftNode()->getBinding()->toTagStringId();
         }
-        else if (simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
+        if (edge->getRightNode()->getBinding() &&
+            edge->getRightNode()->getBinding()->getVariableName() == parsedSingleSimpleApplyData.tagName_)
         {
-            for (const auto& action : edge->getActions())
-            {
-                if (action->getType() == ActionType::Tag ||
-                    (action->getType() == ActionType::Assignment && action->getLeftSide() == "player"))
-                {
-                    mainNodeNames_.insert(edge->getRightNode()->getName());
-                    break;
-                }
-            }
+            fullTag = edge->getRightNode()->getBinding()->toTagStringId();
         }
+        lastNodeName = currentNodeName;
+    }
+    if (parsedSingleSimpleApplyData.hasTag())
+    {
+        mapOfListOfEdgesToTagFromNode_[parsedSingleSimpleApplyData.nodeName_].push_back({fullTag, std::move(edges)});
+    }
+    else
+    {
+        mapOfListOfEdgesToPlayerChangeFromNode_[parsedSingleSimpleApplyData.nodeName_] = std::move(edges);
     }
 }
 

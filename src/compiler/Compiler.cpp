@@ -679,7 +679,7 @@ int Compiler::getCommonPrefixSize(const std::vector<TagAndListOfEdges>& tagsAndE
 }
 
 std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
-    const std::vector<int>& edges, int commonPrefixSize) const
+    const std::vector<int>& edges, const std::shared_ptr<Graph>& graph, int commonPrefixSize) const
 {
     std::vector<std::shared_ptr<IAction>> assignmentList;
     auto lastIt = edges.begin();
@@ -688,7 +688,7 @@ std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
     for (auto it = edges.begin(); it != lastIt; it++)
     {
         int edgeId = *it;
-        auto edge = graph_->getEdge(edgeId);
+        auto edge = graph->getEdge(edgeId);
 
         assert(edge->getActions().size() == 1);
 
@@ -705,6 +705,7 @@ std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
 
 std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     const std::vector<int>& edges,
+    const std::shared_ptr<Graph>& graph,
     const std::string& currentTagFromVector,
     const std::string& fullTagName,
     const std::string& minVal,
@@ -717,7 +718,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     for (it; it != edges.end(); it++)
     {
         int edgeId = *it;
-        auto edge = graph_->getEdge(edgeId);
+        auto edge = graph->getEdge(edgeId);
 
         if (!addedTagDefinition && edge->getLeftNode()->getBinding() &&
             edge->getLeftNode()->getBinding()->toTagStringId() == fullTagName)
@@ -776,13 +777,13 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             auto actionCheck =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, condition));
 
-            std::unique_ptr<BlockInstruction> blockInstructionTmp =
-                getAssignments(actionList, actionVariable, it->first, std::to_string(minValue), commonPrefixSize);
+            std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(
+                actionList, unoptimizedGraph_, actionVariable, it->first, std::to_string(minValue), commonPrefixSize);
             int lastEdgeId = actionList.back();
-            auto lastEdge = graph_->getEdge(lastEdgeId);
+            auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
             auto actions = lastEdge->getActions();
-            blockInstructionTmp->pushInstructionBack(
-                prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true, true));
+            blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
+                unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true, true));
             actionCheck->addInstruction(std::move(blockInstructionTmp));
             if (actionsSwitch)
             {
@@ -797,7 +798,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             }
             actionsSwitch = std::move(actionCheck);
         }
-        auto vecOfAssignments = getAssignmentsList(listOfActionsToTags.front().second, commonPrefixSize);
+        auto vecOfAssignments =
+            getAssignmentsList(listOfActionsToTags.front().second, unoptimizedGraph_, commonPrefixSize);
 
         std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
         std::unique_ptr<BlockInstruction> blockInstructionRevertAssignments = std::make_unique<BlockInstruction>();
@@ -825,13 +827,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     {
         //std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         //    std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
-        std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(listOfActionsToPlayerChange);
+        std::unique_ptr<BlockInstruction> blockInstructionTmp =
+            getAssignments(listOfActionsToPlayerChange, unoptimizedGraph_);
         int lastEdgeId = listOfActionsToPlayerChange.back();
-        auto lastEdge = graph_->getEdge(lastEdgeId);
+        auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
         auto actions = lastEdge->getActions();
 
-        blockInstructionTmp->pushInstructionBack(
-            prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
+        blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
+            unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true));
         //ifInstruction->addInstruction(std::move(blockInstructionTmp));
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }

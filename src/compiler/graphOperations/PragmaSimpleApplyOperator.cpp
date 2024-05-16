@@ -5,12 +5,15 @@
 const std::vector<TagAndListOfEdges>& PragmaSimpleApplyOperator::getActionListToTags(
     const std::shared_ptr<Node>& node) const
 {
+    //std::cout << node->getName() << " " << mapOfListOfEdgesToTagFromNode_.count(node->getName()) << "--\n";
     return mapOfListOfEdgesToTagFromNode_.at(node->getName());
 }
 
 const std::vector<PragmaSimpleApplyOperator::EdgeId>& PragmaSimpleApplyOperator::getActionListToPlayerChange(
     const std::shared_ptr<Node>& node) const
 {
+    //std::cout << node->getName() << " " << mapOfListOfEdgesToPlayerChangeFromNode_.count(node->getName()) << "--\n";
+
     return mapOfListOfEdgesToPlayerChangeFromNode_.at(node->getName());
 }
 
@@ -100,6 +103,7 @@ void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApply
     }
     if (!mapOfListOfEdgesToPlayerChangeFromNode_.count(parsedSingleSimpleApplyData.nodeName_))
     {
+        std::cout << " add " << parsedSingleSimpleApplyData.nodeName_ << "\n";
         mapOfListOfEdgesToPlayerChangeFromNode_[parsedSingleSimpleApplyData.nodeName_] = {};
     }
 

@@ -7,9 +7,9 @@
 
 #include <parser/Parser.hpp>
 
-
 Binding::Binding(const std::string& variableName, const std::string& iteratedType)
-: variableName_(variableName), iteratedType_(iteratedType)
+: variableName_(variableName)
+, iteratedType_(iteratedType)
 {}
 
 std::string Binding::toString() const
@@ -19,15 +19,15 @@ std::string Binding::toString() const
 
 std::string Binding::toTagStringId() const
 {
-    return "(" + variableName_ + ":" + iteratedType_ + ")";
+    return "(" + variableName_ + " : " + iteratedType_ + ")";
 }
 
-bool Binding::operator==(const Binding &rhs) const
+bool Binding::operator==(const Binding& rhs) const
 {
     return variableName_ == rhs.variableName_ && iteratedType_ == rhs.iteratedType_;
 }
 
-bool Binding::operator!=(const Binding &rhs) const
+bool Binding::operator!=(const Binding& rhs) const
 {
     return !this->operator==(rhs);
 }
@@ -42,8 +42,7 @@ const std::string& Binding::getTypeName() const
     return iteratedType_;
 }
 
-
-Node::Node(const nlohmann::json &t)
+Node::Node(const nlohmann::json& t)
 {
     name_ = Parser::getValueFromEntries(t, "Literal", "identifier");
 
@@ -76,7 +75,7 @@ const std::optional<Binding>& Node::getBinding() const
     return binding_;
 }
 
-bool Node::operator==(const Node &rhs) const
+bool Node::operator==(const Node& rhs) const
 {
     return name_ == rhs.name_ && binding_ == rhs.binding_;
 }

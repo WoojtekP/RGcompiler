@@ -28,7 +28,7 @@ FORMATTER = "{: <15}{:9.3f} s"
 startTime = time.time()
 tmp_ast_file = f"{cfg.BUILD_TEST_DIR}/{game_basename}.json"
 run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.RG_DIR}/examples/{game} > {tmp_ast_file}")
-run(f"python3 -m json.tool {tmp_ast_file} > {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
+run(f"python3 scripts/adjust_AST.py {tmp_ast_file} {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
 run(f"rm {tmp_ast_file}")
 elapsedTime = time.time() - startTime
 print(FORMATTER.format("ast:",elapsedTime))

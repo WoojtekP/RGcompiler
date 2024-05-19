@@ -1179,22 +1179,24 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
-                const auto binding = edge->getRightNode()->getBinding();
-                if (binding && binding->getVariableName() == action->toString())
-                {
-                    const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
-                    const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
-                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
+                // TODO: this is an optimization for move application (extracting value of node generator parameter
+                //       from move vector instead of iterating over all values), but does not work for some games
+                // const auto binding = edge->getRightNode()->getBinding();
+                // if (binding && binding->getVariableName() == action->toString())
+                // {
+                //     const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
+                //     const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
+                //     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                //         false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
-                    blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                        binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
-                }
-                else
-                {
+                //     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+                //         binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
+                // }
+                // else
+                // {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
-                }
+                // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
@@ -1244,23 +1246,22 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     }
 
     // wrap into binding if needed
-    // TODO: this is temporary solution, does not work with path compression
     const auto leftBinding = edge->getLeftNode()->getBinding();
     const auto rightBinding = edge->getRightNode()->getBinding();
     if (rightBinding && leftBinding != rightBinding)
     {
-        const auto firstAction = actions.front();
-        const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
-        // TODO: this condition is not sufficient for some games
-        if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
-        {
+        // TODO: this is an optimization for move application (see previous 'TODO' in this file)
+        // const auto firstAction = actions.front();
+        // const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
+        // if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
+        // {
             auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
             loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
             loopInstruction->addInstruction(std::move(blockInstruction));
             auto result = std::make_unique<BlockInstruction>();
             result->pushInstructionBack(std::move(loopInstruction));
             return result;
-        }
+        // }
     }
 
     return blockInstruction;
@@ -1410,7 +1411,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     }
 
     // wrap into binding if needed
-    // TODO: this is temporary solution, does not work with path compression
     const auto leftBinding = edge->getLeftNode()->getBinding();
     const auto rightBinding = edge->getRightNode()->getBinding();
     if (rightBinding && leftBinding != rightBinding)

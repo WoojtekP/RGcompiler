@@ -41,6 +41,17 @@ std::pair<int, int> ValueAssigner::getTypeMinMaxValues(const std::string& identi
     return std::make_pair(minIt->second, maxIt->second);
 }
 
+std::pair<std::string, std::string> ValueAssigner::getTypeMinMaxSymbols(const std::string& identifier) const
+{
+    const auto& symbolToValuesMap = getSymbolToValueMapForType(identifier);
+    const auto [minIt, maxIt] =
+        std::minmax_element(symbolToValuesMap.begin(), symbolToValuesMap.end(), [](const auto& lhs, const auto& rhs) {
+            return lhs.second < rhs.second;
+        });
+
+    return std::make_pair(minIt->first, maxIt->first);
+}
+
 int ValueAssigner::getTypeRange(const std::string& identifier) const
 {
     const auto [minValue, maxValue] = getTypeMinMaxValues(identifier);

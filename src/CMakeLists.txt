@@ -12,6 +12,7 @@ target_link_libraries(rg2cpp
     GraphLib
     ParserLib
     PrinterLib
+    LoopFactoryLib
     ProgramLib
     nlohmann_json::nlohmann_json
     Boost::program_options

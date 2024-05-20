@@ -234,6 +234,30 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
     return result;
 }
 
+void ILoopInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
+{
+    instructions_.push_back(std::move(instruction));
+}
+
+IterLoopInstruction::IterLoopInstruction(
+    const std::string& variableName, const std::string& lowerBound, const std::string& upperBound)
+: variableName_(variableName), lowerBound_(lowerBound), upperBound_(upperBound) {}
+
+std::string IterLoopInstruction::toString(int delimiter, int shift, bool semicolon)
+{
+    std::string result = getLeadingSpaces(delimiter);
+    result += "for (auto " + variableName_ + " = " + lowerBound_ + "; ";
+    result += variableName_ + " <= " + upperBound_ + "; ";
+    result += "++" + variableName_ + ")\n";
+    result += getLeadingSpaces(delimiter) + "{\n";
+    for (const auto& instruction : instructions_)
+    {
+        result += instruction->toString(shift, shift, semicolon);
+    }
+    result += getLeadingSpaces(delimiter) + "}\n";
+    return result;
+}
+
 RangeLoopInstruction::RangeLoopInstruction(const std::string &variableName)
 : variableName_(variableName) {}
 
@@ -245,11 +269,6 @@ void RangeLoopInstruction::setRange(const std::vector<std::string>& range)
 void RangeLoopInstruction::addToRange(const std::string &rangeElement)
 {
     range_.push_back(rangeElement);
-}
-
-void RangeLoopInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
-{
-    instructions_.push_back(std::move(instruction));
 }
 
 std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semicolon)

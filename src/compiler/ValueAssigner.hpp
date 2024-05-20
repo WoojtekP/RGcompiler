@@ -22,6 +22,7 @@ class ValueAssigner
 public:
     const TypeToSymbolToValueMap& getTypeToSymbolToValueMap() const;
     std::pair<int, int> getTypeMinMaxValues(const std::string& identifier) const;
+    std::pair<std::string, std::string> getTypeMinMaxSymbols(const std::string& identifier) const;
     int getTypeRange(const std::string& identifier) const;
     int getTypeDomainSize(const std::string& identifier) const;
     int getBaseValueForTag(const std::string& tag) const;

@@ -4,6 +4,7 @@
 #include <compiler/Compiler.hpp>
 #include <parser/Parser.hpp>
 #include <printer/Printer.hpp>
+#include <program/LoopFactory.hpp>
 
 namespace
 {
@@ -1255,8 +1256,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
         // if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
         // {
-            auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
-            loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
+            const LoopFactory loopFactory(parser_, valueAssigner_);
+            auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
             loopInstruction->addInstruction(std::move(blockInstruction));
             auto result = std::make_unique<BlockInstruction>();
             result->pushInstructionBack(std::move(loopInstruction));
@@ -1415,8 +1416,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     const auto rightBinding = edge->getRightNode()->getBinding();
     if (rightBinding && leftBinding != rightBinding)
     {
-        auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
-        loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
+        const LoopFactory loopFactory(parser_, valueAssigner_);
+        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
         loopInstruction->addInstruction(std::move(blockInstruction));
         auto result = std::make_unique<BlockInstruction>();
         result->pushInstructionBack(std::move(loopInstruction));

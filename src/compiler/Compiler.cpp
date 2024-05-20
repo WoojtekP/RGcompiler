@@ -88,7 +88,7 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
                 const auto nodeName = parts[0]["identifier"].get<std::string>();
                 const auto generatorVariable = parts[1]["identifier"].get<std::string>();
                 const auto generatorType = parts[1]["type"]["identifier"].get<std::string>();
-                data.insert(nodeName + "(" + generatorVariable + " : " + generatorType + ")");
+                data.insert(nodeName + "__bind__" + generatorVariable);
             }
             else
             {
@@ -555,7 +555,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (!applyMode && !pragmaUniqueData_.count(node->getAlternativeName()))
+        if (!applyMode && !pragmaUniqueData_.count(node->getName()))
         {
             std::string cacheName, cacheData;
 

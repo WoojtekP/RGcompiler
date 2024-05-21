@@ -1176,10 +1176,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         else if (action->getType() == ActionType::Tag)
         {
             const auto tagValueStr = getTagValueString(action, edge);
-            const bool useArray =
-                graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
             if (applyEdgeMode)
             {
+                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
+                std::unique_ptr<IfInstruction> ifInstruction;
                 // TODO: this is an optimization for move application (extracting value of node generator parameter
                 //       from move vector instead of iterating over all values), but does not work for some games
                 // const auto binding = edge->getRightNode()->getBinding();
@@ -1195,22 +1195,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 // }
                 // else
                 // {
-                std::unique_ptr<IfInstruction> ifInstruction;
-                if (useArray)
-                {
-                    const int tagPosition =
-                        graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
-                            (*nodeIt)->getName());
-                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, "mr[" + std::to_string(tagPosition) + "] == " + tagValueStr));
-                }
-                else
-                {
-                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
-                    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
-                }
+                // }
+                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1218,6 +1206,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             else
             {
                 std::string pushTag;
+                bool useArray =
+                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
                 if (useArray)
                 {
                     int tagPosition =

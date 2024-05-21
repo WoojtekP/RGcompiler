@@ -32,6 +32,7 @@ class cfg:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -DNDEBUG'
   else:
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer'
+    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++17 -Og -pg -march=native -ftracer'
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer -DNDEBUG'
     # -finline-limit=100
 

@@ -834,8 +834,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActions.second.empty())
     {
-        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
         std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(listOfActions.second);
         int lastEdgeId = listOfActions.second.back();
         auto lastEdge = graph_->getEdge(lastEdgeId);
@@ -843,8 +841,19 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
         blockInstructionTmp->pushInstructionBack(
             prepareBaseInstructions(graph_, actions, lastEdge, graph_->getEdgeIID(lastEdgeId), true));
-        ifInstruction->addInstruction(std::move(blockInstructionTmp));
-        blockInstruction->pushInstructionFront(std::move(ifInstruction));
+        bool useArray =
+                graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+        if (useArray)
+        {
+            blockInstruction->pushInstructionFront(std::move(blockInstructionTmp));
+        }
+        else
+        {
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
+            ifInstruction->addInstruction(std::move(blockInstructionTmp));
+            blockInstruction->pushInstructionFront(std::move(ifInstruction));
+        }
     }
 
     return std::move(blockInstruction);

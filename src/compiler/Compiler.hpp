@@ -65,7 +65,7 @@ private:
         const PairListOfActionsToTagAndListOfActionsToPlayer &listOfActions);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
-        std::vector<std::shared_ptr<IAction>> &actions,
+        const std::vector<std::shared_ptr<IAction>> &actions,
         const std::shared_ptr<Edge> &edge,
         int iid,
         bool applyEdgeMode,

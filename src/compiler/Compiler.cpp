@@ -75,6 +75,11 @@ std::string formatValueForPrinting(
         return varIdentifier;
     }
 }
+
+bool isPlayerAssignment(const std::shared_ptr<IAction>& action)
+{
+    return action->getType() == ActionType::Assignment && action->getLeftSide() == "player";
+}
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
@@ -1051,7 +1056,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Graph>& graph,
-    std::vector<std::shared_ptr<IAction>>& actions,
+    const std::vector<std::shared_ptr<IAction>>& actions,
     const std::shared_ptr<Edge>& edge,
     int iid,
     bool applyEdgeMode,
@@ -1061,7 +1066,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::string stateTo = edge->toName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    if (actions.back()->getType() == ActionType::Assignment && actions.back()->getLeftSide() == "player")
+    if (isPlayerAssignment(actions.back()))
     {
         if (applyEdgeMode)
         {
@@ -1082,7 +1087,6 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
             blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("moves.push_back(mr)"));
-            actions.pop_back();
         }
     }
     else
@@ -1171,7 +1175,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     std::vector<std::shared_ptr<Node>> nodes = {edge->getLeftNode()};
     nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
     assert(nodes.size() == baseActions.size());
-    nodes.push_back(edge->getRightNode());
+    if (isPlayerAssignment(actions.back()) && !applyEdgeMode)
+    {
+        actions.pop_back();
+    }
+    else
+    {
+        nodes.push_back(edge->getRightNode());
+    }
     std::reverse(nodes.begin(), nodes.end());
     auto nodeIt = nodes.begin();
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
@@ -1486,7 +1497,7 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
         const auto& actionFront = graph->getEdge(stateFrom, stateTo, edgeId)->getActions().front();
         std::string id = std::to_string(graph->getNodeId(stateTo));
 
-        if (actionBack->getType() == ActionType::Assignment && actionBack->getLeftSide() == "player")
+        if (isPlayerAssignment(actionBack))
         {
             sw->addCaseInstruction(
                 graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(std::make_unique<ReturnInstruction>(id)));

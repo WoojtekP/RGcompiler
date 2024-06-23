@@ -650,33 +650,33 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
     }
 }
 
-int Compiler::getCommonPrefixSize(const std::vector<TagAndListOfEdges>& tagsAndEdges) const
-{
-    auto& firstVec = tagsAndEdges.front().second;
-    int commonPrefixSize = firstVec.size();
-    auto it = tagsAndEdges.begin();
-    for (++it; it != tagsAndEdges.end(); it++)
-    {
-        auto& curVec = it->second;
-        auto firstVecIt = firstVec.begin();
-        auto curVecIt = curVec.begin();
-        int cnt = 0;
-        while (firstVecIt != firstVec.end() && curVecIt != curVec.end())
-        {
-            if (*curVecIt != *firstVecIt)
-            {
-                break;
-            }
-            cnt++;
-            firstVecIt++;
-            curVecIt++;
-        }
+// int Compiler::getCommonPrefixSize(const std::vector<TagAndListOfEdges>& tagsAndEdges) const
+// {
+//     auto& firstVec = tagsAndEdges.front().second;
+//     int commonPrefixSize = firstVec.size();
+//     auto it = tagsAndEdges.begin();
+//     for (++it; it != tagsAndEdges.end(); it++)
+//     {
+//         auto& curVec = it->second;
+//         auto firstVecIt = firstVec.begin();
+//         auto curVecIt = curVec.begin();
+//         int cnt = 0;
+//         while (firstVecIt != firstVec.end() && curVecIt != curVec.end())
+//         {
+//             if (*curVecIt != *firstVecIt)
+//             {
+//                 break;
+//             }
+//             cnt++;
+//             firstVecIt++;
+//             curVecIt++;
+//         }
 
-        commonPrefixSize = std::min(commonPrefixSize, cnt);
-    }
+//         commonPrefixSize = std::min(commonPrefixSize, cnt);
+//     }
 
-    return commonPrefixSize;
-}
+//     return commonPrefixSize;
+// }
 
 std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
     const std::vector<int>& edges, const std::shared_ptr<Graph>& graph, int commonPrefixSize) const
@@ -750,76 +750,111 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     return std::move(blockInstruction);
 }
 
+std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
+    const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
+    int depth,
+    int minVal,
+    const std::string& fullTagName,
+    bool isExhaustive)
+{
+    if (listOfActionsToTags->children_.empty())
+    {
+        std::cout << "tam\n\n\n";
+        std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(
+            listOfActionsToTags->listOfEdges_,
+            unoptimizedGraph_,
+            "mr[currentMrId-1]",
+            fullTagName,
+            std::to_string(minVal),
+            0);
+        std::cout << "tam2\n\n\n";
+
+        int lastEdgeId = listOfActionsToTags->listOfEdges_.back();
+        auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
+        auto actions = lastEdge->getActions();
+        std::cout << "tam4\n\n\n";
+
+        blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
+            unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true, true));
+        std::cout << "tam5\n\n\n";
+
+        return std::move(blockInstructionTmp);
+    }
+
+    auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
+    int cnt = 0;
+    for (auto pairFullTagAndChild : listOfActionsToTags->children_)
+    {
+        std::cout << "Tutaj\n\n\n" << pairFullTagAndChild.first << "\n";
+        const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
+        auto innerInstructions = std::move(
+            makeSwitchForTags(pairFullTagAndChild.second, depth + 1, minVal, pairFullTagAndChild.first, isExhaustive));
+        if (++cnt == listOfActionsToTags->children_.size() && isExhaustive)
+        {
+            sw->addDefaultInstruction(std::move(innerInstructions));
+        }
+        else
+        {
+            sw->addCaseInstruction(minValue, maxValue, std::move(innerInstructions));
+        }
+    }
+
+    if (!isExhaustive)
+    {
+        std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+        blockInstruction->pushInstructionBack(
+            std::make_unique<CustomInstruction>("currentMrId -= " + std::to_string(depth)));
+        blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
+        sw->addDefaultInstruction(std::move(blockInstruction));
+    }
+
+    std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+    blockInstruction->pushInstructionBack(std::move(sw));
+
+    return blockInstruction;
+}
+
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
-    const std::vector<TagAndListOfEdges>& listOfActionsToTags, const std::vector<int>& listOfActionsToPlayerChange)
+    const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
+    const std::vector<int>& listOfActionsToPlayerChange)
 {
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    if (!listOfActionsToTags.empty())
+    if (!listOfActionsToTags->empty())
     {
         std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
             std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
 
-        const std::string actionVariable = "currentAction";
-        ifInstruction->addInstruction(
-            std::make_unique<AssignmentInstruction>(actionVariable, "mr[currentMrId++]", "const auto"));
+        // const std::string actionVariable = "currentAction";
+        // ifInstruction->addInstruction(
+        //     std::make_unique<AssignmentInstruction>(actionVariable, "mr[currentMrId++]", "const auto"));
 
-        int commonPrefixSize = 0;  //getCommonPrefixSize(listOfActionsToTags); disable common prefix
+        //int commonPrefixSize = 0;  //getCommonPrefixSize(listOfActionsToTags); disable common prefix
         // TODO: use if-else for bindings and switch-case for single tags (it might be a little bit faster)
-        std::unique_ptr<IfInstruction> actionsSwitch;
-        for (auto it = listOfActionsToTags.rbegin(); it != listOfActionsToTags.rend(); it++)
-        {
-            const auto [tagId, actionList] = *it;
-            const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(tagId);
-            const auto condition = (minValue != maxValue)
-                                       ? getValueInRangeExpressionString(actionVariable, minValue, maxValue)
-                                       : (actionVariable + "==" + std::to_string(minValue));
-            auto actionCheck =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, condition));
+        // std::unique_ptr<IfInstruction> actionsSwitch;
 
-            std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(
-                actionList, unoptimizedGraph_, actionVariable, it->first, std::to_string(minValue), commonPrefixSize);
-            int lastEdgeId = actionList.back();
-            auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
-            auto actions = lastEdge->getActions();
-            blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
-                unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true, true));
-            actionCheck->addInstruction(std::move(blockInstructionTmp));
-            if (actionsSwitch)
-            {
-                actionCheck->addElseInstruction(std::move(actionsSwitch));
-            }
-            else
-            {
-                std::unique_ptr<BlockInstruction> blockDefaultInstruction = std::make_unique<BlockInstruction>();
-                blockDefaultInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
-                blockDefaultInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
-                actionCheck->addElseInstruction(std::move(blockDefaultInstruction));
-            }
-            actionsSwitch = std::move(actionCheck);
-        }
-        auto vecOfAssignments =
-            getAssignmentsList(listOfActionsToTags.front().second, unoptimizedGraph_, commonPrefixSize);
-
-        std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
-        std::unique_ptr<BlockInstruction> blockInstructionRevertAssignments = std::make_unique<BlockInstruction>();
-        int edgeId = listOfActionsToTags.front().second.front();
-        int temporaryVariableCnt = 0;
-        for (const auto& action : vecOfAssignments)
-        {
-            std::string lvalue = action->getLeftSide();
-            blockInstructionAssignments->pushInstructionBack(
-                std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
-            blockInstructionAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
-            blockInstructionRevertAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
-            temporaryVariableCnt++;
-        }
-        ifInstruction->addInstruction(std::move(blockInstructionAssignments));
-        ifInstruction->addInstruction(std::move(actionsSwitch));
-        ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments));
-
+        // for common prefix
+        // auto vecOfAssignments =
+        //     getAssignmentsList(listOfActionsToTags.front().second, unoptimizedGraph_, commonPrefixSize);
+        // std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
+        // std::unique_ptr<BlockInstruction> blockInstructionRevertAssignments = std::make_unique<BlockInstruction>();
+        // int edgeId = listOfActionsToTags.front().second.front();
+        // int temporaryVariableCnt = 0;
+        // for (const auto& action : vecOfAssignments)
+        // {
+        //     std::string lvalue = action->getLeftSide();
+        //     blockInstructionAssignments->pushInstructionBack(
+        //         std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
+        //     blockInstructionAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+        //         getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
+        //     blockInstructionRevertAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+        //         lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
+        //     temporaryVariableCnt++;
+        // }
+        // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
+        ifInstruction->addInstruction(std::move(makeSwitchForTags(listOfActionsToTags, 1, false)));
+        // ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments)); for common prefix
+        std::cout << "xdddd\n\n";
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
     }
 

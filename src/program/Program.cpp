@@ -1,3 +1,5 @@
+#include "Program.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <memory>
@@ -5,7 +7,6 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <program/Program.hpp>
-#include "Program.hpp"
 
 std::string ElementaryType::toString() const
 {
@@ -175,7 +176,7 @@ std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
 
     if (elseInstruction_)
     {
-        if (dynamic_cast<IfInstruction*>(elseInstruction_.get()) != nullptr)
+        if (dynamic_cast<IfInstruction *>(elseInstruction_.get()) != nullptr)
         {
             result += getLeadingSpaces(delimiter) + "else ";
             result += elseInstruction_->toString(delimiter, shift, true);
@@ -195,9 +196,15 @@ SwitchInstruction::SwitchInstruction(const std::string &condition)
 : condition_(condition)
 {}
 
-void SwitchInstruction::addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction, bool breakAfter)
+void SwitchInstruction::addCaseInstruction(int valMin, std::unique_ptr<IInstruction> &&instruction, bool breakAfter)
 {
-    instructions_.push_back({val, std::move(instruction), breakAfter});
+    instructions_.push_back({std::make_pair(valMin, valMin), std::move(instruction), breakAfter});
+}
+
+void SwitchInstruction::addCaseInstruction(
+    int valMin, int valMax, std::unique_ptr<IInstruction> &&instruction, bool breakAfter)
+{
+    instructions_.push_back({std::make_pair(valMin, valMax), std::move(instruction), breakAfter});
 }
 
 void SwitchInstruction::addDefaultInstruction(std::unique_ptr<IInstruction> &&instruction)
@@ -213,14 +220,25 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
     result += getLeadingSpaces(delimiter) + "{\n";
 
     int newDelimiter = delimiter + shift;
-    for (const auto &[val, instruction, breakAfter] : instructions_)
+    for (const auto &[valPair, instruction, breakAfter] : instructions_)
     {
-        result += getLeadingSpaces(newDelimiter) + "case " + std::to_string(val) + ":\n";
+        auto [valMin, valMax] = valPair;
+        std::string caseVal;
+        if (valMin == valMax)
+        {
+            caseVal = std::to_string(valMin);
+        }
+        else
+        {
+            caseVal = std::to_string(valMin) + " ... " + std::to_string(valMax);
+        }
+        result += getLeadingSpaces(newDelimiter) + "case " + caseVal + ":\n{\n";
         result += instruction->toString(newDelimiter + shift, shift, true) + "\n";
         if (breakAfter)
         {
             result += "break;\n";
         }
+        result += "}\n";
     }
 
     if (default_)
@@ -235,9 +253,10 @@ std::string SwitchInstruction::toString(int delimiter, int shift, bool semicolon
 }
 
 RangeLoopInstruction::RangeLoopInstruction(const std::string &variableName)
-: variableName_(variableName) {}
+: variableName_(variableName)
+{}
 
-void RangeLoopInstruction::setRange(const std::vector<std::string>& range)
+void RangeLoopInstruction::setRange(const std::vector<std::string> &range)
 {
     range_ = range;
 }
@@ -256,7 +275,7 @@ std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semico
 {
     std::string result = "";
     result += getLeadingSpaces(delimiter) + "for (const auto& " + variableName_ + " : {";
-    for (const auto& value : range_)
+    for (const auto &value : range_)
     {
         result += value + ",";
     }
@@ -266,14 +285,13 @@ std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semico
     }
     result += "})\n";
     result += getLeadingSpaces(delimiter) + "{\n";
-    for (const auto& instruction : instructions_)
+    for (const auto &instruction : instructions_)
     {
         result += instruction->toString(shift, shift, semicolon);
     }
     result += getLeadingSpaces(delimiter) + "}\n";
     return result;
 }
-
 
 BlockInstruction::BlockInstruction() {}
 

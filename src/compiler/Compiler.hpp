@@ -58,9 +58,16 @@ private:
         const std::string &fullTagName = "",
         const std::string &minVal = "",
         int commonPrefixSize = 0) const;
+    std::unique_ptr<BlockInstruction> makeSwitchForTags(
+        const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
+        int depth,
+        int minVal = 0,
+        const std::string &fullTagName = "",
+        bool isExhaustive = false);
+
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
         const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
-    int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
+    //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -69,7 +76,8 @@ private:
         bool addReturn = false,
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const std::vector<TagAndListOfEdges> &listOfActionsToTags, const std::vector<int> &listOfActionsToPlayerChange);
+        const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
+        const std::vector<int> &listOfActionsToPlayerChange);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,

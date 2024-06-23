@@ -244,13 +244,15 @@ public:
 class SwitchInstruction : public IInstruction
 {
     std::string condition_;
-    std::vector<std::tuple<int, std::unique_ptr<IInstruction>, bool>> instructions_;
+    std::vector<std::tuple<std::pair<int, int>, std::unique_ptr<IInstruction>, bool>> instructions_;
     std::unique_ptr<IInstruction> default_;
 
 public:
     SwitchInstruction(const std::string &condition);
 
-    void addCaseInstruction(int val, std::unique_ptr<IInstruction> &&instruction, bool breakAfter = false);
+    void addCaseInstruction(int valMin, std::unique_ptr<IInstruction> &&instruction, bool breakAfter = false);
+    void addCaseInstruction(
+        int valMin, int valMax, std::unique_ptr<IInstruction> &&instruction, bool breakAfter = false);
     void addDefaultInstruction(std::unique_ptr<IInstruction> &&instruction);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
@@ -265,8 +267,8 @@ class RangeLoopInstruction : public IInstruction
 public:
     RangeLoopInstruction(const std::string &variableName);
 
-    void setRange(const std::vector<std::string>& range);
-    void addToRange(const std::string& rangeElement);
+    void setRange(const std::vector<std::string> &range);
+    void addToRange(const std::string &rangeElement);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;

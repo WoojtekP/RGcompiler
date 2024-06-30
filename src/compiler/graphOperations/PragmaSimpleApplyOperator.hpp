@@ -44,6 +44,7 @@ private:
         const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData) const;
     void updateStateForData(const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData);
 
+    std::set<std::string> exhaustiveNodeNames_;
     std::set<std::string> simpeApplyNodeNames_;
     // Main node means that it node without simpleApply pragma have edge to this node
     std::set<std::string> mainNodeNames_;
@@ -64,5 +65,6 @@ public:
     const std::shared_ptr<SimpleApplySwitchTreeNode>& getActionListToTags(const std::shared_ptr<Node>& node) const;
     const std::vector<EdgeId>& getActionListToPlayerChange(const std::shared_ptr<Node>& node) const;
     bool isSimpleApply(const std::string& nodeName) const;
+    bool isExhaustive(const std::string& nodeName) const;
     bool isMainSimpleApply(const std::string& nodeName) const;
 };

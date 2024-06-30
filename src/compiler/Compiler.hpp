@@ -77,7 +77,8 @@ private:
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
-        const std::vector<int> &listOfActionsToPlayerChange);
+        const std::vector<int> &listOfActionsToPlayerChange,
+        bool isExhaustive);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,

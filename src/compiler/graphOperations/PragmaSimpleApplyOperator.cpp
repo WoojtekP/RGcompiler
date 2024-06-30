@@ -86,6 +86,10 @@ void PragmaSimpleApplyOperator::init(const Parser& parser, int gameFlag)
         mainNodeNames_.insert("chooseX");
         mainNodeNames_.insert("chooseY");
         mainNodeNames_.insert("check");
+
+        exhaustiveNodeNames_.insert("chooseX");
+        exhaustiveNodeNames_.insert("chooseY");
+        exhaustiveNodeNames_.insert("check");
     }
     else if (gameFlag == 2)
     {
@@ -113,6 +117,10 @@ void PragmaSimpleApplyOperator::init(const Parser& parser, int gameFlag)
         mainNodeNames_.insert("selectPos");
         mainNodeNames_.insert("selectDirection");
         mainNodeNames_.insert("moved");
+
+        exhaustiveNodeNames_.insert("selectPos");
+        exhaustiveNodeNames_.insert("selectDirection");
+        exhaustiveNodeNames_.insert("moved");
     }
 }
 
@@ -176,6 +184,11 @@ void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApply
     {
         mapOfListOfEdgesToPlayerChangeFromNode_[parsedSingleSimpleApplyData.nodeName_] = std::move(edges);
     }
+}
+
+bool PragmaSimpleApplyOperator::isExhaustive(const std::string& nodeName) const
+{
+    return exhaustiveNodeNames_.count(nodeName);
 }
 
 bool PragmaSimpleApplyOperator::isSimpleApply(const std::string& nodeName) const

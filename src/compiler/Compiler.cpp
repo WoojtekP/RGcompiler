@@ -625,7 +625,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->getActionListToTags(node),
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
-                    ->getActionListToPlayerChange(node)));
+                    ->getActionListToPlayerChange(node),
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
+                    ->isExhaustive(node->getName())));
         }
         else
         {
@@ -810,7 +812,8 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
-    const std::vector<int>& listOfActionsToPlayerChange)
+    const std::vector<int>& listOfActionsToPlayerChange,
+    bool isExhaustive)
 {
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
@@ -846,7 +849,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         //     temporaryVariableCnt++;
         // }
         // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
-        ifInstruction->addInstruction(std::move(makeSwitchForTags(listOfActionsToTags, 1, false)));
+        ifInstruction->addInstruction(std::move(makeSwitchForTags(listOfActionsToTags, 1, isExhaustive)));
         // ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments)); for common prefix
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
     }

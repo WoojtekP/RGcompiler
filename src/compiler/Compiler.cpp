@@ -132,8 +132,7 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
-        ->init(&valueAssigner_, parser_, game_);
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_, game_);
 }
 
 void Compiler::initializePragmas()
@@ -759,7 +758,6 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 {
     if (listOfActionsToTags->children_.empty())
     {
-        std::cout << "tam\n\n\n";
         std::unique_ptr<BlockInstruction> blockInstructionTmp = getAssignments(
             listOfActionsToTags->listOfEdges_,
             unoptimizedGraph_,
@@ -767,16 +765,13 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
             fullTagName,
             std::to_string(minVal),
             0);
-        std::cout << "tam2\n\n\n";
 
         int lastEdgeId = listOfActionsToTags->listOfEdges_.back();
         auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
         auto actions = lastEdge->getActions();
-        std::cout << "tam4\n\n\n";
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
             unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true, true));
-        std::cout << "tam5\n\n\n";
 
         return std::move(blockInstructionTmp);
     }
@@ -785,10 +780,9 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
-        std::cout << "Tutaj\n\n\n" << pairFullTagAndChild.first << "\n";
         const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
-        auto innerInstructions = std::move(
-            makeSwitchForTags(pairFullTagAndChild.second, depth + 1, minVal, pairFullTagAndChild.first, isExhaustive));
+        auto innerInstructions = std::move(makeSwitchForTags(
+            pairFullTagAndChild.second, depth + 1, minValue, pairFullTagAndChild.first, isExhaustive));
         if (++cnt == listOfActionsToTags->children_.size() && isExhaustive)
         {
             sw->addDefaultInstruction(std::move(innerInstructions));
@@ -854,7 +848,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
         ifInstruction->addInstruction(std::move(makeSwitchForTags(listOfActionsToTags, 1, false)));
         // ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments)); for common prefix
-        std::cout << "xdddd\n\n";
         blockInstruction->pushInstructionFront(std::move(ifInstruction));
     }
 

@@ -754,9 +754,9 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
 std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
     int depth,
+    bool isExhaustive,
     int minVal,
-    const std::string& fullTagName,
-    bool isExhaustive)
+    const std::string& fullTagName)
 {
     if (listOfActionsToTags->children_.empty())
     {
@@ -784,7 +784,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     {
         const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
         auto innerInstructions = std::move(makeSwitchForTags(
-            pairFullTagAndChild.second, depth + 1, minValue, pairFullTagAndChild.first, isExhaustive));
+            pairFullTagAndChild.second, depth + 1, isExhaustive, minValue, pairFullTagAndChild.first));
         if (++cnt == listOfActionsToTags->children_.size() && isExhaustive)
         {
             sw->addDefaultInstruction(std::move(innerInstructions));
@@ -856,7 +856,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActionsToPlayerChange.empty())
     {
-        //std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+        // std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         //    std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
             getAssignments(listOfActionsToPlayerChange, unoptimizedGraph_);

@@ -41,6 +41,40 @@ std::string getValueInRangeExpressionString(const std::string variable, const in
     const auto upperLimitValueStr = std::to_string(upper);
     return variable + " >= " + lowerLimitValueStr + " && " + variable + " <= " + upperLimitValueStr;
 }
+
+std::string formatValueForPrinting(
+    const std::string& varIdentifier,
+    const std::shared_ptr<IType>& valueType,
+    IValue* value,
+    const ValueAssigner& valueAssigner,
+    const Parser& parser)
+{
+    if (const FunctionType* functionType = dynamic_cast<FunctionType*>(valueType.get()))
+    {
+        MapValue* mapValue = dynamic_cast<MapValue*>(value);
+        std::string streamInstr = "\"{\"";
+        const auto sourceTypeId = functionType->source->identifier;
+        const auto minValue = valueAssigner.getTypeMinMaxValues(sourceTypeId).first;
+        const auto shiftStr = (minValue > 0) ? "-" + std::to_string(minValue) : "";
+        const std::string sep = " << \", \"";
+        for (const auto& symbol : parser.getDomain(sourceTypeId))
+        {
+            const auto anyDestinationValue =
+                mapValue->defaultValue ? mapValue->defaultValue.get() : mapValue->idToValueMap.begin()->second.get();
+            const auto nestedVariable = varIdentifier + "[" + symbol + shiftStr + "]";
+            const auto valueStr = formatValueForPrinting(
+                nestedVariable, functionType->destination, anyDestinationValue, valueAssigner, parser);
+            streamInstr += " << \"" + symbol + ": \" << " + valueStr + sep;
+        }
+        streamInstr.resize(streamInstr.size() - sep.size());
+        streamInstr += "<< \"}\"";
+        return streamInstr;
+    }
+    else
+    {
+        return varIdentifier;
+    }
+}
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
@@ -1465,6 +1499,30 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
     function->addInstruction(std::make_unique<ReturnInstruction>("-1"));
     program_.addFunction(std::move(function));
 }
+
+void Compiler::generateGetStateDescription()
+{
+    auto function = std::make_unique<Function>("getStateDescription", "std::string", true, true);
+    function->addInstruction(std::make_unique<VariableDeclarationInstruction>("ss", "std::stringstream"));
+
+    for (const auto& var : program_.getVariables())
+    {
+        if (!parser_.isVariable(var->identifier))
+        {
+            continue;
+        }
+        function->addInstruction(std::make_unique<CustomInstruction>(
+            "ss << \"" + var->identifier + " = \" << " +
+            formatValueForPrinting(var->identifier, var->valueType, var->value.get(), valueAssigner_, parser_) +
+            " << std::endl"));
+    }
+    function->addInstruction(
+        std::make_unique<CustomInstruction>("ss << \"currentState = \" << currentState << std::endl"));
+    function->addInstruction(
+        std::make_unique<CustomInstruction>("ss << \"currentMrId = \" << currentMrId << std::endl"));
+    function->addInstruction(std::make_unique<ReturnInstruction>("ss.str()"));
+    program_.addFunction(std::move(function));
+}
 /*
 void Compiler::generateRunApplyEdgeFunction(const std::shared_ptr<Graph>& graph)
 {
@@ -1621,6 +1679,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     generateRunStateFunction(graph, true);
     generateRunStateFunction(graph);
     generateGetFromStateForEdge(graph);
+    generateGetStateDescription();
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
     isTerminal->addInstruction(

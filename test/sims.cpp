@@ -15,14 +15,19 @@ ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 ulong sumScores[1+reasoner::PLAYERS_COUNT];
 
-void exitWithError(const std::string msg) {std::cerr << msg << std::endl; exit(2);}
+void exitWithError(const reasoner::GameState &state, const std::string msg)
+{
+  std::cerr << msg << std::endl;
+  std::cerr << state.getStateDescription();
+  exit(2);
+}
 
 bool keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper) {
     if (state.isTerminal()) return false;
     state.getAllMoves(moves, cache);
     #ifndef NDEBUG
-      if (moves.size() != 1) exitWithError("Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+      if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
     #endif
     state.applyMove(moves[0], cache);
 
@@ -36,12 +41,12 @@ void doSimulation() {
   uint depth = 0;
   while (true) {
     #ifndef NDEBUG
-      if (state.getCurrentPlayer() == reasoner::keeper) exitWithError("Keeper at the beginning of player loop");
+      if (state.getCurrentPlayer() == reasoner::keeper) exitWithError(state, "Keeper at the beginning of player loop");
     #endif
     
     state.getAllMoves(moves, cache);
     #ifndef NDEBUG
-      if (moves.size() == 0) exitWithError("Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+      if (moves.size() == 0) exitWithError(state, "Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
     #endif
     depth++;
     numMoves += moves.size();
@@ -65,7 +70,7 @@ int main(int argc, char** argv) {
 
   [[maybe_unused]] bool initialNonterminal = keeperCompletion(initial);
   #ifndef NDEBUG
-    if (!initialNonterminal) exitWithError("Initial state is terminal");
+    if (!initialNonterminal) exitWithError(initial, "Initial state is terminal");
   #endif
   
   numSimulations = std::stoi(argv[1]);

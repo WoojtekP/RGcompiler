@@ -41,9 +41,6 @@ print(TIME_FORMATTER.format(elapsedTime))
 if result.returncode != 0:
   print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
   exit(2)
-
-print(decodeOutput(result.stdout))
-exit(1)
 stats = decodeOutput(result.stdout).strip().split(' ')
 #print(stats)
 resStates = int(stats[0])

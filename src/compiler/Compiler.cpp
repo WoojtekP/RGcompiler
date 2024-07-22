@@ -156,10 +156,13 @@ void Compiler::initializePragmaRepeat()
 {
     for (const auto& pragma : parser_.getPragmas("Repeat"))
     {
-        std::string mainNodeName = pragma["edgeNames"][0]["parts"][0]["identifier"];
-        for (const auto& nodeName : pragma["identifiers"])
+        for (const auto& edge : pragma["edgeNames"])
         {
-            pragmaRepeatData_[mainNodeName].push_back(nodeName);
+            const auto& nodeName = edge["parts"][0]["identifier"];
+            for (const auto& variableName : pragma["identifiers"])
+            {
+                pragmaRepeatData_[nodeName].push_back(variableName);
+            }
         }
     }
 }
@@ -472,16 +475,16 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 
-    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    for (const auto& [nodeName, variables] : pragmaRepeatData_)
     {
         std::string data;
-        for (const auto nodeName : pairMainNodeNameAndNodeNames.second)
+        for (const auto variable : variables)
         {
-            data += getTypeForVariable(nodeName) + ",";
+            data += getTypeForVariable(variable) + ",";
         }
         data.pop_back();
         program_.addVariableDeclaration(std::make_unique<Variable>(
-            "state_cache_" + pairMainNodeNameAndNodeNames.first,
+            "state_cache_" + nodeName,
             std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
     }
 
@@ -582,7 +585,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (!applyMode && !pragmaUniqueData_.count(node->getName()))
+        if (pragmaRepeatData_.count(state) || (!applyMode && !pragmaUniqueData_.count(node->getName())))
         {
             std::string cacheName, cacheData;
 
@@ -591,9 +594,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 cacheName = "state_cache_" + state;
                 cacheData = "std::make_tuple(";
 
-                for (const auto& nodeName : pragmaRepeatData_[state])
+                for (const auto& variable : pragmaRepeatData_[state])
                 {
-                    cacheData += nodeName + ",";
+                    cacheData += variable + ",";
                 }
                 cacheData.pop_back();
                 cacheData += ")";
@@ -611,7 +614,14 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(" + cacheData + ").second"));
-            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
+            if (applyMode)
+            {
+                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+            }
+            else
+            {
+                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
+            }
 
             function->addInstruction(std::move(ifInstruction));
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
@@ -1701,9 +1711,9 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
     std::string clearingCaches = "state_cache.clear();";  //"for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
 
-    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    for (const auto& nodeAndVariables : pragmaRepeatData_)
     {
-        clearingCaches += "state_cache_" + pairMainNodeNameAndNodeNames.first + ".clear();" + "\n";
+        clearingCaches += "state_cache_" + nodeAndVariables.first + ".clear();" + "\n";
     }
 
     if (verification_)
@@ -1717,6 +1727,11 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
+    for (const auto& nodeAndVariables : pragmaRepeatData_)
+    {
+        applyMoveFunction->addInstruction(
+            std::make_unique<CustomInstruction>("state_cache_" + nodeAndVariables.first + ".clear()"));
+    }
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const move_representation &v = m.mr;
         currentMrId = 0;

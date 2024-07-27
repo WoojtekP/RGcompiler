@@ -9,8 +9,8 @@ void GetTagIndexOperator::init(const Parser& parser)
         maxSize = std::max(maxSize, position);
         for (const auto& nodeStruct : pragma["edgeNames"])
         {
-            std::string nodeName = nodeStruct["parts"][0]["identifier"];
-            nodeNameToTagPosition_[nodeName] = position;
+            const auto node = Node(nodeStruct["parts"]);
+            nodeNameToTagPosition_[node.getName()] = position;
         }
     }
 
@@ -21,8 +21,8 @@ void GetTagIndexOperator::init(const Parser& parser)
 
         for (const auto& nodeStruct : pragma["edgeNames"])
         {
-            std::string nodeName = nodeStruct["parts"][0]["identifier"];
-            nodesWithTagIndexMax.insert(nodeName);
+            const auto node = Node(nodeStruct["parts"]);
+            nodesWithTagIndexMax.insert(node.getName());
         }
     }
 

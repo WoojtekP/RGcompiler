@@ -4,6 +4,7 @@
 #include <compiler/Compiler.hpp>
 #include <parser/Parser.hpp>
 #include <printer/Printer.hpp>
+#include <program/LoopFactory.hpp>
 
 namespace
 {
@@ -39,6 +40,40 @@ std::string getValueInRangeExpressionString(const std::string variable, const in
     const auto lowerLimitValueStr = std::to_string(lower);
     const auto upperLimitValueStr = std::to_string(upper);
     return variable + " >= " + lowerLimitValueStr + " && " + variable + " <= " + upperLimitValueStr;
+}
+
+std::string formatValueForPrinting(
+    const std::string& varIdentifier,
+    const std::shared_ptr<IType>& valueType,
+    IValue* value,
+    const ValueAssigner& valueAssigner,
+    const Parser& parser)
+{
+    if (const FunctionType* functionType = dynamic_cast<FunctionType*>(valueType.get()))
+    {
+        MapValue* mapValue = dynamic_cast<MapValue*>(value);
+        std::string streamInstr = "\"{\"";
+        const auto sourceTypeId = functionType->source->identifier;
+        const auto minValue = valueAssigner.getTypeMinMaxValues(sourceTypeId).first;
+        const auto shiftStr = (minValue > 0) ? "-" + std::to_string(minValue) : "";
+        const std::string sep = " << \", \"";
+        for (const auto& symbol : parser.getDomain(sourceTypeId))
+        {
+            const auto anyDestinationValue =
+                mapValue->defaultValue ? mapValue->defaultValue.get() : mapValue->idToValueMap.begin()->second.get();
+            const auto nestedVariable = varIdentifier + "[" + symbol + shiftStr + "]";
+            const auto valueStr = formatValueForPrinting(
+                nestedVariable, functionType->destination, anyDestinationValue, valueAssigner, parser);
+            streamInstr += " << \"" + symbol + ": \" << " + valueStr + sep;
+        }
+        streamInstr.resize(streamInstr.size() - sep.size());
+        streamInstr += "<< \"}\"";
+        return streamInstr;
+    }
+    else
+    {
+        return varIdentifier;
+    }
 }
 }  // namespace
 
@@ -121,10 +156,13 @@ void Compiler::initializePragmaRepeat()
 {
     for (const auto& pragma : parser_.getPragmas("Repeat"))
     {
-        std::string mainNodeName = pragma["edgeNames"][0]["parts"][0]["identifier"];
-        for (const auto& nodeName : pragma["identifiers"])
+        for (const auto& edge : pragma["edgeNames"])
         {
-            pragmaRepeatData_[mainNodeName].push_back(nodeName);
+            const auto& nodeName = edge["parts"][0]["identifier"];
+            for (const auto& variableName : pragma["identifiers"])
+            {
+                pragmaRepeatData_[nodeName].push_back(variableName);
+            }
         }
     }
 }
@@ -443,16 +481,16 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 
-    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    for (const auto& [nodeName, variables] : pragmaRepeatData_)
     {
         std::string data;
-        for (const auto nodeName : pairMainNodeNameAndNodeNames.second)
+        for (const auto variable : variables)
         {
-            data += getTypeForVariable(nodeName) + ",";
+            data += getTypeForVariable(variable) + ",";
         }
         data.pop_back();
         program_.addVariableDeclaration(std::make_unique<Variable>(
-            "state_cache_" + pairMainNodeNameAndNodeNames.first,
+            "state_cache_" + nodeName,
             std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
     }
 
@@ -553,7 +591,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (!applyMode && !pragmaUniqueData_.count(node->getName()))
+        if (pragmaRepeatData_.count(state) || (!applyMode && !pragmaUniqueData_.count(node->getName())))
         {
             std::string cacheName, cacheData;
 
@@ -562,9 +600,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 cacheName = "state_cache_" + state;
                 cacheData = "std::make_tuple(";
 
-                for (const auto& nodeName : pragmaRepeatData_[state])
+                for (const auto& variable : pragmaRepeatData_[state])
                 {
-                    cacheData += nodeName + ",";
+                    cacheData += variable + ",";
                 }
                 cacheData.pop_back();
                 cacheData += ")";
@@ -582,7 +620,14 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(" + cacheData + ").second"));
-            ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>()));
+            if (applyMode)
+            {
+                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+            }
+            else
+            {
+                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
+            }
 
             function->addInstruction(std::move(ifInstruction));
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
@@ -1251,23 +1296,24 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
-                const auto binding = edge->getRightNode()->getBinding();
-                if (binding && binding->getVariableName() == action->toString())
-                {
-                    const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
-                    const auto tagInRangeExpression =
-                        getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
-                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
+                // TODO: this is an optimization for move application (extracting value of node generator parameter
+                //       from move vector instead of iterating over all values), but does not work for some games
+                // const auto binding = edge->getRightNode()->getBinding();
+                // if (binding && binding->getVariableName() == action->toString())
+                // {
+                //     const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
+                //     const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
+                //     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                //         false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
-                    blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                        binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
-                }
-                else
-                {
+                //     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+                //         binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
+                // }
+                // else
+                // {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
-                }
+                // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
@@ -1317,23 +1363,22 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     }
 
     // wrap into binding if needed
-    // TODO: this is temporary solution, does not work with path compression
     const auto leftBinding = edge->getLeftNode()->getBinding();
     const auto rightBinding = edge->getRightNode()->getBinding();
     if (rightBinding && leftBinding != rightBinding)
     {
-        const auto firstAction = actions.front();
-        const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
-        // TODO: this condition is not sufficient for some games
-        if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
-        {
-            auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
-            loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
+        // TODO: this is an optimization for move application (see previous 'TODO' in this file)
+        // const auto firstAction = actions.front();
+        // const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
+        // if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
+        // {
+            const LoopFactory loopFactory(parser_, valueAssigner_);
+            auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
             loopInstruction->addInstruction(std::move(blockInstruction));
             auto result = std::make_unique<BlockInstruction>();
             result->pushInstructionBack(std::move(loopInstruction));
             return result;
-        }
+        // }
     }
 
     return blockInstruction;
@@ -1483,13 +1528,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     }
 
     // wrap into binding if needed
-    // TODO: this is temporary solution, does not work with path compression
     const auto leftBinding = edge->getLeftNode()->getBinding();
     const auto rightBinding = edge->getRightNode()->getBinding();
     if (rightBinding && leftBinding != rightBinding)
     {
-        auto loopInstruction = std::make_unique<RangeLoopInstruction>(rightBinding->getVariableName());
-        loopInstruction->setRange(parser_.getDomain(rightBinding->getTypeName()));
+        const LoopFactory loopFactory(parser_, valueAssigner_);
+        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
         loopInstruction->addInstruction(std::move(blockInstruction));
         auto result = std::make_unique<BlockInstruction>();
         result->pushInstructionBack(std::move(loopInstruction));
@@ -1535,6 +1579,30 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
     function->addInstruction(std::move(sw));
     function->addInstruction(std::make_unique<ReturnInstruction>("-1"));
+    program_.addFunction(std::move(function));
+}
+
+void Compiler::generateGetStateDescription()
+{
+    auto function = std::make_unique<Function>("getStateDescription", "std::string", true, true);
+    function->addInstruction(std::make_unique<VariableDeclarationInstruction>("ss", "std::stringstream"));
+
+    for (const auto& var : program_.getVariables())
+    {
+        if (!parser_.isVariable(var->identifier))
+        {
+            continue;
+        }
+        function->addInstruction(std::make_unique<CustomInstruction>(
+            "ss << \"" + var->identifier + " = \" << " +
+            formatValueForPrinting(var->identifier, var->valueType, var->value.get(), valueAssigner_, parser_) +
+            " << std::endl"));
+    }
+    function->addInstruction(
+        std::make_unique<CustomInstruction>("ss << \"currentState = \" << currentState << std::endl"));
+    function->addInstruction(
+        std::make_unique<CustomInstruction>("ss << \"currentMrId = \" << currentMrId << std::endl"));
+    function->addInstruction(std::make_unique<ReturnInstruction>("ss.str()"));
     program_.addFunction(std::move(function));
 }
 /*
@@ -1693,6 +1761,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     generateRunStateFunction(graph, true);
     generateRunStateFunction(graph);
     generateGetFromStateForEdge(graph);
+    generateGetStateDescription();
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
     isTerminal->addInstruction(
@@ -1714,9 +1783,9 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
     std::string clearingCaches = "state_cache.clear();";  //"for (auto &us : state_cache)\n{\n  us.clear();\n}\n";
 
-    for (const auto& pairMainNodeNameAndNodeNames : pragmaRepeatData_)
+    for (const auto& nodeAndVariables : pragmaRepeatData_)
     {
-        clearingCaches += "state_cache_" + pairMainNodeNameAndNodeNames.first + ".clear();" + "\n";
+        clearingCaches += "state_cache_" + nodeAndVariables.first + ".clear();" + "\n";
     }
 
     if (verification_)
@@ -1730,6 +1799,11 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
+    for (const auto& nodeAndVariables : pragmaRepeatData_)
+    {
+        applyMoveFunction->addInstruction(
+            std::make_unique<CustomInstruction>("state_cache_" + nodeAndVariables.first + ".clear()"));
+    }
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const move_representation &v = m.mr;
         currentMrId = 0;

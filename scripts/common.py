@@ -21,10 +21,10 @@ class cfg:
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--expandGeneratorNodes --compactSkipEdges --reuseFunctions --normalizeTypes --addExplicitCasts --skipSelfAssignments --skipSelfComparisons'
-  DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes' # Auto-optimization
+  DEFAULT_TRANSLATE_OPTIONS = '--compactSkipEdges --reuseFunctions --normalizeTypes --addExplicitCasts --skipSelfAssignments --skipSelfComparisons'
+  DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes --calculateRepeats' # Auto-optimization
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 1 --disjoint 1'
-  DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 0 --verification 0'
+  DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0'
 
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):
@@ -32,7 +32,9 @@ class cfg:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -DNDEBUG'
   else:
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer'
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto  -march=native -ftracer -DNDEBUG -finline-limit=100'
+    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++17 -Og -pg -march=native -ftracer'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer -DNDEBUG'
+    # -finline-limit=100
 
 class util:
   RESET = "\033[0m"

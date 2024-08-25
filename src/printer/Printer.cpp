@@ -56,6 +56,8 @@ void Printer::initializeSourceFile()
 {
     sourceFile_ << "#include \"reasoner.hpp\"" << std::endl;
     sourceFile_ << std::endl;
+    sourceFile_ << "#include <sstream>" << std::endl;
+    sourceFile_ << std::endl;
     sourceFile_ << "namespace reasoner {" << std::endl;
 }
 

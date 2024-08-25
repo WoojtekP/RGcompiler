@@ -107,6 +107,7 @@ private:
     //void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
+    void generateGetStateDescription();
     void generateVoidStateOptimizedFunction(
         const std::string &state,
         const std::unique_ptr<Function> &function,

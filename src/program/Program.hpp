@@ -258,11 +258,33 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
-class RangeLoopInstruction : public IInstruction
+class ILoopInstruction : public IInstruction
 {
-    const std::string variableName_;
-    std::vector<std::string> range_;
+protected:
     std::vector<std::unique_ptr<IInstruction>> instructions_;
+
+public:
+    virtual ~ILoopInstruction() = default;
+
+    void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+};
+
+class IterLoopInstruction : public ILoopInstruction
+{
+    std::string variableName_;
+    const std::string lowerBound_;
+    const std::string upperBound_;
+
+public:
+    IterLoopInstruction(const std::string &variableName, const std::string &lowerBound, const std::string &upperBound);
+
+    std::string toString(int delimiter, int shift, bool semicolon) override;
+};
+
+class RangeLoopInstruction : public ILoopInstruction
+{
+    std::string variableName_;
+    std::vector<std::string> range_;
 
 public:
     RangeLoopInstruction(const std::string &variableName);

@@ -6,6 +6,7 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 parser = argparse.ArgumentParser(description='Run predefined validation tests for given games.')
 parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
+parser.add_argument('-q', '--quiet', action='store_true', help='suppress g++ warnings')
 
 args = parser.parse_args()
 games = args.game
@@ -106,9 +107,10 @@ for game in games:
   else:
     info = f'{util.OK}'
   printResult(info, elapsedTime)
-  errOutput = decodeOutput(result.stderr).strip()
-  if errOutput != "":
-    print(f'{util.CYAN}{errOutput}{util.RESET}')
+  if not args.quiet:
+    errOutput = decodeOutput(result.stderr).strip()
+    if errOutput != "":
+      print(f'{util.CYAN}{errOutput}{util.RESET}')
   if result.returncode != 0: continue
 
   isOK = True

@@ -51,7 +51,6 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
-, game_(options.game_)
 , mainCacheName_("rgCache")
 , mainCacheType_("RgCache")
 , containerChooser_(mainCacheType_)
@@ -132,7 +131,7 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_, game_);
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_);
 }
 
 void Compiler::initializePragmas()

@@ -3,6 +3,8 @@
 #include <string>
 
 #include <compiler/graphOperations/BaseOperator.hpp>
+const std::string pragmaSimpleApply = "SimpleApply";
+const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 
 struct SimpleApplySwitchTreeNode
 {
@@ -43,6 +45,8 @@ private:
     std::vector<std::string> convertTagsToFullTags(
         const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData) const;
     void updateStateForData(const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData);
+    void parsePragma(const Parser& parser, const std::string& pragmaName);
+    void parseItem(const nlohmann::json& item, bool isExhaustive);
 
     std::set<std::string> exhaustiveNodeNames_;
     std::set<std::string> simpeApplyNodeNames_;
@@ -51,17 +55,7 @@ private:
 
 public:
     PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph);
-    void init(const Parser& parser, int gameFlag = 0);
-    // temporary init for tests till we have proper jsons structure
-    void init(const std::vector<ParsedSingleSimpleApplyData>& parsedSingleSimpleApplyDataVec)
-    {
-        std::set<std::string> mainNodeNames;
-        for (const auto& parsedSingleSimpleApplyData : parsedSingleSimpleApplyDataVec)
-        {
-            mainNodeNames_.insert(parsedSingleSimpleApplyData.nodeName_);
-            updateStateForData(parsedSingleSimpleApplyData);
-        }
-    }
+    void init(const Parser& parser);
     const std::shared_ptr<SimpleApplySwitchTreeNode>& getActionListToTags(const std::shared_ptr<Node>& node) const;
     const std::vector<EdgeId>& getActionListToPlayerChange(const std::shared_ptr<Node>& node) const;
     bool isSimpleApply(const std::string& nodeName) const;

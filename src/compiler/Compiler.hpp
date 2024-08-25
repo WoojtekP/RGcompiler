@@ -17,7 +17,6 @@ struct Options
     bool preserveOriginalNames_;
     bool verification_;
     bool pragmaDisjointEnabled_;
-    int game_;
 };
 
 class Compiler
@@ -161,7 +160,6 @@ private:
     const bool verification_;
     const bool optConditionsSimplePathCompression_;
     const bool optNoCycleDetection_;
-    int game_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;

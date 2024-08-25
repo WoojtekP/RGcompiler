@@ -42,86 +42,51 @@ const std::vector<PragmaSimpleApplyOperator::EdgeId>& PragmaSimpleApplyOperator:
     return mapOfListOfEdgesToPlayerChangeFromNode_.at(node->getName());
 }
 
-void PragmaSimpleApplyOperator::init(const Parser& parser, int gameFlag)
+void PragmaSimpleApplyOperator::parseItem(const nlohmann::json& item, bool isExhaustive)
 {
-    // for (const auto& pragma : parser.getPragmas("SimpleApply"))
-    // {
-    //     for (const auto& edge : pragma["edgeNames"])
-    //     {
-    //         simpeApplyNodeNames_.insert(Node(edge["parts"]).toString());
-    //     }
-    // }
-
-    // for (const auto& [edge, iid] : graph_->getAllEdges())
-    // {
-    //     if (!simpeApplyNodeNames_.count(edge->getLeftNode()->getName()) &&
-    //         simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
-    //     {
-    //         mainNodeNames_.insert(edge->getRightNode()->getName());
-    //     }
-    //     else if (simpeApplyNodeNames_.count(edge->getRightNode()->getName()))
-    //     {
-    //         for (const auto& action : edge->getActions())
-    //         {
-    //             if (action->getType() == ActionType::Tag ||
-    //                 (action->getType() == ActionType::Assignment && action->getLeftSide() == "player"))
-    //             {
-    //                 mainNodeNames_.insert(edge->getRightNode()->getName());
-    //                 break;
-    //             }
-    //         }
-    //     }
-    // }
-
-    //parsing should be done here, but we dont know yet how file to be parsed should looks like
-
-    if (gameFlag == 1)
+    std::string nodeName = item["node"]["parts"][0]["identifier"];
+    if (item["node"]["parts"].size() == 2)
     {
-        ParsedSingleSimpleApplyData d1("chooseX", {"chooseX__bind__coordX", "chooseY"}, {"coordX"});
-        ParsedSingleSimpleApplyData d2("chooseY", {"chooseY__bind__coordY", "check"}, {"coordY"});
-        ParsedSingleSimpleApplyData d3("check", {"set", "endmove", "checkwin"});
-        updateStateForData(d1);
-        updateStateForData(d2);
-        updateStateForData(d3);
-        mainNodeNames_.insert("chooseX");
-        mainNodeNames_.insert("chooseY");
-        mainNodeNames_.insert("check");
-
-        exhaustiveNodeNames_.insert("chooseX");
-        exhaustiveNodeNames_.insert("chooseY");
-        exhaustiveNodeNames_.insert("check");
+        // TO FIX - building names with binding shouldnt be made here
+        nodeName += "__bind__" + static_cast<std::string>(item["node"]["parts"][1]["identifier"]);
     }
-    else if (gameFlag == 2)
+    std::vector<std::string> tags;
+    for (auto tag : item["tags"])
     {
-        ParsedSingleSimpleApplyData d1(
-            "selectPos",
-            {"selectedPos__bind__position",
-             "setPos__bind__position",
-             "setFinished",
-             "checkOwn",
-             "forward",
-             "selectDirection"},
-            {"position"});
-        ParsedSingleSimpleApplyData d2("selectDirection", {"directionForward", "moved"}, {"F"});
-        ParsedSingleSimpleApplyData d3(
-            "selectDirection", {"directionLeft", "directionLeftChecked", "directionOK", "moved"}, {"L"});
-        ParsedSingleSimpleApplyData d4(
-            "selectDirection", {"directionRight", "directionRightChecked", "directionOK", "moved"}, {"R"});
-        ParsedSingleSimpleApplyData d5("moved", {"done", "wincheck"});
-        updateStateForData(d1);
-        updateStateForData(d2);
-        updateStateForData(d3);
-        updateStateForData(d4);
-        updateStateForData(d5);
-
-        mainNodeNames_.insert("selectPos");
-        mainNodeNames_.insert("selectDirection");
-        mainNodeNames_.insert("moved");
-
-        exhaustiveNodeNames_.insert("selectPos");
-        exhaustiveNodeNames_.insert("selectDirection");
-        exhaustiveNodeNames_.insert("moved");
+        tags.push_back(tag);
     }
+    std::vector<std::string> nodes;
+    for (auto node : item["nodes"])
+    {
+        std::string innerNodeName = node["parts"][0]["identifier"];
+        if (node["parts"].size() == 2)
+        {
+            // TO FIX - building names with binding shouldnt be made here
+            innerNodeName += "__bind__" + static_cast<std::string>(node["parts"][1]["identifier"]);
+        }
+        nodes.push_back(innerNodeName);
+    }
+
+    updateStateForData({nodeName, nodes, tags});
+
+    mainNodeNames_.insert(nodeName);
+
+    if (isExhaustive)
+        exhaustiveNodeNames_.insert(nodeName);
+}
+
+void PragmaSimpleApplyOperator::parsePragma(const Parser& parser, const std::string& pragmaName)
+{
+    for (const auto& pragma : parser.getPragmas(pragmaName))
+    {
+        parseItem(pragma, pragmaName == pragmaSimpleApplyExhaustive);
+    }
+}
+
+void PragmaSimpleApplyOperator::init(const Parser& parser)
+{
+    parsePragma(parser, pragmaSimpleApply);
+    parsePragma(parser, pragmaSimpleApplyExhaustive);
 }
 
 std::vector<std::string> PragmaSimpleApplyOperator::convertTagsToFullTags(
@@ -130,6 +95,7 @@ std::vector<std::string> PragmaSimpleApplyOperator::convertTagsToFullTags(
     std::vector<std::string> fullTags(parsedSingleSimpleApplyData.tagNames_.size());
     int cnt = 0;
     std::string lastNodeName = parsedSingleSimpleApplyData.nodeName_;
+
     for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
         assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
@@ -151,6 +117,7 @@ std::vector<std::string> PragmaSimpleApplyOperator::convertTagsToFullTags(
         }
         lastNodeName = currentNodeName;
     }
+
     return fullTags;
 }
 
@@ -171,6 +138,7 @@ void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApply
     for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
         assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
+
         edges.push_back(graph_->getEdgeId(lastNodeName, currentNodeName, 0));
         lastNodeName = currentNodeName;
     }

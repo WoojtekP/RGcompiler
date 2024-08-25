@@ -50,10 +50,23 @@ private:
         int iid,
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
-    std::unique_ptr<BlockInstruction> getAssignments(const std::vector<int> &edges, int commonPrefixSize = 0) const;
+    std::unique_ptr<BlockInstruction> getAssignments(
+        const std::vector<int> &edges,
+        const std::shared_ptr<Graph> &graph,
+        const std::string &currentTagFromVector = "",
+        const std::string &fullTagName = "",
+        const std::string &minVal = "",
+        int commonPrefixSize = 0) const;
+    std::unique_ptr<BlockInstruction> makeSwitchForTags(
+        const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
+        int depth,
+        bool isExhaustive,
+        int minVal = 0,
+        const std::string &fullTagName = "");
+
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
-        const std::vector<int> &edges, int commonPrefixSize = 0) const;
-    int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
+        const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
+    //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -62,7 +75,9 @@ private:
         bool addReturn = false,
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
-        const PairListOfActionsToTagAndListOfActionsToPlayer &listOfActions);
+        const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
+        const std::vector<int> &listOfActionsToPlayerChange,
+        bool isExhaustive);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,
@@ -133,6 +148,7 @@ private:
     const Parser &parser_;
     ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
+    std::shared_ptr<Graph> unoptimizedGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;

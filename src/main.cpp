@@ -36,8 +36,7 @@ int main(const int argc, const char **argv)
             "Disable detecting cycles in patterns")(
             "disjoint",
             boost::program_options::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
-            "Is pragma disjoint enabled")(
-            "game", boost::program_options::value<int>(&options.game_)->default_value(0), "Simple apply game");
+            "Is pragma disjoint enabled");
 
         boost::program_options::variables_map vm;
         boost::program_options::store(boost::program_options::parse_command_line(argc, argv, mainOptions), vm);

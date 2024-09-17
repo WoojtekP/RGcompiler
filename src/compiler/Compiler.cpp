@@ -490,8 +490,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         }
         data.pop_back();
         program_.addVariableDeclaration(std::make_unique<Variable>(
-            "state_cache_" + nodeName,
-            std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
+            "state_cache_" + nodeName, std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
     }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
@@ -1244,6 +1243,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
     assert(nodes.size() == baseActions.size());
     nodes.push_back(edge->getRightNode());
+    if (baseActions.back()->getType() == ActionType::Assignment && baseActions.back()->getLeftSide() == "player")
+    {
+        // last action was erased in prepareBaseInstructions call, therefore we need to adjust set of nodes
+        nodes.pop_back();
+    }
     std::reverse(nodes.begin(), nodes.end());
     auto nodeIt = nodes.begin();
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
@@ -1311,8 +1315,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 // }
                 // else
                 // {
-                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
+                ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
                 // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
@@ -1372,12 +1376,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
         // if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
         // {
-            const LoopFactory loopFactory(parser_, valueAssigner_);
-            auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
-            loopInstruction->addInstruction(std::move(blockInstruction));
-            auto result = std::make_unique<BlockInstruction>();
-            result->pushInstructionBack(std::move(loopInstruction));
-            return result;
+        const LoopFactory loopFactory(parser_, valueAssigner_);
+        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
+        loopInstruction->addInstruction(std::move(blockInstruction));
+        auto result = std::make_unique<BlockInstruction>();
+        result->pushInstructionBack(std::move(loopInstruction));
+        return result;
         // }
     }
 

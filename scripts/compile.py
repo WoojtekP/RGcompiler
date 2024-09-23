@@ -6,10 +6,12 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 parser = argparse.ArgumentParser(description='Compile a game to C++ reasoner.')
 parser.add_argument('game', nargs=1, help='game file')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
+parser.add_argument('-c', dest='compileOptions', nargs='?', help='compile options for rg2cpp', default=cfg.DEFAULT_RG2CPP_OPTIONS)
 
 args = parser.parse_args()
 game = args.game[0]
 translateOptions = args.translateOptions
+compileOptions = args.compileOptions
 
 if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
   print(f'There is no file {cfg.RG_DIR}/examples/{game}', file=sys.stderr)
@@ -17,7 +19,7 @@ if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
 
 game_basename = args.game[0].split('.')[0]
 
-print(f'Compiling {game} with translate options "{translateOptions}"')
+print(f'Preparing {game} with options "{translateOptions}"')
 
 run("mkdir -p "+cfg.BUILD_TEST_DIR)
 run("cp defaultMap.hpp "+cfg.BUILD_TEST_DIR+"/defaultMap.hpp")
@@ -34,6 +36,7 @@ elapsedTime = time.time() - startTime
 print(FORMATTER.format("ast:",elapsedTime))
 
 # Generate cpp files
+print(f'Compiling {game} with options "{compileOptions}"')
 startTime = time.time()
 os.chdir(cfg.BUILD_TEST_DIR)
 run(f'../{cfg.BUILD_DIR}/src/rg2cpp --file {game_basename}-ast.json {cfg.DEFAULT_RG2CPP_OPTIONS} {cfg.DEBUG_RG2CPP_OPTIONS}')

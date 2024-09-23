@@ -22,7 +22,8 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--compactSkipEdges --reuseFunctions --normalizeTypes --addExplicitCasts --skipSelfAssignments --skipSelfComparisons'
-  DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes --calculateRepeats' # Auto-optimization
+  DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes --calculateRepeats --calculateDisjoints' # Auto-optimization
+  #DEFAULT_TRANSLATE_OPTIONS += ' --calculateUniques --calculateTagIndexes --calculateRepeats --calculateDisjoints --calculateSimpleApply' # Auto-optimization
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 1 --disjoint 1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0'
 
@@ -33,7 +34,7 @@ class cfg:
   else:
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer'
     GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++17 -Og -pg -march=native -ftracer'
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer -DNDEBUG'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     # -finline-limit=100
 
 class util:

@@ -91,7 +91,8 @@ private:
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
         int iid,
-        int edgeIdx);
+        int edgeIdx,
+        const std::string &functionType);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,
@@ -170,4 +171,5 @@ private:
     std::set<std::string> pragmaSimpleApplyData_;
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
+    std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
 };

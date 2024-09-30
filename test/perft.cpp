@@ -22,11 +22,12 @@ void exitWithError(const reasoner::GameState &state, const std::string msg)
 
 void keeperCompletion(reasoner::GameState &state, const uint depth) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
-    state.getAllMoves(moves[depth], cache);
-    #ifndef NDEBUG
-      if (moves[depth].size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
-    #endif
-    state.applyMove(moves[depth][0], cache);
+    //state.getAllMoves(moves[depth], cache);
+    //#ifndef NDEBUG
+      //if (moves[depth].size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves[depth].size()) + " moves in keeperCompletion");
+    //#endif
+    //state.applyMove(moves[depth][0], cache);
+    state.applyAnyMove(cache);
   }
 }
 

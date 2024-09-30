@@ -21,17 +21,17 @@ void exitWithError(const reasoner::GameState &state, const std::string msg)
   std::cerr << state.getStateDescription();
   exit(2);
 }
+reasoner::Move EMPTY_MOVE;
 
 bool keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper) {
     if (state.isTerminal()) return false;
-    state.getAllMoves(moves, cache);
-    #ifndef NDEBUG
-      if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
-    #endif
-    state.applyMove(moves[0], cache);
-
-    //state.applyAnyMove(cache);
+    //state.getAllMoves(moves, cache);
+    //#ifndef NDEBUG
+      //if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+    //#endif
+    //state.applyMove(EMPTY_MOVE, cache);
+    state.applyAnyMove(cache);
   }
   return true;
 }

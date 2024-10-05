@@ -649,8 +649,13 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             bool disjointExhaustive =
                 graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isExhaustive(state);
             int cnt = 0;
+            std::set<std::string> visited;
             for (const auto& nodeName : vectorOfNodeNames)
             {
+                if (!visited.insert(nodeName).second)
+                {
+                    continue;
+                }
                 for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
                 {
                     if (nodeInThisEdge(outgoingEdge, nodeName))

@@ -53,7 +53,7 @@ resMaxMoves = int(stats[5])
 stats = stats[6:]
 resAvgScores = []
 for p in range(len(stats)): resAvgScores.append(int(stats[p]) / sims)
-print(f'states: {resStates}  ({resStates / elapsedTime:9,.3f} states/s)')
+print(f'states: {resStates}  ({resStates / elapsedTime:9,.3f} states/s; {sims / elapsedTime:9,.3f} sims/s)')
 print(f'depth: min {resMinDepth} avg {resAvgDepth:1.2f} max {resMaxDepth}')
 print(f'scores: avg {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}')
 

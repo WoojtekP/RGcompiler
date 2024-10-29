@@ -4,6 +4,8 @@
 using uint = unsigned int;
 using ulong = unsigned long;
 
+#define KEEPER_APPLY_ANY_MOVE 1
+
 fast_random::GenDefault randomGenerator(1);
 
 reasoner::GameState initial;
@@ -26,12 +28,15 @@ reasoner::Move EMPTY_MOVE;
 bool keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() == reasoner::keeper) {
     if (state.isTerminal()) return false;
-    //state.getAllMoves(moves, cache);
-    //#ifndef NDEBUG
-      //if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
-    //#endif
-    //state.applyMove(EMPTY_MOVE, cache);
-    state.applyAnyMove(cache);
+    if constexpr(KEEPER_APPLY_ANY_MOVE) {
+      state.applyAnyMove(cache);
+    } else {
+      state.getAllMoves(moves, cache);
+      #ifndef NDEBUG
+        if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+      #endif
+      state.applyMove(EMPTY_MOVE, cache);
+    }
   }
   return true;
 }

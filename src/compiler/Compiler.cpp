@@ -260,10 +260,10 @@ void Compiler::initializePatternGraphs(
                 graphOperatorManager_->getOperator<GetVariableOperator>(graph)->getVariables();
             const auto& variables = variablesInPatternGraphs_.at({from, to, patternId});
             std::vector<std::pair<std::string, int>> variableAndDomain;
-            for (const auto& name : variables)
-            {
-                variableAndDomain.emplace_back(std::make_pair(name, getDomain(name)));
-            }
+            // for (const auto& name : variables)
+            // {
+            //     variableAndDomain.emplace_back(std::make_pair(name, getDomain(name)));
+            // }
             containerChooser_.add({from, to, patternId}, variableAndDomain, graph_->getMaximalNodeId());
         }
     }
@@ -671,8 +671,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 }
             }
 
-            // In case if somone put illegal description of disjoin
-            assert(vectorOfNodeNames.size() == cnt);
+            // In case if somone put illegal description of disjoint
+            // assert(vectorOfNodeNames.size() == cnt);
         }
         else if (
             applyMode && graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)

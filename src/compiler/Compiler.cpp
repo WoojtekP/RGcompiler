@@ -84,6 +84,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
 , verification_(options.verification_)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
+, optGccInline_(options.gccInline_)
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
 , mainCacheName_("rgCache")
@@ -409,7 +410,7 @@ std::string Compiler::getTypeForVariable(const std::string& variableName)
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
-    std::unique_ptr<Function> function = std::make_unique<Function>("operator==", "bool", true, true);
+    std::unique_ptr<Function> function = std::make_unique<Function>("operator==", "bool", "", true, true);
 
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("gs", "const GameState&"));
 
@@ -568,7 +569,13 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         {
             functionType = "bool";
         }
-        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, functionType);
+
+        std::string attribiutes;
+        if (optGccInline_ && pragmaUniqueData_.count(state))
+        {
+            attribiutes += "__attribute__((always_inline))inline";
+        }
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, functionType, attribiutes);
 
         // if (const auto& optBinding = node->getBinding())
         // {
@@ -1571,7 +1578,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 {
-    auto function = std::make_unique<Function>("getFromStateForEdge", "int", false);
+    auto function = std::make_unique<Function>("getFromStateForEdge", "int", "", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
 
     auto sw = std::make_unique<SwitchInstruction>("val");
@@ -1610,7 +1617,7 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 
 void Compiler::generateGetStateDescription()
 {
-    auto function = std::make_unique<Function>("getStateDescription", "std::string", true, true);
+    auto function = std::make_unique<Function>("getStateDescription", "std::string", "", true, true);
     function->addInstruction(std::make_unique<VariableDeclarationInstruction>("ss", "std::stringstream"));
 
     for (const auto& var : program_.getVariables())
@@ -1708,7 +1715,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
         prefix = "apply_state_";
     }
 
-    auto function = std::make_unique<Function>(functionName, "void", false);
+    auto function = std::make_unique<Function>(functionName, "void", "", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
 
     if (applyMode)
@@ -1789,21 +1796,21 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     generateGetFromStateForEdge(graph);
     generateGetStateDescription();
 
-    auto isTerminal = std::make_unique<Function>("isTerminal", "bool", true);
+    auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true);
     isTerminal->addInstruction(
         std::make_unique<ReturnInstruction>("currentState == " + std::to_string(graph->getNodeId("end"))));
 
-    auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", true);
+    auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", "", true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
     getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player - 1]"));
 
-    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrKeeper", true);
+    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrKeeper", "", true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
 
-    auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", true);
+    auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", "", true);
     getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("std::to_string(currentState)"));
 
-    auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", true);
+    auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", "", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
@@ -1822,7 +1829,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
         clearingCaches + "moves.clear();\nmove_representation mr;\nrunState(currentState, moves,mr," + mainCacheName_ +
         ")"));
 
-    auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", true);
+    auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
     for (const auto& nodeAndVariables : pragmaRepeatData_)
@@ -1848,7 +1855,7 @@ void Compiler::generateApplyAnyMove()
 {
     generatePatternFunctions(applyAnyMoveGraphs_, 2);
 
-    auto function = std::make_unique<Function>("applyAnyMove", "bool", true);
+    auto function = std::make_unique<Function>("applyAnyMove", "bool", "", true);
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 

@@ -312,11 +312,17 @@ class Function : public IInstruction
     bool isConst_;
     std::string name_;
     std::string returnType_;
+    std::string attribiutes_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
     std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
 
 public:
-    Function(std::string name, std::string returnType, bool isPublic = false, bool isConst = false);
+    Function(
+        std::string name,
+        std::string returnType,
+        std::string attribiutes = "",
+        bool isPublic = false,
+        bool isConst = false);
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);

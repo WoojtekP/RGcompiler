@@ -258,8 +258,11 @@ void ILoopInstruction::addInstruction(std::unique_ptr<IInstruction> &&instructio
 }
 
 IterLoopInstruction::IterLoopInstruction(
-    const std::string& variableName, const std::string& lowerBound, const std::string& upperBound)
-: variableName_(variableName), lowerBound_(lowerBound), upperBound_(upperBound) {}
+    const std::string &variableName, const std::string &lowerBound, const std::string &upperBound)
+: variableName_(variableName)
+, lowerBound_(lowerBound)
+, upperBound_(upperBound)
+{}
 
 std::string IterLoopInstruction::toString(int delimiter, int shift, bool semicolon)
 {
@@ -268,7 +271,7 @@ std::string IterLoopInstruction::toString(int delimiter, int shift, bool semicol
     result += variableName_ + " <= " + upperBound_ + "; ";
     result += "++" + variableName_ + ")\n";
     result += getLeadingSpaces(delimiter) + "{\n";
-    for (const auto& instruction : instructions_)
+    for (const auto &instruction : instructions_)
     {
         result += instruction->toString(shift, shift, semicolon);
     }
@@ -354,9 +357,10 @@ std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon
     return addSpacesAndSemicolon(delimiter, semicolon, instruction_);
 }
 
-Function::Function(std::string name, std::string returnType, bool isPublic, bool isConst)
+Function::Function(std::string name, std::string returnType, std::string attribiutes, bool isPublic, bool isConst)
 : name_(name)
 , returnType_(returnType)
+, attribiutes_(attribiutes)
 , isPublic_(isPublic)
 , isConst_(isConst)
 {}
@@ -379,7 +383,8 @@ bool Function::isPublic()
 std::string Function::declarationToString()
 {
     std::string argumentsList = getArgumentsList();
-    return returnType_ + " " + name_ + "(" + argumentsList + ")" + (isConst_ ? "const" : "") + ";";
+    return (attribiutes_.empty() ? attribiutes_ : attribiutes_ + " ") + returnType_ + " " + name_ + "(" +
+           argumentsList + ")" + (isConst_ ? "const" : "") + ";";
 }
 
 std::string Function::getName()

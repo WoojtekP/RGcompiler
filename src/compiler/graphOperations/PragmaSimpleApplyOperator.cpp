@@ -51,12 +51,12 @@ void PragmaSimpleApplyOperator::parseItem(const nlohmann::json& item, bool isExh
         nodeName += "__bind__" + static_cast<std::string>(item["node"]["parts"][1]["identifier"]);
     }
     std::vector<std::string> tags;
-    for (auto tag : item["tags"])
+    for (const auto& tag : item["tags"])
     {
         tags.push_back(tag);
     }
     std::vector<std::string> nodes;
-    for (auto node : item["nodes"])
+    for (const auto& node : item["nodes"])
     {
         std::string innerNodeName = node["parts"][0]["identifier"];
         if (node["parts"].size() == 2)
@@ -79,6 +79,8 @@ void PragmaSimpleApplyOperator::parsePragma(const Parser& parser, const std::str
 {
     for (const auto& pragma : parser.getPragmas(pragmaName))
     {
+        std::cout << mapOfSimpleApplySwitchTreeNodeFromNode_.size() << "\n";
+
         parseItem(pragma, pragmaName == pragmaSimpleApplyExhaustive);
     }
 }
@@ -92,28 +94,45 @@ void PragmaSimpleApplyOperator::init(const Parser& parser)
 std::vector<std::string> PragmaSimpleApplyOperator::convertTagsToFullTags(
     const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData) const
 {
+    std::cout << "Tags: \n";
+
+    for (auto tag : parsedSingleSimpleApplyData.tagNames_)
+    {
+        std::cout << tag << ", ";
+    }
+    std::cout << "\n\n";
     std::vector<std::string> fullTags(parsedSingleSimpleApplyData.tagNames_.size());
+    std::cout << fullTags.size() << " * "
+              << "\n";
     int cnt = 0;
     std::string lastNodeName = parsedSingleSimpleApplyData.nodeName_;
 
     for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
         assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
+        if (cnt == parsedSingleSimpleApplyData.tagNames_.size())
+        {
+            break;
+        }
         const auto& edge = graph_->getEdge(graph_->getEdgeId(lastNodeName, currentNodeName, 0));
         if (edge->getLeftNode()->getBinding() &&
             edge->getLeftNode()->getBinding()->getVariableName() == parsedSingleSimpleApplyData.tagNames_[cnt])
         {
             fullTags[cnt++] = edge->getLeftNode()->getBinding()->toTagStringId();
+            std::cout << "xd1 " << fullTags[cnt - 1] << "\n";
         }
         else if (
             edge->getRightNode()->getBinding() &&
             edge->getRightNode()->getBinding()->getVariableName() == parsedSingleSimpleApplyData.tagNames_[cnt])
         {
             fullTags[cnt++] = edge->getRightNode()->getBinding()->toTagStringId();
+            std::cout << "xd2 " << fullTags[cnt - 1] << "\n";
         }
         else if (auto edgeTag = edgeHasTag(edge))
         {
-            fullTags[cnt++] = *edgeTag;
+            if (*edgeTag == parsedSingleSimpleApplyData.tagNames_[cnt])
+                fullTags[cnt++] = *edgeTag;
+            std::cout << "xd " << fullTags[cnt - 1] << "\n";
         }
         lastNodeName = currentNodeName;
     }

@@ -1,8 +1,10 @@
 #pragma once
+#include <iostream>
 #include <set>
 #include <string>
 
 #include <compiler/graphOperations/BaseOperator.hpp>
+
 const std::string pragmaSimpleApply = "SimpleApply";
 const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 
@@ -12,7 +14,17 @@ struct SimpleApplySwitchTreeNode
     std::vector<int> listOfEdges_;
     bool empty() const { return children_.empty() && listOfEdges_.empty(); }
     void insert(const std::vector<std::string>& tags, const std::vector<int>& edges, int currTagPos);
-    void insert(const std::vector<std::string>& tags, const std::vector<int>& edges) { insert(tags, edges, 0); }
+    void insert(const std::vector<std::string>& tags, const std::vector<int>& edges)
+    {
+        std::cout << "Insert: "
+                  << "\n";
+        for (auto xd : tags)
+        {
+            std::cout << xd << ", ";
+        }
+        std::cout << "\n\n";
+        insert(tags, edges, 0);
+    }
 };
 
 class PragmaSimpleApplyOperator : public BaseOperator

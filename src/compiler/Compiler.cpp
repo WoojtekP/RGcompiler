@@ -634,7 +634,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             }
 
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(true, cacheName + ".insert(" + cacheData + ").second"));
+                std::make_unique<ComparisonInstruction>(
+                    cacheName + ".insert(" + cacheData + ").second", ComparisonType::Neg));
             if (applyMode)
             {
                 ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -884,7 +885,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     if (!listOfActionsToTags->empty())
     {
         std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-            std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
+            std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Gr));
 
         // const std::string actionVariable = "currentAction";
         // ifInstruction->addInstruction(
@@ -921,7 +922,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     if (!listOfActionsToPlayerChange.empty())
     {
         // std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        //    std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) == currentMrId"));
+        //    std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Eq));
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
             getAssignments(listOfActionsToPlayerChange, unoptimizedGraph_);
         int lastEdgeId = listOfActionsToPlayerChange.back();
@@ -952,7 +953,7 @@ void Compiler::generateVoidStateOptimizedFunction(
         {
             const std::string shouldCheckVarName = "should_check_" + outgoingEdge->toName();
             std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, shouldCheckVarName));
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(shouldCheckVarName));
             ifInstruction->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
             function->addInstruction(std::move(ifInstruction));
         }
@@ -1026,7 +1027,7 @@ void Compiler::generateBoolStateFunctions(
                 }
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        true, "cache.insert(std::make_tuple(*this, mr, " + nodeId + ")).second"));
+                        "cache.insert(std::make_tuple(*this, mr, " + nodeId + ")).second", ComparisonType::Neg));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
 
                 function->addInstruction(std::move(ifInstruction));
@@ -1034,7 +1035,6 @@ void Compiler::generateBoolStateFunctions(
             }
             // std::unique_ptr<IfInstruction> checkCache =
             //     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-            //         false,
             //         cacheName + ".count(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
             // //containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
             // checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -1130,8 +1130,9 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
             std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
     }
 
+    const auto cmpType = action->getNegated() ? ComparisonType::Neg : ComparisonType::None;
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        std::make_unique<ComparisonInstruction>(action->getNegated(), functionName + "(" + functionArguments + ")"));
+        std::make_unique<ComparisonInstruction>(functionName + "(" + functionArguments + ")", cmpType));
 
     ifInstruction->addInstruction(std::move(blockInstruction));
     if (returnInstruction)
@@ -1168,9 +1169,9 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        true,
                         "verificationCache.insert(std::make_pair(mr," + std::to_string(graph->getNodeId(stateTo)) +
-                            ")).second"));
+                            ")).second",
+                        ComparisonType::Neg));
                 ifInstruction->addInstruction(std::make_unique<CustomInstruction>("abort()"));
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
@@ -1224,7 +1225,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        false, stateName + functionName + "(" + stateFunctionArguments + ")"));
+                        stateName + functionName + "(" + stateFunctionArguments + ")"));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
@@ -1295,9 +1296,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
+            const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    action->getNegated(), action->getLeftSide(), action->getRightSide()));
+                    action->getLeftSide(), action->getRightSide(), cmpType));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
 
@@ -1330,7 +1332,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 //     const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
                 //     const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
                 //     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                //         false, "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
+                //         "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
                 //     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
                 //         binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
@@ -1338,7 +1340,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 // else
                 // {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false, "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
+                    "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
                 // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
@@ -1450,7 +1452,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         name = stateTo;
     }
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        std::make_unique<ComparisonInstruction>(false, prefix + name + "(" + functionArguments + ")"));
+        std::make_unique<ComparisonInstruction>(prefix + name + "(" + functionArguments + ")"));
 
     if (patternId == 0)
     {
@@ -1523,9 +1525,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
+            const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    action->getNegated(), action->getLeftSide(), action->getRightSide()));
+                    action->getLeftSide(), action->getRightSide(), cmpType));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
@@ -1914,7 +1917,7 @@ void Compiler::generateApplyAnyMove()
             }
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    false, "is_legal_any2_" + functionName + "(" + functionArguments + ")"));
+                    "is_legal_any2_" + functionName + "(" + functionArguments + ")"));
             ifInstruction->addInstruction(
                 std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));

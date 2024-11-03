@@ -199,16 +199,29 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon);
 };
 
+enum class ComparisonType
+{
+    None,
+    Neg,
+    Eq,
+    Neq,
+    Gr,
+    Ge,
+    Less,
+    Leq,
+};
+
+std::string cmpToString(const ComparisonType cmpType);
+
 class ComparisonInstruction : public IInstruction
 {
     std::string left_;
     std::string right_;
-    bool negated_;
-    bool onlyLeftSide_;
+    ComparisonType cmpType_;
 
 public:
-    ComparisonInstruction(bool negated, const std::string &left);
-    ComparisonInstruction(bool negated, const std::string &left, const std::string &right);
+    ComparisonInstruction(const std::string &expr, ComparisonType cmp = ComparisonType::None);
+    ComparisonInstruction(const std::string &left, const std::string &right, ComparisonType cmp = ComparisonType::Eq);
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };

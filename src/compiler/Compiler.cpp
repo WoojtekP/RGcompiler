@@ -2,6 +2,8 @@
 #include <iostream>
 
 #include <compiler/Compiler.hpp>
+#include <compiler/stateCache/IStateCache.hpp>
+#include <compiler/stateCache/StateCacheFactory.hpp>
 #include <parser/Parser.hpp>
 #include <printer/Printer.hpp>
 #include <program/LoopFactory.hpp>
@@ -75,6 +77,18 @@ std::string formatValueForPrinting(
         return varIdentifier;
     }
 }
+
+void addReturnInstruction(const std::unique_ptr<IfInstruction>& ifInstruction, const bool isBoolFunction)
+{
+    if (isBoolFunction)
+    {
+        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+    }
+    else
+    {
+        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
+    }
+}
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
@@ -97,6 +111,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
     initializeGraph();
     valueAssigner_.assignValuesForTags(graph_->getAllEdges());
     initializePragmas();
+    generateStateCaches();
 }
 
 void Compiler::compile()
@@ -189,6 +204,15 @@ void Compiler::initializePragmas()
     initializePragmaUnique();
     initializePragmaRepeat();
     initializePragmaSimpleApply();
+}
+
+void Compiler::generateStateCaches()
+{
+    StateCacheFactory factory(parser_, valueAssigner_);
+    for (const auto& [nodeName, variables] : pragmaRepeatData_)
+    {
+        stateToCache_.emplace(nodeName, std::move(factory.createStateCache(nodeName, variables)));
+    }
 }
 
 void Compiler::initializeGraph()
@@ -464,6 +488,13 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
+    auto currentCacheDepthType = std::make_shared<CustomType>("int");
+    auto currentCacheDepthValue = std::make_unique<SingleValue>("0");
+    program_.addVariableDeclaration(
+        std::make_unique<Variable>("currentCacheDepth",
+        std::move(currentCacheDepthType),
+        std::move(currentCacheDepthValue)));
+
     auto currentMrIdType = std::make_shared<CustomType>("int");
     auto currentMrIdValue = std::make_unique<SingleValue>("0");
     program_.addVariableDeclaration(
@@ -491,16 +522,10 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 
-    for (const auto& [nodeName, variables] : pragmaRepeatData_)
+    for (const auto& [_, cache] : stateToCache_)
     {
-        std::string data;
-        for (const auto variable : variables)
-        {
-            data += getTypeForVariable(variable) + ",";
-        }
-        data.pop_back();
         program_.addVariableDeclaration(std::make_unique<Variable>(
-            "state_cache_" + nodeName, std::make_unique<ElementaryType>("std::set<std::tuple<" + data + ">>")));
+            cache->getCacheName(), std::make_unique<CustomType>("std::vector<" + cache->getCacheType() + ">")));
     }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
@@ -606,47 +631,42 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (pragmaRepeatData_.count(state) || (!applyMode && !pragmaUniqueData_.count(node->getName())))
+        if (pragmaRepeatData_.count(state))
         {
-            std::string cacheName, cacheData;
+            const auto stateCache = getStateCacheSafe(state);
+            auto extendStateInstr = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(
+                    "static_cast<int>(" + stateCache->getCacheName() + ".size())",
+                    "currentCacheDepth",
+                    ComparisonType::Leq));
+            extendStateInstr->addInstruction(std::make_unique<CustomInstruction>(
+                stateCache->getCacheName() + ".resize(currentCacheDepth + 1)"));
+            function->addInstruction(std::move(extendStateInstr));
 
-            if (pragmaRepeatData_.count(state))
-            {
-                cacheName = "state_cache_" + state;
-                cacheData = "std::make_tuple(";
+            const auto testInstruction = stateCache->getTestInstruction();
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(testInstruction, ComparisonType::Neg));
+            addReturnInstruction(ifInstruction, applyMode);
+            function->addInstruction(std::move(ifInstruction));
 
-                for (const auto& variable : pragmaRepeatData_[state])
-                {
-                    cacheData += variable + ",";
-                }
-                cacheData.pop_back();
-                cacheData += ")";
-            }
-            else
+            const auto insertInstruction = stateCache->getInsertInstruction();
+            function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));
+        }
+        else if (!applyMode && !pragmaUniqueData_.count(node->getName()))
+        {
+            auto nodeId = std::to_string(graph_->getNodeId(state));
+            if (const auto binding = node->getBinding())
             {
-                auto nodeId = std::to_string(graph_->getNodeId(state));
-                if (const auto binding = node->getBinding())
-                {
-                    nodeId += " + " + binding->getVariableName();
-                }
-                cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
-                cacheName = "state_cache";
+                nodeId += " + " + binding->getVariableName();
             }
+            const std::string cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
+            const std::string cacheName = "state_cache";
 
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(
                     cacheName + ".insert(" + cacheData + ").second", ComparisonType::Neg));
-            if (applyMode)
-            {
-                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
-            }
-            else
-            {
-                ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
-            }
-
+            addReturnInstruction(ifInstruction, applyMode);
             function->addInstruction(std::move(ifInstruction));
-            // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
         }
 
         if (pragmaDisjointEnabled_ &&
@@ -870,6 +890,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     }
 
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
+    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentCacheDepth++"));
     blockInstruction->pushInstructionBack(std::move(sw));
 
     return blockInstruction;
@@ -1323,6 +1344,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (applyEdgeMode)
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
+                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentCacheDepth++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
                 // TODO: this is an optimization for move application (extracting value of node generator parameter
                 //       from move vector instead of iterating over all values), but does not work for some games
@@ -1343,6 +1365,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
                 // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentCacheDepth--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1842,6 +1865,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     }
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const move_representation &v = m.mr;
+        currentCacheDepth = 0;
         currentMrId = 0;
     runApplyState(currentState, v, rgCache);
   )"));
@@ -2079,6 +2103,16 @@ std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, 
     }
     const auto tagName = action->toString();
     return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+}
+
+const std::shared_ptr<IStateCache>& Compiler::getStateCacheSafe(const std::string& state) const
+{
+    const auto it = stateToCache_.find(state);
+    if (it == stateToCache_.end())
+    {
+        throw std::invalid_argument("[Compiler] Unknown cache for state " + state);
+    }
+    return it->second;
 }
 
 std::string Compiler::getVariableValueFromTagString(const std::shared_ptr<Edge>& edge) const

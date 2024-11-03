@@ -2,6 +2,7 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
+#include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
@@ -137,14 +138,15 @@ private:
     int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
-    void initializePragmas();
-    void initializePragmaRepeat();
     void initializePragmaUnique();
+    void initializePragmaRepeat();
     void initializePragmaSimpleApply();
+    void initializePragmas();
+    void generateStateCaches();
     std::string getTypeForVariable(const std::string &variableName);
     std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
     std::string getVariableValueFromTagString(const std::shared_ptr<Edge> &edge) const;
-
+    const std::shared_ptr<IStateCache>& getStateCacheSafe(const std::string& state) const;
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
@@ -168,6 +170,7 @@ private:
     const std::string mainCacheName_;
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
+    std::map<std::string, std::shared_ptr<IStateCache>> stateToCache_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
     std::set<std::string> pragmaSimpleApplyData_;

@@ -54,17 +54,13 @@ private:
     std::unique_ptr<BlockInstruction> getAssignments(
         const std::vector<int> &edges,
         const std::shared_ptr<Graph> &graph,
-        const std::string &currentTagFromVector = "",
-        const std::string &fullTagName = "",
-        const std::string &minVal = "",
+        std::vector<int> &minValues,
         int commonPrefixSize = 0) const;
     std::unique_ptr<BlockInstruction> makeSwitchForTags(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         int depth,
         bool isExhaustive,
-        int minVal = 0,
-        const std::string &fullTagName = "");
-
+        std::vector<int> &minValues);
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
         const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
     //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;

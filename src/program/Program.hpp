@@ -313,16 +313,18 @@ class Function : public IInstruction
     std::string name_;
     std::string returnType_;
     std::string attribiutes_;
+    std::string functionNamespace_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
     std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
 
 public:
     Function(
-        std::string name,
-        std::string returnType,
-        std::string attribiutes = "",
+        const std::string &name,
+        const std::string &returnType,
+        const std::string &attribiutes = "",
         bool isPublic = false,
-        bool isConst = false);
+        bool isConst = false,
+        const std::string &functionNamespace = "GameState::");
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
@@ -344,12 +346,14 @@ public:
     void addConstantDeclaration(std::unique_ptr<IVariable> constantDecl);
     void addVariableDeclaration(std::unique_ptr<IVariable> variableDecl);
     void addFunction(std::unique_ptr<Function> &&function);
+    void addNonGameStateFunction(std::unique_ptr<Function> &&function);
 
     const std::vector<std::shared_ptr<IType>> &getTypes() const;
     std::shared_ptr<IType> findType(const std::string &identifier) const;
     const std::vector<std::unique_ptr<IVariable>> &getConstants() const;
     const std::vector<std::unique_ptr<IVariable>> &getVariables() const;
     const std::vector<std::unique_ptr<Function>> &getFunctions() const;
+    const std::vector<std::unique_ptr<Function>> &getNonGameStateFunctions() const;
     std::vector<std::string> getFunctionNames(std::string returnType) const;
 
 private:
@@ -357,4 +361,5 @@ private:
     std::vector<std::unique_ptr<IVariable>> constants_;
     std::vector<std::unique_ptr<IVariable>> variables_;
     std::vector<std::unique_ptr<Function>> functions_;
+    std::vector<std::unique_ptr<Function>> nonGameStatefunctions_;
 };

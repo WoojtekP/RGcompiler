@@ -347,6 +347,7 @@ void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sour
     printer.printConstants(program_.getConstants());
     printer.printMoveRepresentationDeclaration(getMoveRepresentation());
     printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
+    printer.printNonGameStateFunctions(program_.getNonGameStateFunctions());
     printer.initializeMainClass();
     printer.printVariables(program_.getVariables(), hs2_);
     printer.printFunctions(program_.getFunctions());

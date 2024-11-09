@@ -649,6 +649,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
         }
 
+        bool skipForExhaustiveSimpleApply = false;
         if (applyMode && graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                              ->isMainSimpleApply(node->getName()))
         {
@@ -659,46 +660,53 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                     ->getActionListToPlayerChange(node),
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->isExhaustive(node->getName())));
+
+            skipForExhaustiveSimpleApply =
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
+                    ->isExhaustive(node->getName());
         }
 
-        if (pragmaDisjointEnabled_ &&
-            graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state) && !isSimpleApply)
+        if (!skipForExhaustiveSimpleApply)
         {
-            auto vectorOfNodeNames =
-                graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->getNodeNames(state);
-            bool disjointExhaustive =
-                graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isExhaustive(state);
-            int cnt = 0;
-            std::set<std::string> visited;
-            for (const auto& nodeName : vectorOfNodeNames)
+            if (pragmaDisjointEnabled_ &&
+                graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isDisjoint(state) && !isSimpleApply)
             {
-                if (!visited.insert(nodeName).second)
+                auto vectorOfNodeNames =
+                    graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->getNodeNames(state);
+                bool disjointExhaustive =
+                    graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isExhaustive(state);
+                int cnt = 0;
+                std::set<std::string> visited;
+                for (const auto& nodeName : vectorOfNodeNames)
                 {
-                    continue;
-                }
-                for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
-                {
-                    if (nodeInThisEdge(outgoingEdge, nodeName))
+                    if (!visited.insert(nodeName).second)
                     {
-                        function->addInstruction(generateVoidEdgeInstruction(
-                            graph,
-                            outgoingEdge,
-                            iid,
-                            applyMode,
-                            true,
-                            disjointExhaustive && ++cnt == vectorOfNodeNames.size()));
+                        continue;
+                    }
+                    for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                    {
+                        if (nodeInThisEdge(outgoingEdge, nodeName))
+                        {
+                            function->addInstruction(generateVoidEdgeInstruction(
+                                graph,
+                                outgoingEdge,
+                                iid,
+                                applyMode,
+                                true,
+                                disjointExhaustive && ++cnt == vectorOfNodeNames.size()));
+                        }
                     }
                 }
-            }
 
-            // In case if somone put illegal description of disjoint
-            // assert(vectorOfNodeNames.size() == cnt);
-        }
-        else
-        {
-            for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                // In case if somone put illegal description of disjoint
+                // assert(vectorOfNodeNames.size() == cnt);
+            }
+            else
             {
-                function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
+                for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                {
+                    function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
+                }
             }
         }
 
@@ -892,7 +900,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 {
     static int nameCnt = 0;
     std::string functionName = "switch_" + std::to_string(nameCnt++);
-    std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "int");
+    std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]]const move_representation&"));
 
@@ -964,18 +972,23 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));
     blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>("currentMrId", "tmpCurrentMrId"));
     function->addInstruction(std::move(blockInstruction));
-    function->addInstruction(std::make_unique<ReturnInstruction>("-1"));
+    function->addInstruction(std::make_unique<ReturnInstruction>("false"));
 
     program_.addFunction(std::move(function));
 
     blockInstruction = std::make_unique<BlockInstruction>();
-
-    blockInstruction->pushInstructionFront(
-        std::make_unique<AssignmentInstruction>("int switch_tmp", functionName + "(mr, " + mainCacheName_ + ")"));
-    std::unique_ptr<IfInstruction> ifInstruction =
-        std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(true, "-1", "switch_tmp"));
-    ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("switch_tmp"));
-    blockInstruction->pushInstructionBack(std::move(ifInstruction));
+    std::string functionCall = functionName + "(mr, " + mainCacheName_ + ")";
+    if (isExhaustive)
+    {
+        blockInstruction->pushInstructionBack((std::make_unique<ReturnInstruction>(functionCall)));
+    }
+    else
+    {
+        std::unique_ptr<IfInstruction> ifInstruction =
+            std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, functionCall));
+        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
+        blockInstruction->pushInstructionBack(std::move(ifInstruction));
+    }
     return std::move(blockInstruction);
 }
 

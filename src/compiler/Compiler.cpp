@@ -797,7 +797,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         {
             blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
                 edge->getLeftNode()->getBinding()->getVariableName(),
-                "mr[currentMrId - " + std::to_string(curentPos) + "]" + " - " +
+                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
                     std::to_string(minValues[curentPos - 1]),
                 "const auto"));
 
@@ -808,9 +808,11 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         {
             blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
                 edge->getRightNode()->getBinding()->getVariableName(),
-                "mr[currentMrId - " + std::to_string(curentPos) + "]" + " - " +
+                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
                     std::to_string(minValues[curentPos - 1]),
                 "const auto"));
+
+            curentPos++;
             skipNext = true;
         }
         assert(edge->getActions().size() == 1);

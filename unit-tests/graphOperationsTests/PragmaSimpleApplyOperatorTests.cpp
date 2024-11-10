@@ -4,6 +4,28 @@
 
 using namespace GraphCreator;
 
+void addSimpleApplyDataToParsedJson(
+    nlohmann::json& json, const PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData& data, bool isExhaustive = true)
+{
+    nlohmann::json SimpleApplys;
+    for (const auto& nodeName : data.nodePathToTagOrPlayerChange_)
+    {
+        nlohmann::json node = {{"kind", "EdgeName"}, {"parts", {{{"identifier", nodeName}, {"kind", "Literal"}}}}};
+        SimpleApplys["nodes"] += node;
+    }
+
+    SimpleApplys["tags"];
+    for (const auto& tagName : data.tagNames_)
+    {
+        SimpleApplys["tags"] += tagName;
+    }
+
+    SimpleApplys["kind"] = isExhaustive ? "SimpleApplyExhaustive" : "SimpleApply";
+    SimpleApplys["node"] = {{"kind", "EdgeName"}, {"parts", {{{"identifier", data.nodeName_}, {"kind", "Literal"}}}}};
+
+    json["pragmas"] += SimpleApplys;
+}
+
 TEST_F(GraphFixture, TestSimpleApplyOneTag)
 {
     addEdge(graph_, "1", "2", createTagAction("test"));
@@ -14,7 +36,10 @@ TEST_F(GraphFixture, TestSimpleApplyOneTag)
     PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1("1", {"2", "3", "4"}, {"test"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
-    simpleApplyOperator->init({data1});
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    addSimpleApplyDataToParsedJson(parsedJson, data1);
+    Parser parser(parsedJson);
+    simpleApplyOperator->init(parser);
 
     const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFrom1 =
         simpleApplyOperator->getActionListToTags(createNode("1"));
@@ -38,13 +63,21 @@ TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
          {"type", {{"identifiers", nlohmann::json("[w, b]")}, {"kind", "Set"}}}},
     });
 
-    addEdge(graph_, NodeData({"selectPos"}), NodeData({"selectedPos", "Position"}), createTagAction("position"));
     addEdge(
         graph_,
-        NodeData({"selectedPos", "Position"}),
-        NodeData({"setPos", "Position"}),
+        NodeData({"selectPos"}),
+        NodeData({"selectedPos", "position", "Position"}),
+        createTagAction("position"));
+    addEdge(
+        graph_,
+        NodeData({"selectedPos", "position", "Position"}),
+        NodeData({"setPos", "position", "Position"}),
         createAssignmentAction("val", "2"));
-    addEdge(graph_, NodeData({"setPos", "Position"}), NodeData({"setFinished"}), createAssignmentAction("val", "3"));
+    addEdge(
+        graph_,
+        NodeData({"setPos", "position", "Position"}),
+        NodeData({"setFinished"}),
+        createAssignmentAction("val", "3"));
     addEdge(graph_, "setFinished", "checkOwn", createAssignmentAction("val", "3"));
     addEdge(graph_, "checkOwn", "forward", createAssignmentAction("val", "3"));
     addEdge(graph_, "forward", "selectDirection", createAssignmentAction("val", "3"));
@@ -78,7 +111,14 @@ TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
     PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d5("moved", {"done", "wincheck"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
-    simpleApplyOperator->init({d1, d2, d3, d4, d5});
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    addSimpleApplyDataToParsedJson(parsedJson, d1);
+    addSimpleApplyDataToParsedJson(parsedJson, d2);
+    addSimpleApplyDataToParsedJson(parsedJson, d3);
+    addSimpleApplyDataToParsedJson(parsedJson, d4);
+    addSimpleApplyDataToParsedJson(parsedJson, d5);
+    Parser parser(parsedJson);
+    simpleApplyOperator->init(parser);
 
     std::shared_ptr<SimpleApplySwitchTreeNode> treeFromSelectPos =
         simpleApplyOperator->getActionListToTags(createNode("selectPos"));
@@ -113,32 +153,51 @@ TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
     EXPECT_EQ(edgesFromMoved.size(), 2);
 }
 
-// TODO: add this test
-// TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
-// {
-//     addEdge(graph_, "1", "2", createTagAction("test"));
-//     addEdge(graph_, "2", "3", createAssignmentAction("val", "2"));
-//     addEdge(graph_, "3", "4", createAssignmentAction("val", "3"));
+TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
+{
+    valueAssigner_.assignValuesForSymbols({
+        {{"identifier", "Coord"},
+         {"kind", "TypeDeclaration"},
+         {"type", {{"identifiers", nlohmann::json("[0, 1, 2]")}, {"kind", "Set"}}}},
+        {{"identifier", "Player"},
+         {"kind", "TypeDeclaration"},
+         {"type", {{"identifiers", nlohmann::json("[w, b]")}, {"kind", "Set"}}}},
+    });
 
-//     graph_->initialize(valueAssigner_);
-//     PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1("1", {"2", "3", "4"}, {"test"});
+    addEdge(graph_, NodeData({"move"}), NodeData({"chooseX"}), createAssignmentAction("val", "2"));
+    addEdge(graph_, NodeData({"chooseX"}), NodeData({"chooseX", "coordX", "Coord"}), createTagAction("coordX"));
+    addEdge(
+        graph_, NodeData({"chooseX", "coordX", "Coord"}), NodeData({"chooseY"}), createAssignmentAction("val", "2"));
+    addEdge(graph_, NodeData({"chooseY"}), NodeData({"chooseY", "coordY", "Coord"}), createTagAction("coordY"));
+    addEdge(graph_, NodeData({"chooseY", "coordY", "Coord"}), NodeData({"check"}), createAssignmentAction("val", "2"));
 
-//     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
-//     simpleApplyOperator->init({data1});
+    graph_->initialize(valueAssigner_);
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1(
+        "chooseX", {"chooseX__bind__coordX", "chooseY", "chooseY__bind__coordY", "check"}, {"coordX", "coordY"});
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data2("move", {"chooseX"}, {});
 
-//     const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFromSelectPos =
-//         simpleApplyOperator->getActionListToTags(createNode("selectPos"));
+    auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    addSimpleApplyDataToParsedJson(parsedJson, data1);
+    addSimpleApplyDataToParsedJson(parsedJson, data2);
 
-//     std::vector<int> edgeIds;
-//     EXPECT_TRUE(treeFromSelectPos->children_.count("selectPos"));
-//     edgeIds.push_back(graph_->getEdgeId("selectPos", "selectedPos", 0));
-//     edgeIds.push_back(graph_->getEdgeId("selectedPos", "setPos", 0));
-//     edgeIds.push_back(graph_->getEdgeId("setPos", "setFinished", 0));
-//     edgeIds.push_back(graph_->getEdgeId("setFinished", "checkOwn", 0));
-//     edgeIds.push_back(graph_->getEdgeId("checkOwn", "forward", 0));
-//     edgeIds.push_back(graph_->getEdgeId("forward", "selectDirection", 0));
-//     EXPECT_EQ(treeFromSelectPos->children_["selectPos"]->listOfEdges_, edgeIds);
-// }
+    Parser parser(parsedJson);
+    simpleApplyOperator->init(parser);
+
+    std::vector<int> edgeIds;
+    const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFromChooseX =
+        simpleApplyOperator->getActionListToTags(createNode("chooseX"));
+    ASSERT_TRUE(treeFromChooseX->children_["(coordX : Coord)"]);
+    ASSERT_TRUE(treeFromChooseX->children_["(coordX : Coord)"]->children_["(coordY : Coord)"]);
+
+    edgeIds.push_back(graph_->getEdgeId("chooseX", "chooseX__bind__coordX", 0));
+    edgeIds.push_back(graph_->getEdgeId("chooseX__bind__coordX", "chooseY", 0));
+    edgeIds.push_back(graph_->getEdgeId("chooseY", "chooseY__bind__coordY", 0));
+    edgeIds.push_back(graph_->getEdgeId("chooseY__bind__coordY", "check", 0));
+    EXPECT_EQ(treeFromChooseX->children_["(coordX : Coord)"]->children_["(coordY : Coord)"]->listOfEdges_, edgeIds);
+    auto edgesFromMoved = simpleApplyOperator->getActionListToPlayerChange(createNode("move"));
+    EXPECT_EQ(edgesFromMoved.size(), 1);
+}
 
 TEST_F(GraphFixture, TestSimpleMultiTag)
 {
@@ -154,7 +213,11 @@ TEST_F(GraphFixture, TestSimpleMultiTag)
     PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data2("1", {"5", "6", "7"}, {"test2a", "test2b"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
-    simpleApplyOperator->init({data1, data2});
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    addSimpleApplyDataToParsedJson(parsedJson, data1);
+    addSimpleApplyDataToParsedJson(parsedJson, data2);
+    Parser parser(parsedJson);
+    simpleApplyOperator->init(parser);
 
     const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFrom1 =
         simpleApplyOperator->getActionListToTags(createNode("1"));

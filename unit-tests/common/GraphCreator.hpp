@@ -23,7 +23,8 @@ public:
 struct NodeData
 {
     std::string nodeName_;
-    std::string bindingName_;
+    std::string bindingVarName_;
+    std::string bindingTypeName_;
 };
 
 std::shared_ptr<Node> createNode(const std::string& nodeName);

@@ -491,10 +491,8 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 
     auto currentCacheDepthType = std::make_shared<CustomType>("int");
     auto currentCacheDepthValue = std::make_unique<SingleValue>("0");
-    program_.addVariableDeclaration(
-        std::make_unique<Variable>("currentCacheDepth",
-        std::move(currentCacheDepthType),
-        std::move(currentCacheDepthValue)));
+    program_.addVariableDeclaration(std::make_unique<Variable>(
+        "currentCacheDepth", std::move(currentCacheDepthType), std::move(currentCacheDepthValue)));
 
     auto currentMrIdType = std::make_shared<CustomType>("int");
     auto currentMrIdValue = std::make_unique<SingleValue>("0");
@@ -635,13 +633,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         if (pragmaRepeatData_.count(state))
         {
             const auto stateCache = getStateCacheSafe(state);
-            auto extendStateInstr = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(" + stateCache->getCacheName() + ".size())",
-                    "currentCacheDepth",
-                    ComparisonType::Leq));
-            extendStateInstr->addInstruction(std::make_unique<CustomInstruction>(
-                stateCache->getCacheName() + ".resize(currentCacheDepth + 1)"));
+            auto extendStateInstr = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                "static_cast<int>(" + stateCache->getCacheName() + ".size())",
+                "currentCacheDepth",
+                ComparisonType::Leq));
+            extendStateInstr->addInstruction(
+                std::make_unique<CustomInstruction>(stateCache->getCacheName() + ".resize(currentCacheDepth + 1)"));
             function->addInstruction(std::move(extendStateInstr));
 
             const auto testInstruction = stateCache->getTestInstruction();
@@ -663,8 +660,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             const std::string cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
             const std::string cacheName = "state_cache";
 
-            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     cacheName + ".insert(" + cacheData + ").second", ComparisonType::Neg));
             addReturnInstruction(ifInstruction, applyMode);
             function->addInstruction(std::move(ifInstruction));
@@ -901,7 +898,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         if (!pairFullTagAndChild.second->children_.empty())
         {
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(false, "static_cast<int>(mr.size()) > currentMrId"));
+                std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
             ifInstruction->addInstruction(std::move(innerInstructions));
             breakInstruction->pushInstructionBack(std::move(ifInstruction));
             breakInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("break"));
@@ -1027,7 +1024,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     else
     {
         std::unique_ptr<IfInstruction> ifInstruction =
-            std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(false, functionCall));
+            std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(functionCall));
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
         blockInstruction->pushInstructionBack(std::move(ifInstruction));
     }
@@ -1395,9 +1392,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         else if (action->getType() == ActionType::Comparison)
         {
             const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    action->getLeftSide(), action->getRightSide(), cmpType));
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
 
@@ -1626,9 +1622,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         else if (action->getType() == ActionType::Comparison)
         {
             const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    action->getLeftSide(), action->getRightSide(), cmpType));
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();

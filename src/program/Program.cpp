@@ -123,27 +123,54 @@ std::string AssignmentInstruction::toString(int delimiter, int shift, bool semic
     return addSpacesAndSemicolon(delimiter, semicolon, left_->toString(0, shift, false) + " = " + right_);
 }
 
-ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left)
-: left_(left)
-, negated_(negated)
-, onlyLeftSide_(true)
-{}
+std::string cmpToString(const ComparisonType cmpType)
+{
+    switch (cmpType)
+    {
+        case ComparisonType::None: return "";
+        case ComparisonType::Neg: return "!";
+        case ComparisonType::Eq: return "==";
+        case ComparisonType::Neq: return "!=";
+        case ComparisonType::Gr: return ">";
+        case ComparisonType::Ge: return ">=";
+        case ComparisonType::Less: return "<";
+        case ComparisonType::Leq: return "<=";
+    }
+    throw std::invalid_argument("[Program] Unkwnon ComparisonType: " + std::to_string(static_cast<int>(cmpType)));
+}
 
-ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left, const std::string &right)
+
+ComparisonInstruction::ComparisonInstruction(const std::string &expr, ComparisonType cmp)
+: left_(expr)
+, cmpType_(cmp)
+{
+    if (cmpType_ != ComparisonType::None && cmpType_ != ComparisonType::Neg)
+    {
+        throw std::invalid_argument("[Program] ComparisonInstruction with single expression \""
+            + left_ + "\" created with invalid type: " + cmpToString(cmpType_));
+    }
+}
+
+ComparisonInstruction::ComparisonInstruction(const std::string &left, const std::string &right, ComparisonType cmp)
 : left_(left)
 , right_(right)
-, negated_(negated)
-, onlyLeftSide_(false)
-{}
+, cmpType_(cmp)
+{
+    if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
+    {
+        throw std::invalid_argument("[Program] ComparisonInstruction with two expressions \""
+            + left_ + "\" and \"" + right_ + "\" created with invalid type: " + cmpToString(cmpType_));
+    }
+}
 
 std::string ComparisonInstruction::toString(int delimiter, int shift, bool semicolon)
 {
-    if (onlyLeftSide_)
+    if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
     {
-        return addSpacesAndSemicolon(delimiter, semicolon, (negated_ ? "!" : "") + left_);
+        return addSpacesAndSemicolon(delimiter, semicolon, cmpToString(cmpType_) + left_);
     }
 
-    return addSpacesAndSemicolon(delimiter, semicolon, left_ + (negated_ ? " != " : " == ") + right_);
+    return addSpacesAndSemicolon(delimiter, semicolon, left_ + cmpToString(cmpType_) + right_);
 }
 
 IfInstruction::IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition)

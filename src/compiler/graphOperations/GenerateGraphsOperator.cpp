@@ -115,7 +115,7 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
         // We should work on not optimized graph
         assert(edge->getActions().size() == 1);
 
-        if (nodesInPatternGraph.count(graph_->getNodeId(edge->fromName())) &&
+        if (edge->fromName() != to && nodesInPatternGraph.count(graph_->getNodeId(edge->fromName())) &&
             nodesInPatternGraph.count(graph_->getNodeId(edge->toName())) &&
             bannedEdges.find(graph_->getEdgeId(edge->fromName(), edge->toName(), iid)) == bannedEdges.end())
         {

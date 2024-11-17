@@ -793,16 +793,21 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
 
     auto addAssigmentInstruction =
         [&minValues, &curentPos, &blockInstruction, &alreadyCreatedVars](const std::string& varName) {
-            if (!alreadyCreatedVars.insert(varName).second)
+            if (alreadyCreatedVars.insert(varName).second)
             {
-                return;
+                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                    varName,
+                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                        std::to_string(minValues[curentPos - 1]),
+                    "const auto"));
             }
-
-            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                varName,
-                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                    std::to_string(minValues[curentPos - 1]),
-                "const auto"));
+            else
+            {
+                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                    varName,
+                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                        std::to_string(minValues[curentPos - 1])));
+            }
 
             curentPos++;
         };

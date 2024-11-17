@@ -783,38 +783,52 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     std::vector<int>& minValues,
     int commonPrefixSize) const
 {
+    int curentPos = 1;
+    bool skipNext = false;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
     auto it = edges.begin();
     std::advance(it, commonPrefixSize);
-    int curentPos = 1;
-    bool skipNext = false;
+
+    std::set<std::string> alreadyCreatedVars;
+
+    auto addAssigmentInstruction =
+        [&minValues, &curentPos, &blockInstruction, &alreadyCreatedVars](const std::string& varName) {
+            if (!alreadyCreatedVars.insert(varName).second)
+            {
+                return;
+            }
+
+            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                varName,
+                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                    std::to_string(minValues[curentPos - 1]),
+                "const auto"));
+
+            curentPos++;
+        };
+
     for (it; it != edges.end(); it++)
     {
         int edgeId = *it;
         auto edge = graph->getEdge(edgeId);
 
-        if (!skipNext && edge->getLeftNode()->getBinding())
+        if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
         {
-            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                edge->getLeftNode()->getBinding()->getVariableName(),
-                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                    std::to_string(minValues[curentPos - 1]),
-                "const auto"));
-
-            curentPos++;
-        }
-        skipNext = false;
-        if (edge->getRightNode()->getBinding())
-        {
-            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                edge->getRightNode()->getBinding()->getVariableName(),
-                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                    std::to_string(minValues[curentPos - 1]),
-                "const auto"));
-
-            curentPos++;
+            if (edge->getLeftNode()->getBinding())
+            {
+                addAssigmentInstruction(edge->getLeftNode()->getBinding()->getVariableName());
+            }
+            else
+            {
+                addAssigmentInstruction(edge->getRightNode()->getBinding()->getVariableName());
+            }
             skipNext = true;
         }
+        else
+        {
+            skipNext = false;
+        }
+
         assert(edge->getActions().size() == 1);
         const auto& action = edge->getActions().back();
         if (action->getType() == ActionType::Assignment)

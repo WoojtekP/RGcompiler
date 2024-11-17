@@ -639,13 +639,13 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 ComparisonType::Leq));
             extendStateInstr->addInstruction(
                 std::make_unique<CustomInstruction>(stateCache->getCacheName() + ".resize(currentCacheDepth + 1)"));
-            function->addInstruction(std::move(extendStateInstr));
 
-            const auto testInstruction = stateCache->getTestInstruction();
-            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(testInstruction, ComparisonType::Neg));
-            addReturnInstruction(ifInstruction, applyMode);
-            function->addInstruction(std::move(ifInstruction));
+            auto testCacheInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(stateCache->getTestInstruction()));
+            addReturnInstruction(testCacheInstruction, applyMode);
+
+            extendStateInstr->addElseInstruction(std::move(testCacheInstruction));
+            function->addInstruction(std::move(extendStateInstr));
 
             const auto insertInstruction = stateCache->getInsertInstruction();
             function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));

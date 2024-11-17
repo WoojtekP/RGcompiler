@@ -209,6 +209,15 @@ void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& funct
     }
 }
 
+void Printer::printNonGameStateFunctions(const std::vector<std::unique_ptr<Function>>& functions)
+{
+    for (const auto& f : functions)
+    {
+        headerFile_ << f->declarationToString() << std::endl;
+        sourceFile_ << f->toString(0, 4, false) << std::endl;
+    }
+}
+
 void Printer::printMoveRepresentationDeclaration(const std::string& mvRepresentation)
 {
     std::string obj = R"(

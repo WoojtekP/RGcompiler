@@ -384,12 +384,19 @@ std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon
     return addSpacesAndSemicolon(delimiter, semicolon, instruction_);
 }
 
-Function::Function(std::string name, std::string returnType, std::string attribiutes, bool isPublic, bool isConst)
+Function::Function(
+    const std::string &name,
+    const std::string &returnType,
+    const std::string &attribiutes,
+    bool isPublic,
+    bool isConst,
+    const std::string &functionNamespace)
 : name_(name)
 , returnType_(returnType)
 , attribiutes_(attribiutes)
 , isPublic_(isPublic)
 , isConst_(isConst)
+, functionNamespace_(functionNamespace)
 {}
 
 void Function::addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var)
@@ -435,7 +442,7 @@ std::string Function::toString(int delimiter, int shift, bool semicolon)
         body += instruction->toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " GameState::" + name_ + "(" + argumentsList + ")" +
+    result += getLeadingSpaces(delimiter) + returnType_ + " " + functionNamespace_ + name_ + "(" + argumentsList + ")" +
               (isConst_ ? "const" : "") + "\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
@@ -481,6 +488,11 @@ void Program::addFunction(std::unique_ptr<Function> &&function)
     functions_.push_back(std::move(function));
 }
 
+void Program::addNonGameStateFunction(std::unique_ptr<Function> &&function)
+{
+    nonGameStatefunctions_.push_back(std::move(function));
+}
+
 const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
 {
     return types_;
@@ -511,6 +523,11 @@ const std::vector<std::unique_ptr<IVariable>> &Program::getVariables() const
 const std::vector<std::unique_ptr<Function>> &Program::getFunctions() const
 {
     return functions_;
+}
+
+const std::vector<std::unique_ptr<Function>> &Program::getNonGameStateFunctions() const
+{
+    return nonGameStatefunctions_;
 }
 
 std::vector<std::string> Program::getFunctionNames(std::string retrunType) const

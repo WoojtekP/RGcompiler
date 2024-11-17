@@ -12,15 +12,15 @@ std::shared_ptr<Node> createNode(const std::string& nodeName)
 
 std::shared_ptr<Node> createNode(const NodeData& nodeData)
 {
-    if (nodeData.bindingName_.empty())
+    if (nodeData.bindingTypeName_.empty())
     {
         return createNode(nodeData.nodeName_);
     }
     nlohmann::json label = {
         {{"kind", "Literal"}, {"identifier", nodeData.nodeName_}},
-        {{"identifier", "position"},
+        {{"identifier", nodeData.bindingVarName_},
          {"kind", "Binding"},
-         {"type", {{"identifier", nodeData.bindingName_}, {"kind", "TypeReference"}}}}};
+         {"type", {{"identifier", nodeData.bindingTypeName_}, {"kind", "TypeReference"}}}}};
 
     return std::make_shared<Node>(label);
 }

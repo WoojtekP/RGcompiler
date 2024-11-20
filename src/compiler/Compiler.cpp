@@ -835,7 +835,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         int edgeId = *it;
         auto edge = graph->getEdge(edgeId);
 
-        if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
+        if (!skipNext && (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding()))
         {
             if (edge->getLeftNode()->getBinding())
             {
@@ -847,7 +847,9 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
             }
             skipNext = true;
         }
-        else
+
+        // This works because for now we only hanlde nodes with one binding
+        if (!edge->getRightNode()->getBinding())
         {
             skipNext = false;
         }
@@ -1139,8 +1141,6 @@ void Compiler::generateBoolStateFunctions(
         }
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
-
-        std::cout << "pat " << patternId << " " << state << " " << outgoingEdges.size() << "\n";
 
         if (outgoingEdges.empty())
         {

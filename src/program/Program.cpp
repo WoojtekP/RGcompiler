@@ -123,27 +123,54 @@ std::string AssignmentInstruction::toString(int delimiter, int shift, bool semic
     return addSpacesAndSemicolon(delimiter, semicolon, left_->toString(0, shift, false) + " = " + right_);
 }
 
-ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left)
-: left_(left)
-, negated_(negated)
-, onlyLeftSide_(true)
-{}
+std::string cmpToString(const ComparisonType cmpType)
+{
+    switch (cmpType)
+    {
+        case ComparisonType::None: return "";
+        case ComparisonType::Neg: return "!";
+        case ComparisonType::Eq: return "==";
+        case ComparisonType::Neq: return "!=";
+        case ComparisonType::Gr: return ">";
+        case ComparisonType::Ge: return ">=";
+        case ComparisonType::Less: return "<";
+        case ComparisonType::Leq: return "<=";
+    }
+    throw std::invalid_argument("[Program] Unkwnon ComparisonType: " + std::to_string(static_cast<int>(cmpType)));
+}
 
-ComparisonInstruction::ComparisonInstruction(bool negated, const std::string &left, const std::string &right)
+
+ComparisonInstruction::ComparisonInstruction(const std::string &expr, ComparisonType cmp)
+: left_(expr)
+, cmpType_(cmp)
+{
+    if (cmpType_ != ComparisonType::None && cmpType_ != ComparisonType::Neg)
+    {
+        throw std::invalid_argument("[Program] ComparisonInstruction with single expression \""
+            + left_ + "\" created with invalid type: " + cmpToString(cmpType_));
+    }
+}
+
+ComparisonInstruction::ComparisonInstruction(const std::string &left, const std::string &right, ComparisonType cmp)
 : left_(left)
 , right_(right)
-, negated_(negated)
-, onlyLeftSide_(false)
-{}
+, cmpType_(cmp)
+{
+    if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
+    {
+        throw std::invalid_argument("[Program] ComparisonInstruction with two expressions \""
+            + left_ + "\" and \"" + right_ + "\" created with invalid type: " + cmpToString(cmpType_));
+    }
+}
 
 std::string ComparisonInstruction::toString(int delimiter, int shift, bool semicolon)
 {
-    if (onlyLeftSide_)
+    if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
     {
-        return addSpacesAndSemicolon(delimiter, semicolon, (negated_ ? "!" : "") + left_);
+        return addSpacesAndSemicolon(delimiter, semicolon, cmpToString(cmpType_) + left_);
     }
 
-    return addSpacesAndSemicolon(delimiter, semicolon, left_ + (negated_ ? " != " : " == ") + right_);
+    return addSpacesAndSemicolon(delimiter, semicolon, left_ + cmpToString(cmpType_) + right_);
 }
 
 IfInstruction::IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition)
@@ -357,12 +384,19 @@ std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon
     return addSpacesAndSemicolon(delimiter, semicolon, instruction_);
 }
 
-Function::Function(std::string name, std::string returnType, std::string attribiutes, bool isPublic, bool isConst)
+Function::Function(
+    const std::string &name,
+    const std::string &returnType,
+    const std::string &attribiutes,
+    bool isPublic,
+    bool isConst,
+    const std::string &functionNamespace)
 : name_(name)
 , returnType_(returnType)
 , attribiutes_(attribiutes)
 , isPublic_(isPublic)
 , isConst_(isConst)
+, functionNamespace_(functionNamespace)
 {}
 
 void Function::addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var)
@@ -408,7 +442,7 @@ std::string Function::toString(int delimiter, int shift, bool semicolon)
         body += instruction->toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " GameState::" + name_ + "(" + argumentsList + ")" +
+    result += getLeadingSpaces(delimiter) + returnType_ + " " + functionNamespace_ + name_ + "(" + argumentsList + ")" +
               (isConst_ ? "const" : "") + "\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
@@ -454,6 +488,11 @@ void Program::addFunction(std::unique_ptr<Function> &&function)
     functions_.push_back(std::move(function));
 }
 
+void Program::addNonGameStateFunction(std::unique_ptr<Function> &&function)
+{
+    nonGameStatefunctions_.push_back(std::move(function));
+}
+
 const std::vector<std::shared_ptr<IType>> &Program::getTypes() const
 {
     return types_;
@@ -484,6 +523,11 @@ const std::vector<std::unique_ptr<IVariable>> &Program::getVariables() const
 const std::vector<std::unique_ptr<Function>> &Program::getFunctions() const
 {
     return functions_;
+}
+
+const std::vector<std::unique_ptr<Function>> &Program::getNonGameStateFunctions() const
+{
+    return nonGameStatefunctions_;
 }
 
 std::vector<std::string> Program::getFunctionNames(std::string retrunType) const

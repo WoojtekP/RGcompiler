@@ -1,8 +1,10 @@
 #pragma once
+
 #include <set>
 #include <string>
 
 #include <compiler/graphOperations/BaseOperator.hpp>
+
 const std::string pragmaSimpleApply = "SimpleApply";
 const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 

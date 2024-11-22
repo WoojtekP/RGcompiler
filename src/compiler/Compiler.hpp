@@ -2,6 +2,7 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
+#include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
@@ -54,17 +55,13 @@ private:
     std::unique_ptr<BlockInstruction> getAssignments(
         const std::vector<int> &edges,
         const std::shared_ptr<Graph> &graph,
-        const std::string &currentTagFromVector = "",
-        const std::string &fullTagName = "",
-        const std::string &minVal = "",
+        std::vector<int> &minValues,
         int commonPrefixSize = 0) const;
     std::unique_ptr<BlockInstruction> makeSwitchForTags(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         int depth,
         bool isExhaustive,
-        int minVal = 0,
-        const std::string &fullTagName = "");
-
+        std::vector<int> &minValues);
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
         const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
     //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
@@ -137,14 +134,15 @@ private:
     int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
-    void initializePragmas();
-    void initializePragmaRepeat();
     void initializePragmaUnique();
+    void initializePragmaRepeat();
     void initializePragmaSimpleApply();
+    void initializePragmas();
+    void generateStateCaches();
     std::string getTypeForVariable(const std::string &variableName);
     std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
     std::string getVariableValueFromTagString(const std::shared_ptr<Edge> &edge) const;
-
+    const std::shared_ptr<IStateCache>& getStateCacheSafe(const std::string& state) const;
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
@@ -168,6 +166,7 @@ private:
     const std::string mainCacheName_;
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;
+    std::map<std::string, std::shared_ptr<IStateCache>> stateToCache_;
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
     std::set<std::string> pragmaSimpleApplyData_;

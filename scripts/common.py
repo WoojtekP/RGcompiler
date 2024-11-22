@@ -21,10 +21,11 @@ class cfg:
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--addExplicitCasts --compactSkipEdges --inlineAssignment --inlineReachability --joinForkPrefixes --joinForkSuffixes --pruneSingletonTypes --pruneUnreachableNodes --pruneUnusedConstants --pruneUnusedVariables --reuseFunctions --skipGeneratorComparisons --skipSelfAssignments --skipSelfComparisons --skipUnusedTags'
-  DEFAULT_TRANSLATE_OPTIONS += ' --calculateDisjoints --calculateRepeats --calculateSimpleApply --calculateTagIndexes --calculateUniques ' # Auto-optimization
+  #DEFAULT_TRANSLATE_OPTIONS = '--addExplicitCasts --compactSkipEdges --inlineAssignment --inlineReachability --joinForkPrefixes --joinForkSuffixes --pruneSingletonTypes --pruneUnreachableNodes --pruneUnusedConstants --pruneUnusedVariables --reuseFunctions --skipGeneratorComparisons --skipSelfAssignments --skipSelfComparisons --skipUnusedTags'
+  DEFAULT_TRANSLATE_OPTIONS = '--x-enable-all-optimizations --x-enable-all-pragmas'
+  #DEFAULT_TRANSLATE_OPTIONS += ' --calculateDisjoints --calculateRepeats --calculateSimpleApply --calculateTagIndexes --calculateUniques ' # Auto-optimization
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 1 --disjoint 1'
-  DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 0'
+  DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 1'
 
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):

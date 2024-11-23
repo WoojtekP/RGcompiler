@@ -29,11 +29,11 @@ class cfg:
 
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto'
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto -DNDEBUG'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto -DNDEBUG'
   else:
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++17 -Ofast -flto=auto -march=native -ftracer'
-    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++17 -Og -pg -march=native -ftracer'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
+    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     # -finline-limit=100
 

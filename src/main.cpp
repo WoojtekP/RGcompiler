@@ -11,39 +11,46 @@
 int main(const int argc, const char **argv)
 {
     Options options;
-    std::string fileName;
+    std::string inputFileName;
+    std::string outputFileName;
 
     try
     {
-        boost::program_options::options_description mainOptions("Main options");
+        namespace po = boost::program_options;
+        po::options_description mainOptions("Main options");
 
-        mainOptions.add_options()(
-            "file", boost::program_options::value<std::string>(&fileName)->required(), "Json file name")(
+        mainOptions.add_options()
+            ("help,h", "Show this help message and exit")(
+            "file", po::value<std::string>(&inputFileName)->required(), "Json file name with AST")(
+            ",o", po::value<std::string>(&outputFileName)->default_value("reasoner"), "Output file name")(
             "print-function-names",
-            boost::program_options::value<bool>(&options.printOriginalNames_)->default_value(0),
-            "Print original node names during execution")(
+            po::value<bool>(&options.printOriginalNames_)->default_value(0),
+            "Print original node names in function names")(
             "preserve-original-node-names",
-            boost::program_options::value<bool>(&options.preserveOriginalNames_)->default_value(0),
+            po::value<bool>(&options.preserveOriginalNames_)->default_value(0),
             "Preserve original node names")(
             "verification",
-            boost::program_options::value<bool>(&options.verification_)->default_value(0),
+            po::value<bool>(&options.verification_)->default_value(0),
             "Extra verification for transducer")(
             "simple-path-compression",
-            boost::program_options::value<bool>(&options.simplePathCompression_)->default_value(false),
+            po::value<bool>(&options.simplePathCompression_)->default_value(false),
             "Enable compressing simple paths")(
             "no-cycle-detection",
-            boost::program_options::value<bool>(&options.noCycleDetection_)->default_value(false),
+            po::value<bool>(&options.noCycleDetection_)->default_value(false),
             "Disable detecting cycles in patterns")(
             "disjoint",
-            boost::program_options::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
-            "Is pragma disjoint enabled")(
-            "gccinline",
-            boost::program_options::value<bool>(&options.gccInline_)->default_value(false),
-            "Enable gcc inline attribiute");
+            po::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
+            "Enable pragma 'disjoint'")(
+            "gccinline", po::value<bool>(&options.gccInline_)->default_value(false), "Enable gcc inline attribiute");
 
-        boost::program_options::variables_map vm;
-        boost::program_options::store(boost::program_options::parse_command_line(argc, argv, mainOptions), vm);
-        boost::program_options::notify(vm);
+        po::variables_map vm;
+        po::store(po::parse_command_line(argc, argv, mainOptions), vm);
+        if (vm.count("help"))
+        {
+            std::cout << mainOptions << std::endl;  // Print the help message
+            return 0;
+        }
+        po::notify(vm);
     }
     catch (const std::exception &ex)
     {
@@ -51,15 +58,15 @@ int main(const int argc, const char **argv)
         return 1;
     }
 
-    std::ifstream jsonGameFile(fileName);
+    std::ifstream jsonGameFile(inputFileName);
     Parser parser(jsonGameFile);
 
-    std::ofstream headerFile("reasoner.hpp");
-    std::ofstream sourceFile("reasoner.cpp");
+    std::ofstream headerFile(outputFileName + ".hpp");
+    std::ofstream sourceFile(outputFileName + ".cpp");
 
     Compiler compiler(parser, options);
     compiler.compile();
-    compiler.generateSourceCode(headerFile, sourceFile);
+    compiler.generateSourceCode(outputFileName, headerFile, sourceFile);
 
     return 0;
 }

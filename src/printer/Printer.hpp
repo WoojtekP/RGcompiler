@@ -10,7 +10,11 @@ class Printer
 {
 public:
     Printer(
-        const Parser& parse, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile);
+        const Parser& parser,
+        const ValueAssigner& valueAssigner,
+        const std::string& outputFileName,
+        std::ofstream& headerFile,
+        std::ofstream& sourceFile);
     void initializeHeaderFile(bool debug);
     void initializeSourceFile();
     void initializeMainClass();
@@ -34,6 +38,7 @@ public:
 private:
     const Parser& parser_;
     const ValueAssigner& valueAssigner_;
+    const std::string outputFileName_;
     std::ofstream& headerFile_;
     std::ofstream& sourceFile_;
 };

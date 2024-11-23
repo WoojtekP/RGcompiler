@@ -361,9 +361,10 @@ std::string Compiler::getMoveRepresentation()
     return "typedef std::vector<int> move_representation;";
 }
 
-void Compiler::generateSourceCode(std::ofstream& headerFile, std::ofstream& sourceFile)
+void Compiler::generateSourceCode(
+    const std::string& outputFileName, std::ofstream& headerFile, std::ofstream& sourceFile)
 {
-    Printer printer(parser_, valueAssigner_, headerFile, sourceFile);
+    Printer printer(parser_, valueAssigner_, outputFileName, headerFile, sourceFile);
     printer.initializeHeaderFile(printOriginalNames_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());

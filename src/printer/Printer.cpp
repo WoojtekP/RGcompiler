@@ -16,9 +16,14 @@ bool isNumber(const std::string& s)
 }  // namespace
 
 Printer::Printer(
-    const Parser& parser, const ValueAssigner& valueAssigner, std::ofstream& headerFile, std::ofstream& sourceFile)
+    const Parser& parser,
+    const ValueAssigner& valueAssigner,
+    const std::string& outputFileName,
+    std::ofstream& headerFile,
+    std::ofstream& sourceFile)
 : parser_(parser)
 , valueAssigner_(valueAssigner)
+, outputFileName_(outputFileName)
 , headerFile_(headerFile)
 , sourceFile_(sourceFile)
 {}
@@ -52,7 +57,7 @@ void Printer::initializeHeaderFile(bool debug)
 
 void Printer::initializeSourceFile()
 {
-    sourceFile_ << "#include \"reasoner.hpp\"" << std::endl;
+    sourceFile_ << "#include \"" + outputFileName_ + ".hpp\"" << std::endl;
     sourceFile_ << std::endl;
     sourceFile_ << "#include <sstream>" << std::endl;
     sourceFile_ << std::endl;

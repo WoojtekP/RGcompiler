@@ -29,7 +29,7 @@ class Compiler
 public:
     Compiler(const Parser &parser, const Options &options);
     void compile();
-    void generateSourceCode(std::ofstream &headerFile, std::ofstream &sourceFile);
+    void generateSourceCode(const std::string& outputFileName, std::ofstream &headerFile, std::ofstream &sourceFile);
 
 private:
     void initializeGraph();

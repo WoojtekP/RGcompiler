@@ -179,10 +179,23 @@ void Compiler::initializePragmaUnique()
 
 void Compiler::initializePragmaRepeat()
 {
+    const auto isVariableOfFunctionType = [this](const auto& variableName) {
+        const auto& variableType = parser_.findTypeOfVariable(variableName);
+        if (variableType["kind"] == "TypeReference")
+        {
+            const auto& typeDefinition = parser_.findTypeByIdentifier(variableType["identifier"]);
+            return typeDefinition["type"]["kind"] == "Arrow";
+        }
+        return variableType["kind"] == "Arrow";
+    };
     for (const auto& pragma : parser_.getPragmas("Repeat"))
     {
         for (const auto& edge : pragma["edgeNames"])
         {
+            if (std::any_of(pragma["identifiers"].begin(), pragma["identifiers"].end(), isVariableOfFunctionType))
+            {
+                continue;
+            }
             const auto& nodeName = edge["parts"][0]["identifier"];
             for (const auto& variableName : pragma["identifiers"])
             {

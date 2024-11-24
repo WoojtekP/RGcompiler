@@ -503,11 +503,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
-    auto currentCacheDepthType = std::make_shared<CustomType>("int");
-    auto currentCacheDepthValue = std::make_unique<SingleValue>("0");
-    program_.addVariableDeclaration(std::make_unique<Variable>(
-        "currentCacheDepth", std::move(currentCacheDepthType), std::move(currentCacheDepthValue)));
-
     auto currentMrIdType = std::make_shared<CustomType>("int");
     auto currentMrIdValue = std::make_unique<SingleValue>("0");
     program_.addVariableDeclaration(
@@ -940,7 +935,6 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     // }
 
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
-    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentCacheDepth++"));
     blockInstruction->pushInstructionBack(std::move(sw));
 
     return blockInstruction;
@@ -1428,7 +1422,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (applyEdgeMode)
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
-                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentCacheDepth++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
                 // TODO: this is an optimization for move application (extracting value of node generator parameter
                 //       from move vector instead of iterating over all values), but does not work for some games
@@ -1449,7 +1442,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
                 // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
-                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentCacheDepth--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1948,7 +1940,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     }
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const move_representation &v = m.mr;
-        currentCacheDepth = 0;
         currentMrId = 0;
     runApplyState(currentState, v, rgCache);
   )"));

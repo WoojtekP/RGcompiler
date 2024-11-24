@@ -216,6 +216,7 @@ std::string IfInstruction::toString(int delimiter, int shift, bool semicolon)
             result += getLeadingSpaces(delimiter) + "\n" + getLeadingSpaces(delimiter) + "}\n";
         }
     }
+    result.pop_back();
     return result;
 }
 

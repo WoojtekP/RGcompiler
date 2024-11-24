@@ -538,7 +538,9 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     for (const auto& [_, cache] : stateToCache_)
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
-            cache->getCacheName(), std::make_unique<CustomType>("std::vector<" + cache->getCacheType() + ">")));
+            cache->getCacheName(),
+            std::make_unique<CustomType>(
+                "std::unordered_map<move_representation," + cache->getCacheType() + ", vector_hash>")));
     }
 
     auto initialType = std::make_shared<CustomType>("static constexpr int");
@@ -647,21 +649,16 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         if (pragmaRepeatData_.count(state))
         {
             const auto stateCache = getStateCacheSafe(state);
-            auto extendStateInstr = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(" + stateCache->getCacheName() + ".size())",
-                "currentCacheDepth",
-                ComparisonType::Leq));
-            extendStateInstr->addInstruction(
-                std::make_unique<CustomInstruction>(stateCache->getCacheName() + ".resize(currentCacheDepth + 1)"));
+            const std::string cacheVarName = "cache";
+            function->addInstruction(
+                std::make_unique<AssignmentInstruction>(cacheVarName, stateCache->getCacheName() + "[mr]", "auto&"));
 
             auto testCacheInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>(stateCache->getTestInstruction()));
+                std::make_unique<ComparisonInstruction>(cacheVarName + stateCache->getTestInstruction()));
             addReturnInstruction(testCacheInstruction, applyMode);
+            function->addInstruction(std::move(testCacheInstruction));
 
-            extendStateInstr->addElseInstruction(std::move(testCacheInstruction));
-            function->addInstruction(std::move(extendStateInstr));
-
-            const auto insertInstruction = stateCache->getInsertInstruction();
+            const auto insertInstruction = cacheVarName + stateCache->getInsertInstruction();
             function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));
         }
         else if (!applyMode && !pragmaUniqueData_.count(node->getName()))

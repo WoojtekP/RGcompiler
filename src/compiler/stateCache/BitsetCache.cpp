@@ -48,7 +48,7 @@ std::string BitsetCache::getTestInstruction() const
 
 std::string BitsetCache::getMethodCall(const std::string& method) const
 {
-    std::string expression = cacheName_ + "[currentCacheDepth]";
+    std::string expression;
     for (auto id = identifiers_.begin(); id < identifiers_.end() - 1; ++id)
     {
         expression += "[" + *id + "]";

@@ -32,7 +32,7 @@ public:
         const std::string& xd);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printNonGameStateFunctions(const std::vector<std::unique_ptr<Function>>& functions);
-    void printMoveRepresentationDeclaration(const std::string& mvRepresentation);
+    void printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation);
     void printAdditionDataForCycleHandling(const std::string& s);
 
 private:

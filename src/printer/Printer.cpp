@@ -223,14 +223,26 @@ void Printer::printNonGameStateFunctions(const std::vector<std::unique_ptr<Funct
     }
 }
 
-void Printer::printMoveRepresentationDeclaration(const std::string& mvRepresentation)
+void Printer::printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation)
 {
-    std::string obj = R"(
-class GameState;
+    const auto [moveContainer, moveSize] = moveRepresentation;
+    std::string moveInitialization = "move_representation mr";
+    if (moveContainer.find("array") != std::string::npos)
+    {
+        moveInitialization += " = {";
+        const std::string unusedTagValue = "-1";
+        for (int i = 1; i < moveSize; ++i)
+        {
+            moveInitialization += unusedTagValue + ",";
+        }
+        moveInitialization += unusedTagValue + "}";
+    }
+    moveInitialization += ";";
 
+    const auto structMoveDefinition = R"(
 struct Move
 {
-    move_representation mr;
+)" + moveInitialization + R"(
 
     Move(void) = default;
     Move(const move_representation& mv)
@@ -241,8 +253,9 @@ struct Move
     {
         return mr == rhs.mr;
     }
-};
+};)";
 
+    const auto hashFunctions = R"(
 namespace
 {
 void combine(size_t& acc, size_t x)
@@ -288,11 +301,18 @@ size_t hash(const std::vector<int>& v)
     }
     return x;
 }
-}  // namespace
+}  // namespace)";
 
-)";
+    headerFile_ << "using move_representation = " << moveContainer << "<int";
+    if (moveSize != -1)
+    {
+        headerFile_ << "," << moveSize;
+    }
+    headerFile_ << ">;" << std::endl;
 
-    headerFile_ << mvRepresentation << obj << std::endl << std::endl;
+    headerFile_ << "class GameState;" << std::endl << std::endl;
+    headerFile_ << structMoveDefinition << std::endl << std::endl;
+    headerFile_ << hashFunctions << std::endl << std::endl;
 }
 
 void Printer::printAdditionDataForCycleHandling(const std::string& s)

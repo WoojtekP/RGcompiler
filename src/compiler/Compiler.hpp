@@ -123,7 +123,7 @@ private:
     void restoreAssignments(
         const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
     std::string getStateIntId(std::string name);
-    std::string getMoveRepresentation();
+    std::pair<std::string, int> getMoveRepresentation();
     std::shared_ptr<IType> generateType(const nlohmann::json &t);
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);

@@ -10,6 +10,8 @@
 
 namespace
 {
+const std::string UNUSED_TAG_VALUE = "-1";
+
 bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
 {
     for (const auto& [edgeA, iid] : edges)
@@ -357,21 +359,18 @@ int Compiler::getDomain(const std::string& s)
     return valueAssigner_.getTypeDomainSize(type);
 }
 
-std::string Compiler::getMoveRepresentation()
+std::pair<std::string, int> Compiler::getMoveRepresentation()
 {
     int containerSize = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->containerSize();
     if (graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition())
     {
-        return "typedef std::array<int, " + std::to_string(containerSize) + "> move_representation;";
+        return {"std::array", containerSize};
     }
-
     if (containerSize != -1)
     {
-        return "typedef boost::container::static_vector<int, " + std::to_string(containerSize) +
-               "> move_representation;";
+        return {"boost::container::static_vector", containerSize};
     }
-
-    return "typedef std::vector<int> move_representation;";
+    return {"std::vector", -1};
 }
 
 void Compiler::generateSourceCode(
@@ -1206,7 +1205,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     functionArguments += mainCacheName_;
     if (!skipStateCache)
     {
-        functionArguments += ",mr_" + cacheName + "," + cacheName;
+        functionArguments += ",mr_" + cacheName + ".mr," + cacheName;
     }
     //     std::string cacheDecl = containerChooser_.getCustomName(typeId);
     //     if (containerChooser_.isInCache(typeId))
@@ -1227,7 +1226,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
             "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
         tmpBlockInstruction->pushInstructionBack(
-            std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
+            std::make_unique<CustomInstruction>("Move mr_" + cacheName));
     }
 
     const auto cmpType = action->getNegated() ? ComparisonType::Neg : ComparisonType::None;
@@ -1448,7 +1447,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             }
             else
             {
-                std::string pushTag;
                 bool useArray =
                     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
                 if (useArray)
@@ -1457,16 +1455,18 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                         graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
                             (*nodeIt)->getName());
                     assert(tagPosition != -1);
-                    pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagValueStr;
+                    const auto accessTag = "mr[" + std::to_string(tagPosition) + "]";
+                    const auto setTag = accessTag + " = " + tagValueStr;
+                    const auto unsetTag = accessTag + " = " + UNUSED_TAG_VALUE;
+                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(setTag));
+                    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(unsetTag));
                 }
                 else
                 {
-                    pushTag = "mr.push_back(" + tagValueStr + ")";
-                }
-                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
-                if (!useArray)
-                {
+                    const auto pushTag = "mr.push_back(" + tagValueStr + ")";
+                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
+
                 }
             }
         }
@@ -1927,7 +1927,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
         clearingCaches += "verificationCache.clear();\n";
     }
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        clearingCaches + "moves.clear();\nmove_representation mr;\nrunState(currentState, moves,mr," + mainCacheName_ +
+        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ +
         ")"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);

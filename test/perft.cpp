@@ -20,7 +20,7 @@ void exitWithError(const reasoner::GameState &state, const std::string msg)
   exit(2);
 }
 
-void keeperCompletion(reasoner::GameState &state, const uint depth) {
+void keeperCompletion(reasoner::GameState &state, const uint) {
   while (state.getCurrentPlayer() == reasoner::keeper && !state.isTerminal()) {
     //state.getAllMoves(moves[depth], cache);
     //#ifndef NDEBUG

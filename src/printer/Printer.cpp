@@ -45,6 +45,7 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << std::endl;
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
+    headerFile_ << "#include <boost/functional/hash.hpp>" << std::endl;
 
     headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;
@@ -78,8 +79,12 @@ void Printer::endMainClass()
 void Printer::endHeaderFile(std::string& hs, std::string& hs2)
 {
     std::string ss = "struct hasher3{";
-    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
-    ss += hs + "^ std::get<2>(gs)" + ";";
+    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& key) const{\n";
+    ss += "const auto& [gs, mv, stateId] = key;\n";
+    ss += "auto acc = hash(mv);\n";
+    ss += hs;
+    ss += "boost::hash_combine(acc, stateId);\n";
+    ss += "return acc;\n";
     ss += "}};";
     // std::string ss2 = "struct hasher2{";
     // ss2 += "size_t operator()(const GameState& gs) const{";
@@ -151,8 +156,12 @@ void Printer::printVariables(
 
     if (isPublic)
     {
-        std::string ss = "struct hasher2{size_t operator()(const std::pair<GameState, int>& gs)const{";
-        ss += "return " + xd + ";}};";
+        std::string ss = "struct hasher2{size_t operator()(const std::pair<GameState, int>& key)const{";
+        ss += "const auto [gs, stateId] = key;\n";
+        ss += "std::size_t acc = 0;\n";
+        ss += xd;
+        ss += "return acc;\n";
+        ss += "}};";
         headerFile_ << ss;
     }
 
@@ -258,24 +267,13 @@ struct Move
     const auto hashFunctions = R"(
 namespace
 {
-void combine(size_t& acc, size_t x)
-{
-    acc ^= x;
-}
-
-template<typename T = int>
-size_t hash(int x)
-{
-    return x;
-}
-
 template<typename T, size_t N>
 size_t hash(std::array<T, N> a)
 {
     size_t acc = 0;
     for (size_t i = 0; i < N; i++)
     {
-        combine(acc, hash(a[i]));
+        boost::hash_combine(acc, a[i]);
     }
 
     return acc;
@@ -287,7 +285,7 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     size_t acc = 0;
     for (auto x : v)
     {
-        acc ^= x;
+        boost::hash_combine(acc, x);
     }
     return acc;
 }
@@ -297,7 +295,7 @@ size_t hash(const std::vector<int>& v)
     size_t x = 0;
     for (int t : v)
     {
-        x ^= t;
+        boost::hash_combine(x, t);
     }
     return x;
 }

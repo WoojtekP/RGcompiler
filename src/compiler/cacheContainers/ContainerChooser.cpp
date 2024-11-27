@@ -101,13 +101,7 @@ std::string ContainerChooser::getAdditionalData() const
 {
   size_t operator()(const move_representation &v) const
   {
-    int res = 0;
-    for (int x : v)
-    {
-      res ^= x;
-    }
-
-    return res;
+    return boost::hash_range(v.begin(), v.end());
   }
 };
 )";

@@ -23,24 +23,13 @@ const std::string UnorderedSetContainer::data_ =
     R"(
 struct rg_hash
 {
-  void combine(size_t &acc, size_t x) const
-  {
-    acc ^= x;
-  }
-
-  template<typename T = int>
-  size_t hash(int x) const
-  {
-    return x;
-  }
-
   template<typename T, size_t N>
   size_t hash(std::array<T, N> a) const
   {
     size_t acc = 0;
     for (size_t i=0;i<N;i++)
     {
-      combine(acc, hash(a[i]));
+      boost::hash_combine(acc, a[i]);
     }
 
     return acc;
@@ -57,7 +46,7 @@ struct rg_hash
   template<size_t I = 0, typename... Tp>
   void hashIter(const std::tuple<Tp...>& t, size_t &acc) const
   {
-    combine(acc, hash(std::get<I>(t)));
+    boost::hash_combine(acc, std::get<I>(t));
 
     if constexpr(I+1 != sizeof...(Tp))
     {

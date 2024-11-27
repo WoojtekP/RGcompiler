@@ -2033,7 +2033,7 @@ void Compiler::generateApplyAnyMove()
                 cacheNeeded |= !skipStateCache;
                 if (!skipStateCache)
                 {
-                    functionArguments += ",mr_" + cacheName + "," + cacheName;
+                    functionArguments += ",mr_" + cacheName + ".mr," + cacheName;
                 }
             }
 
@@ -2068,7 +2068,7 @@ void Compiler::generateApplyAnyMove()
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
             "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
         tmpBlockInstruction->pushInstructionBack(
-            std::make_unique<CustomInstruction>("move_representation mr_" + cacheName));
+            std::make_unique<CustomInstruction>("Move mr_" + cacheName));
         function->addInstruction(std::move(tmpBlockInstruction));
     }
 

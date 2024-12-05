@@ -700,6 +700,20 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                     graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph)->isExhaustive(state);
                 int cnt = 0;
                 std::set<std::string> visited;
+
+                if (!disjointExhaustive)
+                {
+                    visited.insert(vectorOfNodeNames.begin(), vectorOfNodeNames.end());
+                    for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                    {
+                        if (!visited.count(outgoingEdge->getRightNode()->getName()))
+                        {
+                            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
+                        }
+                    }
+                    visited.clear();
+                }
+
                 for (const auto& nodeName : vectorOfNodeNames)
                 {
                     if (!visited.insert(nodeName).second)
@@ -1225,8 +1239,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     {
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
             "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
-        tmpBlockInstruction->pushInstructionBack(
-            std::make_unique<CustomInstruction>("Move mr_" + cacheName));
+        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
     }
 
     const auto cmpType = action->getNegated() ? ComparisonType::Neg : ComparisonType::None;
@@ -1466,7 +1479,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     const auto pushTag = "mr.push_back(" + tagValueStr + ")";
                     blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
-
                 }
             }
         }
@@ -1927,8 +1939,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
         clearingCaches += "verificationCache.clear();\n";
     }
     getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ +
-        ")"));
+        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));

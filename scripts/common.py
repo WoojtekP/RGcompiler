@@ -24,7 +24,7 @@ class cfg:
   DEFAULT_TRANSLATE_OPTIONS = '--x-enable-all-optimizations --x-enable-all-pragmas'
   #DEFAULT_TRANSLATE_OPTIONS = '--addExplicitCasts --compactSkipEdges --inlineAssignment --inlineReachability --joinForkPrefixes --joinForkSuffixes --mangleSymbols --pruneSingletonTypes --pruneUnreachableNodes --pruneUnusedConstants --pruneUnusedVariables --reuseFunctions --skipGeneratorComparisons --skipSelfAssignments --skipSelfComparisons --skipUnusedTags'
   #DEFAULT_TRANSLATE_OPTIONS += ' --calculateDisjoints --calculateRepeats --calculateSimpleApply --calculateTagIndexes --calculateUniques ' # Auto-optimization
-  DEFAULT_RG2CPP_OPTIONS = '--simple-path 1 --disjoint 1'
+  DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 0'
 
   result = runCap('g++ --version')
@@ -37,7 +37,7 @@ class cfg:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     # -finline-limit=100
 
-class util:
+class utils:
   RESET = "\033[0m"
   RED = "\033[31m"
   GREEN = "\033[32m"

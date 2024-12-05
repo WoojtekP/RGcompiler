@@ -836,7 +836,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
                     varName,
                     "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
                         std::to_string(minValues[curentPos - 1]),
-                    "const auto"));
+                    "[[maybe_unused]] auto"));
             }
             else
             {
@@ -918,10 +918,17 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
         if (!pairFullTagAndChild.second->children_.empty())
         {
-            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
-            ifInstruction->addInstruction(std::move(innerInstructions));
-            breakInstruction->pushInstructionBack(std::move(ifInstruction));
+            if (isExhaustive)
+            {
+                breakInstruction->pushInstructionBack(std::move(innerInstructions));
+            }
+            else
+            {
+                std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                    std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
+                ifInstruction->addInstruction(std::move(innerInstructions));
+                breakInstruction->pushInstructionBack(std::move(ifInstruction));
+            }
             breakInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("break"));
         }
         else
@@ -974,9 +981,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActionsToTags->empty())
     {
-        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-            std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Gr));
-
         // const std::string actionVariable = "currentAction";
         // ifInstruction->addInstruction(
         //     std::make_unique<AssignmentInstruction>(actionVariable, "mr[currentMrId++]", "const auto"));
@@ -1005,9 +1009,22 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // }
         // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
         std::vector<int> minValues;
-        ifInstruction->addInstruction(std::move(makeSwitchForTags(listOfActionsToTags, 1, isExhaustive, minValues)));
+        std::unique_ptr<IInstruction> blockAction;
+        auto switchBody = makeSwitchForTags(listOfActionsToTags, 1, isExhaustive, minValues);
+        if (isExhaustive)
+        {
+            blockAction = std::move(switchBody);
+        }
+        else
+        {
+            std::unique_ptr<IfInstruction> ifInstruction =
+                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    "static_cast<int>(mr.size())", "currentMrId", ComparisonType::Gr));
+            ifInstruction->addInstruction(std::move(switchBody));
+            blockAction = std::move(ifInstruction);
+        }
         // ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments)); for common prefix
-        blockInstruction->pushInstructionFront(std::move(ifInstruction));
+        blockInstruction->pushInstructionFront(std::move(blockAction));
     }
 
     if (!listOfActionsToPlayerChange.empty())
@@ -1027,9 +1044,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
 
-    blockInstruction->pushInstructionFront(
-        std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));
-    blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>("currentMrId", "tmpCurrentMrId"));
+    if (!isExhaustive)
+    {
+        blockInstruction->pushInstructionFront(
+            std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));
+        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>("currentMrId", "tmpCurrentMrId"));
+    }
     function->addInstruction(std::move(blockInstruction));
     function->addInstruction(std::make_unique<ReturnInstruction>("false"));
 

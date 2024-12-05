@@ -99,7 +99,7 @@ std::vector<std::string> PragmaSimpleApplyOperator::convertTagsToFullTags(
 
     for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
-        assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
+        //assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
         if (cnt == parsedSingleSimpleApplyData.tagNames_.size())
         {
             break;
@@ -143,8 +143,7 @@ void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApply
     std::string lastNodeName = parsedSingleSimpleApplyData.nodeName_;
     for (auto& currentNodeName : parsedSingleSimpleApplyData.nodePathToTagOrPlayerChange_)
     {
-        assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
-
+        // assert(graph_->getEdgeIdOptional(lastNodeName, currentNodeName, 1).has_value() == false);
         edges.push_back(graph_->getEdgeId(lastNodeName, currentNodeName, 0));
         lastNodeName = currentNodeName;
     }

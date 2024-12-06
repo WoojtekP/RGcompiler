@@ -21,7 +21,7 @@ class cfg:
   BUILD_TEST_DIR = 'build-test'
   RG_DIR = '../rg'
 
-  DEFAULT_TRANSLATE_OPTIONS = '--x-enable-all-optimizations --x-enable-all-pragmas'
+  DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
   #DEFAULT_TRANSLATE_OPTIONS = '--addExplicitCasts --compactSkipEdges --inlineAssignment --inlineReachability --joinForkPrefixes --joinForkSuffixes --mangleSymbols --pruneSingletonTypes --pruneUnreachableNodes --pruneUnusedConstants --pruneUnusedVariables --reuseFunctions --skipGeneratorComparisons --skipSelfAssignments --skipSelfComparisons --skipUnusedTags'
   #DEFAULT_TRANSLATE_OPTIONS += ' --calculateDisjoints --calculateRepeats --calculateSimpleApply --calculateTagIndexes --calculateUniques ' # Auto-optimization
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1'
@@ -37,7 +37,7 @@ class cfg:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     # -finline-limit=100
 
-class utils:
+class util:
   RESET = "\033[0m"
   RED = "\033[31m"
   GREEN = "\033[32m"

@@ -15,11 +15,11 @@ translateOptions = args.translateOptions
 compileOptions = args.compileOptions
 outputFile = args.outputFile
 
-if not os.path.isfile(f'{cfg.RG_DIR}/examples/{game}'):
-  print(f'There is no file {cfg.RG_DIR}/examples/{game}', file=sys.stderr)
+if not os.path.isfile(f'{cfg.RG_DIR}/games/{game}'):
+  print(f'There is no file {cfg.RG_DIR}/games/{game}', file=sys.stderr)
   exit(2)
 
-game_basename = game.split('.')[0]
+game_basename = game.replace("/","_").split('.')[0]
 
 print(f'Preparing {game} with options "{translateOptions}"')
 
@@ -31,7 +31,8 @@ FORMATTER = "{: <15}{:9.3f} s"
 # Create AST
 startTime = time.time()
 tmp_ast_file = f"{cfg.BUILD_TEST_DIR}/{game_basename}.json"
-run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.RG_DIR}/examples/{game} > {tmp_ast_file}")
+#run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.RG_DIR}/examples/{game} > {tmp_ast_file}")
+run(f"cargo run --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml ast {translateOptions} {cfg.RG_DIR}/games/{game} > {tmp_ast_file}")
 run(f"python3 scripts/adjust_AST.py {tmp_ast_file} {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
 run(f"rm {tmp_ast_file}")
 elapsedTime = time.time() - startTime

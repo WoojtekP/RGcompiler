@@ -7,13 +7,15 @@ parser = argparse.ArgumentParser(description='Compile and run perft.')
 parser.add_argument('game', nargs=1, help='game file')
 parser.add_argument('depth', nargs=1, help='perft depth')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
+parser.add_argument('-skipcompilation', action='store_true', help='skip compile.py and use the existing reasoner sources')
 
 args = parser.parse_args()
 game = args.game[0]
 depth = args.depth[0]
 translateOptions = '"' + args.translateOptions + '"'
 
-run(f'python3 scripts/compile.py {game} -t{translateOptions}')
+if not args.skipcompilation:
+  run(f'python3 scripts/compile.py {game} -t{translateOptions}')
 
 HEAD_FORMATTER = '{: <14} '
 TIME_FORMATTER = '{:9.3f} s'

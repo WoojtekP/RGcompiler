@@ -1180,7 +1180,7 @@ void Compiler::generateBoolStateFunctions(
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
 
-        if (outgoingEdges.empty())
+        if (state == to)
         {
             function->addInstruction(std::make_unique<ReturnInstruction>("true"));
         }
@@ -2050,7 +2050,13 @@ void Compiler::generateApplyAnyMove()
             ifInstruction->addInstruction(
                 std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
+
             block->pushInstructionBack(std::move(ifInstruction));
+            if (cacheNeeded)
+            {
+                block->pushInstructionBack(std::make_unique<CustomInstruction>(cacheName + "= {}"));
+                block->pushInstructionBack(std::make_unique<CustomInstruction>("mr_" + cacheName + "= {}"));
+            }
         }
         block->pushInstructionBack(std::make_unique<ReturnInstruction>("false"));
         sw->addCaseInstruction(graph_->getNodeId(nodeName), std::move(block));

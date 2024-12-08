@@ -110,6 +110,10 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     generatePathFromNodeToNode(
         graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
 
+    visited.clear();
+    generatePathFromNodeToNode(
+        graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
+
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         // We should work on not optimized graph

@@ -54,6 +54,7 @@ private:
     std::set<std::string> simpeApplyNodeNames_;
     // Main node means that it node without simpleApply pragma have edge to this node
     std::set<std::string> mainNodeNames_;
+    std::set<std::string> nodesWithAnyEmptyTagSequence_;
 
 public:
     PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph);
@@ -63,4 +64,5 @@ public:
     bool isSimpleApply(const std::string& nodeName) const;
     bool isExhaustive(const std::string& nodeName) const;
     bool isMainSimpleApply(const std::string& nodeName) const;
+    bool hasAnyEmptyTagSequence(const std::string& nodeName) const;
 };

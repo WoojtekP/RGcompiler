@@ -60,7 +60,8 @@ private:
     std::unique_ptr<BlockInstruction> makeSwitchForTags(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         int depth,
-        bool isExhaustive,
+        const bool isExhaustive,
+        const bool hasAnyEmptyTagSequence,
         std::vector<int> &minValues);
     std::vector<std::shared_ptr<IAction>> getAssignmentsList(
         const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
@@ -75,7 +76,8 @@ private:
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         const std::vector<int> &listOfActionsToPlayerChange,
-        bool isExhaustive);
+        const bool isExhaustive,
+        const bool hasAnyEmptyTagSequence);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         std::vector<std::shared_ptr<IAction>> &actions,

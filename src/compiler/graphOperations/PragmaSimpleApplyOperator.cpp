@@ -155,6 +155,7 @@ void PragmaSimpleApplyOperator::updateStateForData(const ParsedSingleSimpleApply
     }
     else
     {
+        nodesWithAnyEmptyTagSequence_.insert(parsedSingleSimpleApplyData.nodeName_);
         mapOfListOfEdgesToPlayerChangeFromNode_[parsedSingleSimpleApplyData.nodeName_] = std::move(edges);
     }
 }
@@ -172,6 +173,11 @@ bool PragmaSimpleApplyOperator::isSimpleApply(const std::string& nodeName) const
 bool PragmaSimpleApplyOperator::isMainSimpleApply(const std::string& nodeName) const
 {
     return mainNodeNames_.count(nodeName);
+}
+
+bool PragmaSimpleApplyOperator::hasAnyEmptyTagSequence(const std::string& nodeName) const
+{
+    return nodesWithAnyEmptyTagSequence_.count(nodeName);
 }
 
 PragmaSimpleApplyOperator::PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph)

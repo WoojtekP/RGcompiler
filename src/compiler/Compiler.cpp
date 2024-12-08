@@ -682,7 +682,9 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->getActionListToPlayerChange(node),
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
-                    ->isExhaustive(node->getName())));
+                    ->isExhaustive(node->getName()),
+                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
+                    ->hasAnyEmptyTagSequence(node->getName())));
 
             skipForExhaustiveSimpleApply =
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
@@ -888,7 +890,8 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
 std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
     int depth,
-    bool isExhaustive,
+    const bool isExhaustive,
+    const bool hasAnyEmptyTagSequence,
     std::vector<int>& minValues)
 {
     if (listOfActionsToTags->children_.empty())
@@ -913,12 +916,12 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
         minValues.push_back(minValue);
         auto innerInstructions =
-            std::move(makeSwitchForTags(pairFullTagAndChild.second, depth + 1, isExhaustive, minValues));
+            std::move(makeSwitchForTags(pairFullTagAndChild.second, depth + 1, isExhaustive, hasAnyEmptyTagSequence, minValues));
 
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
         if (!pairFullTagAndChild.second->children_.empty())
         {
-            if (isExhaustive)
+            if (isExhaustive && !hasAnyEmptyTagSequence)
             {
                 breakInstruction->pushInstructionBack(std::move(innerInstructions));
             }
@@ -963,7 +966,8 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
     const std::vector<int>& listOfActionsToPlayerChange,
-    bool isExhaustive)
+    const bool isExhaustive,
+    const bool hasAnyEmptyTagSequence)
 {
     static int nameCnt = 0;
     std::string functionName = "switch_" + std::to_string(nameCnt++);
@@ -1010,8 +1014,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
         std::vector<int> minValues;
         std::unique_ptr<IInstruction> blockAction;
-        auto switchBody = makeSwitchForTags(listOfActionsToTags, 1, isExhaustive, minValues);
-        if (isExhaustive)
+        auto switchBody = makeSwitchForTags(listOfActionsToTags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues);
+        if (isExhaustive && !hasAnyEmptyTagSequence)
         {
             blockAction = std::move(switchBody);
         }
@@ -1044,7 +1048,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
 
-    if (!isExhaustive)
+    if (!isExhaustive || hasAnyEmptyTagSequence)
     {
         blockInstruction->pushInstructionFront(
             std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));

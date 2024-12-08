@@ -35,7 +35,7 @@ bool keeperCompletion(reasoner::GameState &state) {
       #ifndef NDEBUG
         if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
       #endif
-      state.applyMove(EMPTY_MOVE, cache);
+      state.applyMove(moves[0], cache);
     }
   }
   return true;

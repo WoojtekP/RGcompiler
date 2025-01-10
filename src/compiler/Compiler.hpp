@@ -2,8 +2,8 @@
 
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
-#include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
+#include <compiler/stateCache/IStateCache.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
@@ -29,7 +29,7 @@ class Compiler
 public:
     Compiler(const Parser &parser, const Options &options);
     void compile();
-    void generateSourceCode(const std::string& outputFileName, std::ofstream &headerFile, std::ofstream &sourceFile);
+    void generateSourceCode(const std::string &outputFileName, std::ofstream &headerFile, std::ofstream &sourceFile);
 
 private:
     void initializeGraph();
@@ -53,12 +53,12 @@ private:
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
     std::unique_ptr<BlockInstruction> getAssignments(
-        const std::vector<int> &edges,
-        const std::shared_ptr<Graph> &graph,
-        std::vector<int> &minValues,
-        int commonPrefixSize = 0) const;
+        const std::vector<std::unique_ptr<IAction>> &actions,
+        const std::vector<std::string> &tags,
+        std::vector<int> &minValues) const;
     std::unique_ptr<BlockInstruction> makeSwitchForTags(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
+        std::vector<std::string> &tags,
         int depth,
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence,
@@ -75,14 +75,15 @@ private:
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
-        const std::vector<int> &listOfActionsToPlayerChange,
+        std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>> &listOfActionsToPlayerChangeAndEndNode,
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence);
+
+    template<typename TPtrNode, typename TPtrAction>
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
-        std::vector<std::shared_ptr<IAction>> &actions,
-        const std::shared_ptr<Edge> &edge,
-        int iid,
+        std::vector<TPtrAction> &actions,
+        const TPtrNode &toNode,
         bool applyEdgeMode,
         bool simpleApplyEdgeMode = false);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
@@ -143,8 +144,9 @@ private:
     void generateStateCaches();
     std::string getTypeForVariable(const std::string &variableName);
     std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
-    std::string getVariableValueFromTagString(const std::shared_ptr<Edge> &edge) const;
-    const std::shared_ptr<IStateCache>& getStateCacheSafe(const std::string& state) const;
+    template<typename TPtrNode>
+    std::string getVariableValueFromTagString(const TPtrNode &node) const;
+    const std::shared_ptr<IStateCache> &getStateCacheSafe(const std::string &state) const;
     bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;

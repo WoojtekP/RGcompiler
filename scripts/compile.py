@@ -8,6 +8,7 @@ parser.add_argument('game', help='game file')
 parser.add_argument('-o', dest='outputFile', help='name of output file with generated code', default="reasoner")
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 parser.add_argument('-c', dest='compileOptions', nargs='?', help='compile options for rg2cpp', default=cfg.DEFAULT_RG2CPP_OPTIONS)
+parser.add_argument('-skipast', action='store_true', help='skip AST creation and use existing one for given game')
 
 args = parser.parse_args()
 game = args.game
@@ -21,22 +22,21 @@ if not os.path.isfile(f'{cfg.RG_DIR}/games/{game}'):
 
 game_basename = game.replace("/","_").split('.')[0]
 
-print(f'Preparing {game} with options "{translateOptions}"')
-
 run("mkdir -p "+cfg.BUILD_TEST_DIR)
-run("cp defaultMap.hpp "+cfg.BUILD_TEST_DIR+"/defaultMap.hpp")
 
 FORMATTER = "{: <15}{:9.3f} s"
 
 # Create AST
-startTime = time.time()
-tmp_ast_file = f"{cfg.BUILD_TEST_DIR}/{game_basename}.json"
-#run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.RG_DIR}/examples/{game} > {tmp_ast_file}")
-run(f"cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml ast {translateOptions} {cfg.RG_DIR}/games/{game} > {tmp_ast_file}")
-run(f"python3 scripts/adjust_AST.py {tmp_ast_file} {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
-run(f"rm {tmp_ast_file}")
-elapsedTime = time.time() - startTime
-print(FORMATTER.format("ast:",elapsedTime))
+if not args.skipast:
+  print(f'Preparing {game} with options "{translateOptions}"')
+  startTime = time.time()
+  tmp_ast_file = f"{cfg.BUILD_TEST_DIR}/{game_basename}.json"
+  #run(f"node {cfg.RG_DIR}/interpreter_node/lib/cli {translateOptions} rg-ast {cfg.RG_DIR}/examples/{game} > {tmp_ast_file}")
+  run(f"cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml ast {translateOptions} {cfg.RG_DIR}/games/{game} > {tmp_ast_file}")
+  run(f"python3 scripts/adjust_AST.py {tmp_ast_file} {cfg.BUILD_TEST_DIR}/{game_basename}-ast.json")
+  run(f"rm {tmp_ast_file}")
+  elapsedTime = time.time() - startTime
+  print(FORMATTER.format("ast:",elapsedTime))
 
 # Generate cpp files
 print(f'Compiling {game} with options "{compileOptions}"')

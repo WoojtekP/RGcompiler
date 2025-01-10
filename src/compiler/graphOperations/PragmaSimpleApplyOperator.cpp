@@ -44,7 +44,9 @@ void PragmaSimpleApplyOperator::parseItem(
     std::vector<std::string> tags;
     for (const auto& tag : item["tags"])
     {
-        data.tagNames_.push_back(tag);
+        std::string tagVarName = tag["tag"].get<std::string>();
+        std::string tagType = tag["type"]["identifier"];
+        data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
     }
     std::vector<std::unique_ptr<IAction>> actions;
 

@@ -223,6 +223,9 @@ public:
     ComparisonInstruction(const std::string &expr, ComparisonType cmp = ComparisonType::None);
     ComparisonInstruction(const std::string &left, const std::string &right, ComparisonType cmp = ComparisonType::Eq);
 
+    ComparisonType getType() const;
+    std::pair<std::string, std::string> getSubexpressions() const;
+
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 
@@ -233,8 +236,10 @@ class BlockInstruction : public IInstruction
 public:
     BlockInstruction();
 
+    const std::unique_ptr<IInstruction>& frontInstruction() const;
     void pushInstructionBack(std::unique_ptr<IInstruction> &&instruction);
     void pushInstructionFront(std::unique_ptr<IInstruction> &&instruction);
+    void popInstructionFront();
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
@@ -248,6 +253,8 @@ class IfInstruction : public IInstruction
 public:
     IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition);
 
+    std::vector<std::unique_ptr<IInstruction>> extractInstructions();
+    const std::unique_ptr<ComparisonInstruction>& getCondition() const;
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
     void addElseInstruction(std::unique_ptr<IInstruction> &&instruction);
 

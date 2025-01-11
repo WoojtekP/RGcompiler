@@ -1510,26 +1510,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
     }
 
-    // wrap into binding if needed
-    const auto leftBinding = edge->getLeftNode()->getBinding();
-    const auto rightBinding = edge->getRightNode()->getBinding();
-    if (rightBinding && leftBinding != rightBinding)
-    {
-        // TODO: this is an optimization for move application (see previous 'TODO' in this file)
-        // const auto firstAction = actions.front();
-        // const auto isFirstActionTag = firstAction->getType() == ActionType::Tag;
-        // if (!applyEdgeMode || !(isFirstActionTag && rightBinding->getVariableName() == firstAction->toString()))
-        // {
-        const LoopFactory loopFactory(parser_, valueAssigner_);
-        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
-        loopInstruction->addInstruction(std::move(blockInstruction));
-        auto result = std::make_unique<BlockInstruction>();
-        result->pushInstructionBack(std::move(loopInstruction));
-        return result;
-        // }
-    }
-
-    return blockInstruction;
+    return wrapIntoLoopIfNeeded(edge, std::move(blockInstruction));
 }
 
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
@@ -1682,20 +1663,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
     }
 
-    // wrap into binding if needed
-    const auto leftBinding = edge->getLeftNode()->getBinding();
-    const auto rightBinding = edge->getRightNode()->getBinding();
-    if (rightBinding && leftBinding != rightBinding)
-    {
-        const LoopFactory loopFactory(parser_, valueAssigner_);
-        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
-        loopInstruction->addInstruction(std::move(blockInstruction));
-        auto result = std::make_unique<BlockInstruction>();
-        result->pushInstructionBack(std::move(loopInstruction));
-        return result;
-    }
-
-    return blockInstruction;
+    return wrapIntoLoopIfNeeded(edge, std::move(blockInstruction));
 }
 
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
@@ -2166,6 +2134,57 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
         }
     }
     return std::make_unique<MapValue>(std::move(idToValueMap), std::move(defaultValue));
+}
+
+
+std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
+    const std::shared_ptr<Edge>& edge, std::unique_ptr<BlockInstruction> blockInstruction) const
+{
+    const auto leftBinding = edge->getLeftNode()->getBinding();
+    const auto rightBinding = edge->getRightNode()->getBinding();
+    if (rightBinding && leftBinding != rightBinding)
+    {
+        // Optimization: not create loops when only one value will be accepted
+        const auto ifInstruction = dynamic_cast<IfInstruction*>(blockInstruction->frontInstruction().get());
+        if (ifInstruction != nullptr && ifInstruction->getCondition()->getType() == ComparisonType::Eq)
+        {
+            const auto [lhs, rhs] = ifInstruction->getCondition()->getSubexpressions();
+            const auto bindParameterName = rightBinding->getVariableName();
+            if (lhs == bindParameterName)
+            {
+                auto instructionsInsideIf = ifInstruction->extractInstructions();
+                blockInstruction->popInstructionFront();
+                for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
+                {
+                    blockInstruction->pushInstructionFront(std::move(insideInstruction));
+                }
+                blockInstruction->pushInstructionFront(
+                    std::make_unique<AssignmentInstruction>(bindParameterName, rhs, "const auto"));
+                return blockInstruction;
+            }
+            if (rhs == bindParameterName)
+            {
+                auto instructionsInsideIf = ifInstruction->extractInstructions();
+                blockInstruction->popInstructionFront();
+                for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
+                {
+                    blockInstruction->pushInstructionFront(std::move(insideInstruction));
+                }
+                blockInstruction->pushInstructionFront(
+                    std::make_unique<AssignmentInstruction>(bindParameterName, lhs, "const auto"));
+                return blockInstruction;
+            }
+        }
+
+        const LoopFactory loopFactory(parser_, valueAssigner_);
+        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
+        loopInstruction->addInstruction(std::move(blockInstruction));
+        auto result = std::make_unique<BlockInstruction>();
+        result->pushInstructionBack(std::move(loopInstruction));
+        return result;
+    }
+
+    return blockInstruction;
 }
 
 std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionName)

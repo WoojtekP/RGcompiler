@@ -139,7 +139,6 @@ std::string cmpToString(const ComparisonType cmpType)
     throw std::invalid_argument("[Program] Unkwnon ComparisonType: " + std::to_string(static_cast<int>(cmpType)));
 }
 
-
 ComparisonInstruction::ComparisonInstruction(const std::string &expr, ComparisonType cmp)
 : left_(expr)
 , cmpType_(cmp)
@@ -163,6 +162,16 @@ ComparisonInstruction::ComparisonInstruction(const std::string &left, const std:
     }
 }
 
+ComparisonType ComparisonInstruction::getType() const
+{
+    return cmpType_;
+}
+
+std::pair<std::string, std::string> ComparisonInstruction::getSubexpressions() const
+{
+    return {left_, right_};
+}
+
 std::string ComparisonInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
@@ -176,6 +185,16 @@ std::string ComparisonInstruction::toString(int delimiter, int shift, bool semic
 IfInstruction::IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition)
 : condition_(std::move(condition))
 {}
+
+std::vector<std::unique_ptr<IInstruction>> IfInstruction::extractInstructions()
+{
+    return std::move(instructions_);
+}
+
+const std::unique_ptr<ComparisonInstruction>& IfInstruction::getCondition() const
+{
+    return condition_;
+}
 
 void IfInstruction::addInstruction(std::unique_ptr<IInstruction> &&instruction)
 {
@@ -303,7 +322,7 @@ std::string IterLoopInstruction::toString(int delimiter, int shift, bool semicol
     {
         result += instruction->toString(shift, shift, semicolon);
     }
-    result += getLeadingSpaces(delimiter) + "}\n";
+    result += getLeadingSpaces(delimiter) + "}";
     return result;
 }
 
@@ -339,11 +358,16 @@ std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semico
     {
         result += instruction->toString(shift, shift, semicolon);
     }
-    result += getLeadingSpaces(delimiter) + "}\n";
+    result += getLeadingSpaces(delimiter) + "}";
     return result;
 }
 
 BlockInstruction::BlockInstruction() {}
+
+const std::unique_ptr<IInstruction>& BlockInstruction::frontInstruction() const
+{
+    return instructions_.front();
+}
 
 void BlockInstruction::pushInstructionBack(std::unique_ptr<IInstruction> &&instruction)
 {
@@ -353,6 +377,11 @@ void BlockInstruction::pushInstructionBack(std::unique_ptr<IInstruction> &&instr
 void BlockInstruction::pushInstructionFront(std::unique_ptr<IInstruction> &&instruction)
 {
     instructions_.push_front(std::move(instruction));
+}
+
+void BlockInstruction::popInstructionFront()
+{
+    instructions_.pop_front();
 }
 
 std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)

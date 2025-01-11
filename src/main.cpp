@@ -19,8 +19,7 @@ int main(const int argc, const char **argv)
         namespace po = boost::program_options;
         po::options_description mainOptions("Main options");
 
-        mainOptions.add_options()
-            ("help,h", "Show this help message and exit")(
+        mainOptions.add_options()("help,h", "Show this help message and exit")(
             "file", po::value<std::string>(&inputFileName)->required(), "Json file name with AST")(
             ",o", po::value<std::string>(&outputFileName)->default_value("reasoner"), "Output file name")(
             "print-function-names",
@@ -41,7 +40,10 @@ int main(const int argc, const char **argv)
             "disjoint",
             po::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
             "Enable pragma 'disjoint'")(
-            "gccinline", po::value<bool>(&options.gccInline_)->default_value(false), "Enable gcc inline attribiute");
+            "gccinline", po::value<bool>(&options.gccInline_)->default_value(false), "Enable gcc inline attribiute")(
+            "max-move-len",
+            po::value<int>(&options.maxMoveLen_)->default_value(-1),
+            "Enable setting size of static vector");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, mainOptions), vm);

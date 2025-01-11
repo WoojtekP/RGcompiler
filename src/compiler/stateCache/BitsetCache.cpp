@@ -2,9 +2,24 @@
 
 #include <string>
 #include <vector>
+#include <ranges>
 
 #include <compiler/ValueAssigner.hpp>
 #include <parser/Parser.hpp>
+
+
+namespace
+{
+std::string getIndexExpressionPart(const std::string& identifier, const int multiplier, const int offset)
+{
+    std::string expression = (offset == 0) ? identifier : "(" + identifier + "-" + std::to_string(offset) + ")";
+    if (multiplier > 1)
+    {
+        expression += "*" + std::to_string(multiplier);
+    }
+    return expression;
+}
+}
 
 BitsetCache::BitsetCache(
     const std::string& nodeName,
@@ -19,16 +34,14 @@ BitsetCache::BitsetCache(
 
 std::string BitsetCache::getCacheType() const
 {
-    const auto sourceType = parser_.findTypeOfVariable(identifiers_.back());
-    const auto typeRange = valueAssigner_.getTypeRange(sourceType["identifier"].get<std::string>());
-    std::string cacheType = "std::bitset<" + std::to_string(typeRange) + ">";
-    for (auto id = identifiers_.end() - 2; id >= identifiers_.begin(); --id)
+    auto combinedRangeSize = 1;
+    for (const auto& identifier : identifiers_)
     {
-        const auto sourceType = parser_.findTypeOfVariable(*id);
+        const auto sourceType = parser_.findTypeOfVariable(identifier);
         const auto typeRange = valueAssigner_.getTypeRange(sourceType["identifier"].get<std::string>());
-        cacheType = "Arr<" + cacheType + "," + std::to_string(typeRange) + ">";
+        combinedRangeSize *= typeRange;
     }
-    return cacheType;
+    return combinedRangeSize == 1 ? "bool" : "std::bitset<" + std::to_string(combinedRangeSize) + ">";
 }
 
 std::string BitsetCache::getCacheName() const
@@ -48,10 +61,32 @@ std::string BitsetCache::getTestInstruction() const
 
 std::string BitsetCache::getMethodCall(const std::string& method) const
 {
-    std::string expression;
-    for (auto id = identifiers_.begin(); id < identifiers_.end() - 1; ++id)
+    if (identifiers_.size() == 1)
     {
-        expression += "[" + *id + "]";
+        return "." + method + "(" + identifiers_.front() + ")";
     }
-    return expression + "." + method + "(" + identifiers_.back() + ")";
+    const auto identifierToMultiplierAndOffsetMap = getIdentifierToMultiplierAndOffsetMap();
+    std::string indexExpression;
+    for (const auto& identifier : identifiers_)
+    {
+        const auto [multiplier, offset] = identifierToMultiplierAndOffsetMap.at(identifier);
+        indexExpression += getIndexExpressionPart(identifier, multiplier, offset) + "+";
+    }
+    indexExpression.pop_back();
+    return "." + method + "(" + indexExpression + ")";
+}
+
+std::map<std::string, std::pair<int, int>> BitsetCache::getIdentifierToMultiplierAndOffsetMap() const
+{
+    std::map<std::string, std::pair<int, int>> identifierToMultiplierAndOffsetMap;
+    int currentMultiplier = 1;
+    for (const auto& identifier : std::ranges::reverse_view(identifiers_))
+    {
+        const auto sourceType = parser_.findTypeOfVariable(identifier);
+        const auto [minValue, maxValue] = valueAssigner_.getTypeMinMaxValues(sourceType["identifier"].get<std::string>());
+        const auto typeRange = maxValue - minValue + 1;
+        identifierToMultiplierAndOffsetMap.emplace(identifier, std::make_pair(currentMultiplier, minValue));
+        currentMultiplier *= typeRange;
+    }
+    return identifierToMultiplierAndOffsetMap;
 }

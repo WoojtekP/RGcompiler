@@ -24,6 +24,7 @@ public:
 
 private:
     std::string getMethodCall(const std::string& method) const;
+    std::map<std::string, std::pair<int, int>> getIdentifierToMultiplierAndOffsetMap() const;
 
     const std::string cacheName_;
     const std::vector<std::string> identifiers_;

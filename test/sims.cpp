@@ -1,8 +1,13 @@
 #include <iostream>
+#include <chrono>
 #include "fast_random.hpp"
 #include <reasoner.hpp>
 using uint = unsigned int;
 using ulong = unsigned long;
+
+#ifndef USE_TIME
+#define USE_TIME 0
+#endif
 
 #define KEEPER_APPLY_ANY_MOVE 1
 
@@ -45,6 +50,7 @@ void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
   while (true) {
+    //std::cerr << "depth " << depth << std::endl;
     #ifndef NDEBUG
       if (state.getCurrentPlayer() == reasoner::keeper) exitWithError(state, "Keeper at the beginning of player loop");
     #endif
@@ -69,7 +75,11 @@ void doSimulation() {
 
 int main(int argc, char** argv) {
   if (argc != 2) {
-    std::cerr << "Usage: " << argv[0] << " [number of simulations]" << std::endl;
+    if constexpr(USE_TIME) {
+      std::cerr << "Usage: " << argv[0] << " [time in ms]" << std::endl;
+    } else {
+      std::cerr << "Usage: " << argv[0] << " [number of simulations]" << std::endl;
+    }
     return 1;
   }
 
@@ -78,8 +88,21 @@ int main(int argc, char** argv) {
     if (!initialNonterminal) exitWithError(initial, "Initial state is terminal");
   #endif
   
-  numSimulations = std::stoi(argv[1]);
-  for (uint i = 0; i < numSimulations; i++) doSimulation();
+  if constexpr(USE_TIME) {
+    std::chrono::duration simulation_duration = std::chrono::milliseconds(std::stoi(argv[1]));
+    std::chrono::steady_clock::time_point end_time;
+    std::chrono::steady_clock::time_point start_time(std::chrono::steady_clock::now());
+    std::chrono::steady_clock::time_point planned_end_time = start_time + simulation_duration;
+    for (numSimulations = 0; ; numSimulations++) {
+      doSimulation();
+      end_time = std::chrono::steady_clock::now();
+      if (end_time >= planned_end_time) break;
+    }
+  } else {
+    numSimulations = std::stoi(argv[1]);
+    for (uint i = 0; i < numSimulations; i++) doSimulation();
+  }
+  
   if (maxMoves == 0) maxMoves = minMoves;
   if (maxDepth == 0) maxDepth = minDepth;
 

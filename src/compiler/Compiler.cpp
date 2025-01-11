@@ -834,51 +834,26 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     const std::vector<std::string>& tags,
     std::vector<int>& minValues) const
 {
-    std::optional<std::string> tagVar;
     int curentPos = 1;
-    bool skipNext = false;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    std::set<std::string> alreadyCreatedVars;
-
-    auto addAssigmentInstruction =
-        [&minValues, &curentPos, &blockInstruction, &alreadyCreatedVars](const std::string& varName) {
-            if (alreadyCreatedVars.insert(varName).second)
-            {
-                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                    varName,
-                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                        std::to_string(minValues[curentPos - 1]),
-                    "[[maybe_unused]] auto"));
-            }
-            else
-            {
-                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                    varName,
-                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                        std::to_string(minValues[curentPos - 1])));
-            }
-
-            curentPos++;
-        };
-    auto tagIt = tags.begin();
-    if (!tags.empty())
+    for (auto tag : tags)
     {
-        tagVar = getTagVar(*tagIt++);
-    }
-    for (const auto& action : actions)
-    {
+        auto tagVar = getTagVar(tag);
         if (tagVar)
         {
-            if (action->getRightSide() == *tagVar)
-            {
-                addAssigmentInstruction(*tagVar);
-                if (tagIt != tags.end())
-                {
-                    tagVar = getTagVar(*tagIt++);
-                }
-            }
+            tag = *tagVar;
         }
+        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+            tag,
+            "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                std::to_string(minValues[curentPos - 1]),
+            "[[maybe_unused]] auto"));
+        curentPos++;
+    }
+
+    for (const auto& action : actions)
+    {
         blockInstruction->pushInstructionBack(
             std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
     }

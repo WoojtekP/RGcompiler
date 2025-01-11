@@ -43,7 +43,8 @@ int main(const int argc, const char **argv)
             "gccinline", po::value<bool>(&options.gccInline_)->default_value(false), "Enable gcc inline attribiute")(
             "max-move-len",
             po::value<int>(&options.maxMoveLen_)->default_value(-1),
-            "Enable setting size of static vector");
+            "Enable setting size of static vector")(
+            "all-unique", po::value<bool>(&options.allUnique_)->default_value(false), "Remove caches");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, mainOptions), vm);

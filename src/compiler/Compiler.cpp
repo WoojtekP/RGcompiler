@@ -114,6 +114,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , verification_(options.verification_)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
 , optGccInline_(options.gccInline_)
+, allUnique_(options.allUnique_)
 , maxMoveLen_(options.maxMoveLen_ == -1 ? std::nullopt : std::optional(options.maxMoveLen_))
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
@@ -177,7 +178,8 @@ void Compiler::initializePragmaUnique()
     for (const auto& [from, to, graph] : patternReachabilityGraphs_)
     {
         if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
-                pragmaUniqueData_))
+                pragmaUniqueData_) ||
+            allUnique_)
         {
             areAllNodesInPatternGraphUnique_.insert({from, to});
         }
@@ -186,7 +188,8 @@ void Compiler::initializePragmaUnique()
     for (const auto& [from, to, graph] : applyAnyMoveGraphs_)
     {
         if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
-                pragmaUniqueData_))
+                pragmaUniqueData_) ||
+            allUnique_)
         {
             areAllNodesInApplyAnyGraphUnique_.insert({from, to});
         }
@@ -195,6 +198,11 @@ void Compiler::initializePragmaUnique()
 
 void Compiler::initializePragmaRepeat()
 {
+    if (allUnique_)
+    {
+        return;
+    }
+
     const auto isVariableOfFunctionType = [this](const auto& variableName) {
         const auto& variableType = parser_.findTypeOfVariable(variableName);
         if (variableType["kind"] == "TypeReference")
@@ -673,7 +681,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             const auto insertInstruction = cacheVarName + stateCache->getInsertInstruction();
             function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));
         }
-        else if (!applyMode && !pragmaUniqueData_.count(node->getName()))
+        else if (!applyMode && !(pragmaUniqueData_.count(node->getName()) || allUnique_))
         {
             auto nodeId = std::to_string(graph_->getNodeId(state));
             if (const auto binding = node->getBinding())
@@ -1134,7 +1142,7 @@ void Compiler::generateBoolStateFunctions(
                     "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
             }
 
-            if (!pragmaUniqueData_.count(node->getAlternativeName()) && !skipStateCache)
+            if (!(pragmaUniqueData_.count(node->getAlternativeName()) || allUnique_) && !skipStateCache)
             {
                 auto nodeId = std::to_string(graph_->getNodeId(state));
                 if (const auto binding = node->getBinding())

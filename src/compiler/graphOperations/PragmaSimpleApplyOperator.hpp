@@ -11,10 +11,21 @@ const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 struct SimpleApplySwitchTreeNode
 {
     std::unordered_map<std::string, std::shared_ptr<SimpleApplySwitchTreeNode>> children_;
-    std::vector<int> listOfEdges_;
-    bool empty() const { return children_.empty() && listOfEdges_.empty(); }
-    void insert(const std::vector<std::string>& tags, const std::vector<int>& edges, int currTagPos);
-    void insert(const std::vector<std::string>& tags, const std::vector<int>& edges) { insert(tags, edges, 0); }
+    std::vector<std::unique_ptr<IAction>> listOfActions_;
+    std::unique_ptr<Node> endNode_;
+    bool empty() const { return children_.empty() && listOfActions_.empty(); }
+    void insert(
+        const std::vector<std::string>& tags,
+        std::vector<std::unique_ptr<IAction>> actions,
+        std::unique_ptr<Node> endNode,
+        int currTagPos);
+    void insert(
+        const std::vector<std::string>& tags,
+        std::vector<std::unique_ptr<IAction>> actions,
+        std::unique_ptr<Node> endNode)
+    {
+        insert(tags, std::move(actions), std::move(endNode), 0);
+    }
 };
 
 class PragmaSimpleApplyOperator : public BaseOperator
@@ -22,33 +33,33 @@ class PragmaSimpleApplyOperator : public BaseOperator
 public:
     struct ParsedSingleSimpleApplyData
     {
-        std::string nodeName_;
+        std::string startNodeName_;
+        std::unique_ptr<Node> endNode_;
         std::vector<std::string> tagNames_;
-        std::vector<std::string> nodePathToTagOrPlayerChange_;
+        std::vector<std::unique_ptr<IAction>> actionsToTagOrPlayerChange_;
         bool hasTag() const { return !tagNames_.empty(); };
+        ParsedSingleSimpleApplyData() = default;
         ParsedSingleSimpleApplyData(
-            const std::string& nodeName,
-            const std::vector<std::string>& nodePathToTagOrPlayerChange,
+            const std::string& startNodeName,
+            std::unique_ptr<Node> endNode,
+            std::vector<std::unique_ptr<IAction>> actionsToTagOrPlayerChange,
             const std::vector<std::string>& tagNames = {})
-        : nodeName_(nodeName)
-        , nodePathToTagOrPlayerChange_(nodePathToTagOrPlayerChange)
+        : startNodeName_(startNodeName)
+        , endNode_(std::move(endNode))
+        , actionsToTagOrPlayerChange_(std::move(actionsToTagOrPlayerChange))
         , tagNames_(tagNames)
         {}
     };
 
 private:
     using NodeName = std::string;
-    using EdgeId = int;
-    using TagId = int;
     std::map<NodeName, std::shared_ptr<SimpleApplySwitchTreeNode>> mapOfSimpleApplySwitchTreeNodeFromNode_;
-    std::map<NodeName, std::vector<EdgeId>> mapOfListOfEdgesToPlayerChangeFromNode_;
+    std::map<NodeName, std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>>
+        mapOfListOfActionsToPlayerChangeFromNodeAndEndNode_;
 
-    std::optional<std::string> edgeHasTag(const std::shared_ptr<Edge>& edge) const;
-    std::vector<std::string> convertTagsToFullTags(
-        const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData) const;
-    void updateStateForData(const ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData);
-    void parsePragma(const Parser& parser, const std::string& pragmaName);
-    void parseItem(const nlohmann::json& item, bool isExhaustive);
+    void updateStateForData(ParsedSingleSimpleApplyData& parsedSingleSimpleApplyData);
+    void parsePragma(const Parser& parser, const ExpressionFactory& expressionFactory, const std::string& pragmaName);
+    void parseItem(const nlohmann::json& item, const ExpressionFactory& expressionFactory, bool isExhaustive);
 
     std::set<std::string> exhaustiveNodeNames_;
     std::set<std::string> simpeApplyNodeNames_;
@@ -58,9 +69,10 @@ private:
 
 public:
     PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph);
-    void init(const Parser& parser);
+    void init(const Parser& parser, const ValueAssigner& valueAssigner);
     const std::shared_ptr<SimpleApplySwitchTreeNode>& getActionListToTags(const std::shared_ptr<Node>& node) const;
-    const std::vector<EdgeId>& getActionListToPlayerChange(const std::shared_ptr<Node>& node) const;
+    std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>& getActionListToPlayerChange(
+        const std::shared_ptr<Node>& node);
     bool isSimpleApply(const std::string& nodeName) const;
     bool isExhaustive(const std::string& nodeName) const;
     bool isMainSimpleApply(const std::string& nodeName) const;

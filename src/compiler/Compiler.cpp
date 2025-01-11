@@ -12,6 +12,19 @@ namespace
 {
 const std::string UNUSED_TAG_VALUE = "-1";
 
+std::optional<std::string> getTagVar(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        return tagTmp.substr(0, pos - 1);
+    }
+    return {};
+}
+
 bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
 {
     for (const auto& [edgeA, iid] : edges)
@@ -209,7 +222,7 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_);
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_, valueAssigner_);
 }
 
 void Compiler::initializePragmas()
@@ -817,71 +830,32 @@ std::vector<std::shared_ptr<IAction>> Compiler::getAssignmentsList(
 }
 
 std::unique_ptr<BlockInstruction> Compiler::getAssignments(
-    const std::vector<int>& edges,
-    const std::shared_ptr<Graph>& graph,
-    std::vector<int>& minValues,
-    int commonPrefixSize) const
+    const std::vector<std::unique_ptr<IAction>>& actions,
+    const std::vector<std::string>& tags,
+    std::vector<int>& minValues) const
 {
     int curentPos = 1;
-    bool skipNext = false;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
-    auto it = edges.begin();
-    std::advance(it, commonPrefixSize);
 
-    std::set<std::string> alreadyCreatedVars;
-
-    auto addAssigmentInstruction =
-        [&minValues, &curentPos, &blockInstruction, &alreadyCreatedVars](const std::string& varName) {
-            if (alreadyCreatedVars.insert(varName).second)
-            {
-                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                    varName,
-                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                        std::to_string(minValues[curentPos - 1]),
-                    "[[maybe_unused]] auto"));
-            }
-            else
-            {
-                blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                    varName,
-                    "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                        std::to_string(minValues[curentPos - 1])));
-            }
-
-            curentPos++;
-        };
-
-    for (it; it != edges.end(); it++)
+    for (auto tag : tags)
     {
-        int edgeId = *it;
-        auto edge = graph->getEdge(edgeId);
-
-        if (!skipNext && (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding()))
+        auto tagVar = getTagVar(tag);
+        if (tagVar)
         {
-            if (edge->getLeftNode()->getBinding())
-            {
-                addAssigmentInstruction(edge->getLeftNode()->getBinding()->getVariableName());
-            }
-            else
-            {
-                addAssigmentInstruction(edge->getRightNode()->getBinding()->getVariableName());
-            }
-            skipNext = true;
+            tag = *tagVar;
         }
+        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+            tag,
+            "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                std::to_string(minValues[curentPos - 1]),
+            "[[maybe_unused]] auto"));
+        curentPos++;
+    }
 
-        // This works because for now we only hanlde nodes with one binding
-        if (!edge->getRightNode()->getBinding())
-        {
-            skipNext = false;
-        }
-
-        assert(edge->getActions().size() == 1);
-        const auto& action = edge->getActions().back();
-        if (action->getType() == ActionType::Assignment)
-        {
-            blockInstruction->pushInstructionBack(
-                std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
-        }
+    for (const auto& action : actions)
+    {
+        blockInstruction->pushInstructionBack(
+            std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
     }
 
     return std::move(blockInstruction);
@@ -889,6 +863,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
 
 std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
+    std::vector<std::string>& tags,
     int depth,
     const bool isExhaustive,
     const bool hasAnyEmptyTagSequence,
@@ -897,14 +872,10 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     if (listOfActionsToTags->children_.empty())
     {
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
-            getAssignments(listOfActionsToTags->listOfEdges_, unoptimizedGraph_, minValues, 0);
-
-        int lastEdgeId = listOfActionsToTags->listOfEdges_.back();
-        auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
-        auto actions = lastEdge->getActions();
+            getAssignments(listOfActionsToTags->listOfActions_, tags, minValues);
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
-            unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true, true));
+            unoptimizedGraph_, listOfActionsToTags->listOfActions_, listOfActionsToTags->endNode_, true, true));
 
         return std::move(blockInstructionTmp);
     }
@@ -915,9 +886,10 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     {
         const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
         minValues.push_back(minValue);
-        auto innerInstructions =
-            std::move(makeSwitchForTags(pairFullTagAndChild.second, depth + 1, isExhaustive, hasAnyEmptyTagSequence, minValues));
-
+        tags.push_back(pairFullTagAndChild.first);
+        auto innerInstructions = std::move(makeSwitchForTags(
+            pairFullTagAndChild.second, tags, depth + 1, isExhaustive, hasAnyEmptyTagSequence, minValues));
+        tags.pop_back();
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
         if (!pairFullTagAndChild.second->children_.empty())
         {
@@ -965,7 +937,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
-    const std::vector<int>& listOfActionsToPlayerChange,
+    std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>& listOfActionsToPlayerChangeAndEndNode,
     const bool isExhaustive,
     const bool hasAnyEmptyTagSequence)
 {
@@ -1014,7 +986,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
         std::vector<int> minValues;
         std::unique_ptr<IInstruction> blockAction;
-        auto switchBody = makeSwitchForTags(listOfActionsToTags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues);
+        std::vector<std::string> tags;
+        auto switchBody =
+            makeSwitchForTags(listOfActionsToTags, tags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues);
         if (isExhaustive && !hasAnyEmptyTagSequence)
         {
             blockAction = std::move(switchBody);
@@ -1031,19 +1005,19 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         blockInstruction->pushInstructionFront(std::move(blockAction));
     }
 
-    if (!listOfActionsToPlayerChange.empty())
+    if (!listOfActionsToPlayerChangeAndEndNode.first.empty())
     {
         // std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         //    std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Eq));
         std::vector<int> minValuesEmpty;
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
-            getAssignments(listOfActionsToPlayerChange, unoptimizedGraph_, minValuesEmpty);
-        int lastEdgeId = listOfActionsToPlayerChange.back();
-        auto lastEdge = unoptimizedGraph_->getEdge(lastEdgeId);
-        auto actions = lastEdge->getActions();
+            getAssignments(listOfActionsToPlayerChangeAndEndNode.first, {}, minValuesEmpty);
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
-            unoptimizedGraph_, actions, lastEdge, unoptimizedGraph_->getEdgeIID(lastEdgeId), true));
+            unoptimizedGraph_,
+            listOfActionsToPlayerChangeAndEndNode.first,
+            listOfActionsToPlayerChangeAndEndNode.second,
+            true));
         //ifInstruction->addInstruction(std::move(blockInstructionTmp));
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
@@ -1278,17 +1252,15 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     tmpBlockInstruction->pushInstructionBack(std::move(ifInstruction));
     return std::move(tmpBlockInstruction);
 }
-
+template<typename TPtrNode, typename TPtrAction>
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Graph>& graph,
-    std::vector<std::shared_ptr<IAction>>& actions,
-    const std::shared_ptr<Edge>& edge,
-    int iid,
+    std::vector<TPtrAction>& actions,
+    const TPtrNode& toNode,
     bool applyEdgeMode,
     bool simpleApplyEdgeMode)
 {
-    const std::string stateFrom = edge->fromName();
-    const std::string stateTo = edge->toName();
+    const std::string stateTo = toNode->getName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
     if (actions.back()->getType() == ActionType::Assignment && actions.back()->getLeftSide() == "player")
@@ -1331,11 +1303,11 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             stateFunctionArguments += "," + mainCacheName_;
         }
 
-        if (const auto binding = edge->getRightNode()->getBinding())
+        if (const auto binding = toNode->getBinding())
         {
             if (simpleApplyEdgeMode)
             {
-                stateFunctionArguments += "," + getVariableValueFromTagString(edge);
+                stateFunctionArguments += "," + getVariableValueFromTagString(toNode);
             }
             else
             {
@@ -1389,7 +1361,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const auto& baseActions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::vector<std::shared_ptr<IAction>> actions(baseActions.begin(), baseActions.end());
     std::unique_ptr<BlockInstruction> blockInstruction =
-        prepareBaseInstructions(graph, actions, edge, iid, applyEdgeMode);
+        prepareBaseInstructions(graph, actions, edge->getRightNode(), applyEdgeMode);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
     auto skipFirstInstructionIter = actions.rend();
@@ -2071,8 +2043,7 @@ void Compiler::generateApplyAnyMove()
         auto tmpBlockInstruction = std::make_unique<BlockInstruction>();
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
             "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
-        tmpBlockInstruction->pushInstructionBack(
-            std::make_unique<CustomInstruction>("Move mr_" + cacheName));
+        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
         function->addInstruction(std::move(tmpBlockInstruction));
     }
 
@@ -2230,9 +2201,10 @@ const std::shared_ptr<IStateCache>& Compiler::getStateCacheSafe(const std::strin
     return it->second;
 }
 
-std::string Compiler::getVariableValueFromTagString(const std::shared_ptr<Edge>& edge) const
+template<typename TPtrNode>
+std::string Compiler::getVariableValueFromTagString(const TPtrNode& node) const
 {
-    const auto binding = edge->getRightNode()->getBinding();
+    const auto binding = node->getBinding();
     assert(binding);
     return "mr[currentMrId-1] -" + std::to_string(valueAssigner_.getBaseValueForTag(binding->toTagStringId()));
 }

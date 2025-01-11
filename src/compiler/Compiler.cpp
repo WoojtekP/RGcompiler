@@ -114,6 +114,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , verification_(options.verification_)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
 , optGccInline_(options.gccInline_)
+, maxMoveLen_(options.maxMoveLen_ == -1 ? std::nullopt : std::optional(options.maxMoveLen_))
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
 , mainCacheName_("rgCache")
@@ -382,6 +383,10 @@ std::pair<std::string, int> Compiler::getMoveRepresentation()
     if (containerSize != -1)
     {
         return {"boost::container::static_vector", containerSize};
+    }
+    if (maxMoveLen_)
+    {
+        return {"boost::container::static_vector", *maxMoveLen_};
     }
     return {"std::vector", -1};
 }

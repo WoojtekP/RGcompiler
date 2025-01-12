@@ -50,7 +50,7 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "namespace reasoner {" << std::endl;
     headerFile_ << "template<class T, std::size_t N>" << std::endl;
     headerFile_ << "using Arr = std::array<T, N>;" << std::endl;
-    headerFile_ << "struct hasher2;" << std::endl;
+    headerFile_ << "struct gameStateHasher;" << std::endl;
 
     headerFile_ << std::endl;
 }
@@ -75,22 +75,17 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& hs, std::string& hs2)
+void Printer::endHeaderFile(std::string& gameStateAndMoveAndNodeIdHasherBody)
 {
-    std::string ss = "struct hasher3{";
-    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
-    ss += hs + "^ std::get<2>(gs)" + ";";
-    ss += "}};";
-    // std::string ss2 = "struct hasher2{";
-    // ss2 += "size_t operator()(const GameState& gs) const{";
-    // ss2 += "return " + hs2 + ";";
-    // ss2 += "}};";
-    std::string stateCacheDeclaration =
-        "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher3> state_cache;";
+    std::string stateCacheHasher = "struct stateCacheHasher{";
+    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
+    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
+    stateCacheHasher += "}};";
 
-    //  program_.addVariableDeclaration(
-    //  std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
-    headerFile_ << "namespace {" + ss + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
+    std::string stateCacheDeclaration =
+        "std::unordered_set<std::tuple<GameState, move_representation,int>, stateCacheHasher> state_cache;";
+
+    headerFile_ << "namespace {" + stateCacheHasher + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
 }
 
 void Printer::endSourceFile()
@@ -145,15 +140,13 @@ void Printer::printVariables(
     const std::vector<std::unique_ptr<IVariable>>& variables,
     bool isPublic,
     const std::string& prefix,
-    const std::string& xd)
+    const std::string& gameStateHasher)
 {
     headerFile_ << prefix << std::endl;
 
     if (isPublic)
     {
-        std::string ss = "struct hasher2{size_t operator()(const std::pair<GameState, int>& gs)const{";
-        ss += "return " + xd + ";}};";
-        headerFile_ << ss;
+        headerFile_ << gameStateHasher;
     }
 
     if (!std::accumulate(
@@ -185,10 +178,11 @@ void Printer::printVariables(
     headerFile_ << std::endl;
 }
 
-void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& xd)
+void Printer::printVariables(
+    const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& gameStateHasher)
 {
-    printVariables(variables, true, "public:", xd);
-    printVariables(variables, false, "private:", xd);
+    printVariables(variables, true, "public:", gameStateHasher);
+    printVariables(variables, false, "private:", gameStateHasher);
 }
 
 void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& functions)
@@ -270,7 +264,7 @@ size_t hash(int x)
 }
 
 template<typename T, size_t N>
-size_t hash(std::array<T, N> a)
+size_t hash(const std::array<T, N> &a)
 {
     size_t acc = 0;
     for (size_t i = 0; i < N; i++)
@@ -292,7 +286,7 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     return acc;
 }
 
-size_t hash(const std::vector<int>& v)
+[[maybe_unused]] size_t hash(const std::vector<int>& v)
 {
     size_t x = 0;
     for (int t : v)

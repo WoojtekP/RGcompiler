@@ -25,9 +25,6 @@ struct Options
 
 class Compiler
 {
-    std::string hs_;
-    std::string hs2_;
-
 public:
     Compiler(const Parser &parser, const Options &options);
     void compile();
@@ -184,4 +181,6 @@ private:
     std::map<std::string, std::vector<std::string>> pragmaRepeatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
+    std::string gameStateAndMoveAndNodeIdHasherBody_;
+    std::string gameStateHasher_;
 };

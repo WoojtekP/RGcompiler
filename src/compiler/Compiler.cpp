@@ -1,5 +1,5 @@
 #include <functional>
-#include <iostream>
+#include <ranges>
 
 #include <compiler/Compiler.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
@@ -933,15 +933,6 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         }
     }
 
-    // if (!isExhaustive)
-    // {
-    //     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
-    //     blockInstruction->pushInstructionBack(
-    //         std::make_unique<CustomInstruction>("currentMrId -= " + std::to_string(depth)));
-    //     blockInstruction->pushInstructionBack(std::move(std::make_unique<ReturnInstruction>("false")));
-    //     sw->addDefaultInstruction(std::move(blockInstruction));
-    // }
-
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
     blockInstruction->pushInstructionBack(std::move(sw));
 
@@ -977,33 +968,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActionsToTags->empty())
     {
-        // const std::string actionVariable = "currentAction";
-        // ifInstruction->addInstruction(
-        //     std::make_unique<AssignmentInstruction>(actionVariable, "mr[currentMrId++]", "const auto"));
-
-        //int commonPrefixSize = 0;  //getCommonPrefixSize(listOfActionsToTags); disable common prefix
-        // TODO: use if-else for bindings and switch-case for single tags (it might be a little bit faster)
-        // std::unique_ptr<IfInstruction> actionsSwitch;
-
-        // for common prefix
-        // auto vecOfAssignments =
-        //     getAssignmentsList(listOfActionsToTags.front().second, unoptimizedGraph_, commonPrefixSize);
-        // std::unique_ptr<BlockInstruction> blockInstructionAssignments = std::make_unique<BlockInstruction>();
-        // std::unique_ptr<BlockInstruction> blockInstructionRevertAssignments = std::make_unique<BlockInstruction>();
-        // int edgeId = listOfActionsToTags.front().second.front();
-        // int temporaryVariableCnt = 0;
-        // for (const auto& action : vecOfAssignments)
-        // {
-        //     std::string lvalue = action->getLeftSide();
-        //     blockInstructionAssignments->pushInstructionBack(
-        //         std::make_unique<AssignmentInstruction>(lvalue, action->getRightSide()));
-        //     blockInstructionAssignments->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-        //         getTemporaryVariableName(temporaryVariableCnt, edgeId), action->getLeftSide(), "const auto"));
-        //     blockInstructionRevertAssignments->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-        //         lvalue, getTemporaryVariableName(temporaryVariableCnt, edgeId)));
-        //     temporaryVariableCnt++;
-        // }
-        // ifInstruction->addInstruction(std::move(blockInstructionAssignments));
         std::vector<int> minValues;
         std::unique_ptr<IInstruction> blockAction;
         std::vector<std::string> tags;
@@ -1021,14 +985,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             ifInstruction->addInstruction(std::move(switchBody));
             blockAction = std::move(ifInstruction);
         }
-        // ifInstruction->addInstruction(std::move(blockInstructionRevertAssignments)); for common prefix
+
         blockInstruction->pushInstructionFront(std::move(blockAction));
     }
 
     if (!listOfActionsToPlayerChangeAndEndNode.first.empty())
     {
-        // std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        //    std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Eq));
         std::vector<int> minValuesEmpty;
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
             getAssignments(listOfActionsToPlayerChangeAndEndNode.first, {}, minValuesEmpty);
@@ -1038,7 +1000,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             listOfActionsToPlayerChangeAndEndNode.first,
             listOfActionsToPlayerChangeAndEndNode.second,
             true));
-        //ifInstruction->addInstruction(std::move(blockInstructionTmp));
+
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
 

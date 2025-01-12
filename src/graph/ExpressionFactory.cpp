@@ -1,7 +1,5 @@
 #include "ExpressionFactory.hpp"
 
-#include <iostream>
-
 #include <graph/Expression.hpp>
 
 ExpressionFactory::ExpressionFactory(const Parser& parser, const ValueAssigner& valueAssigner)

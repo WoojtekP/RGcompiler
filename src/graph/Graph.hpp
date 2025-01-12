@@ -73,18 +73,7 @@ public:
     int getNodeId(const std::string &name) const;
     std::shared_ptr<Edge> getEdge(const std::string &from, const std::string &to, int iid) const;
     std::shared_ptr<Edge> getEdge(int edgeId) const;
-    int getEdgeIID(int edgeId) const
-    {
-        for (auto &[edge, iid] : edgesWithIID_)
-        {
-            if (getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid))
-            {
-                return iid;
-            }
-        }
-
-        return -1;
-    }
+    int getEdgeIID(int edgeId) const;
 
     std::shared_ptr<Node> getNode(int nodeid) const;
     std::optional<int> getEdgeIdOptional(const std::string &from, const std::string &to, int iid) const;

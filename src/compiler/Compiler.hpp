@@ -62,9 +62,6 @@ private:
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence,
         std::vector<int> &minValues);
-    std::vector<std::shared_ptr<IAction>> getAssignmentsList(
-        const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
-    //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -106,7 +103,6 @@ private:
         const std::string &prefix,
         int patternId = 0);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
-    //void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
     void generateGetStateDescription();
@@ -136,7 +132,6 @@ private:
         const std::shared_ptr<Edge> &edge, std::unique_ptr<BlockInstruction> blockInstruction) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
-    int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
     void initializePragmaUnique();
@@ -144,7 +139,6 @@ private:
     void initializePragmaSimpleApply();
     void initializePragmas();
     void generateStateCaches();
-    std::string getTypeForVariable(const std::string &variableName);
     std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;
@@ -158,7 +152,6 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
-    std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool printOriginalNames_;

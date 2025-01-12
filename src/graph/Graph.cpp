@@ -1,6 +1,5 @@
 #include "Graph.hpp"
 
-#include <iostream>
 #include <queue>
 #include <string>
 
@@ -22,19 +21,19 @@ void Graph::addEdge(const std::shared_ptr<Edge> &edge)
 
 std::string Graph::toString() const
 {
-    std::string graph;
+    std::string graphStr;
 
     for (auto &&edge : edges_)
     {
-        std::cout << edge->fromName() << "--\"";
+        graphStr += edge->fromName() + "--\"";
         for (const auto &action : edge->getActions())
         {
-            std::cout << action->toString() << "<br/>";
+            graphStr += action->toString() + "<br/>";
         }
-        std::cout << "\"-->" << edge->toName() << "\n";
+        graphStr += "\"-->" + edge->toName() + "\n";
     }
 
-    return graph;
+    return graphStr;
 }
 
 bool Graph::empty() const
@@ -237,4 +236,17 @@ int Graph::getMaximalNodeId() const
 int Graph::getNumberOfNodes() const
 {
     return maxNodeId_;
+}
+
+int Graph::getEdgeIID(int edgeId) const
+{
+    for (auto &[edge, iid] : edgesWithIID_)
+    {
+        if (getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid))
+        {
+            return iid;
+        }
+    }
+
+    return -1;
 }

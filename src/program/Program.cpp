@@ -1,7 +1,6 @@
 #include "Program.hpp"
 
 #include <algorithm>
-#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -127,14 +126,22 @@ std::string cmpToString(const ComparisonType cmpType)
 {
     switch (cmpType)
     {
-        case ComparisonType::None: return "";
-        case ComparisonType::Neg: return "!";
-        case ComparisonType::Eq: return "==";
-        case ComparisonType::Neq: return "!=";
-        case ComparisonType::Gr: return ">";
-        case ComparisonType::Ge: return ">=";
-        case ComparisonType::Less: return "<";
-        case ComparisonType::Leq: return "<=";
+        case ComparisonType::None:
+            return "";
+        case ComparisonType::Neg:
+            return "!";
+        case ComparisonType::Eq:
+            return "==";
+        case ComparisonType::Neq:
+            return "!=";
+        case ComparisonType::Gr:
+            return ">";
+        case ComparisonType::Ge:
+            return ">=";
+        case ComparisonType::Less:
+            return "<";
+        case ComparisonType::Leq:
+            return "<=";
     }
     throw std::invalid_argument("[Program] Unkwnon ComparisonType: " + std::to_string(static_cast<int>(cmpType)));
 }
@@ -145,8 +152,9 @@ ComparisonInstruction::ComparisonInstruction(const std::string &expr, Comparison
 {
     if (cmpType_ != ComparisonType::None && cmpType_ != ComparisonType::Neg)
     {
-        throw std::invalid_argument("[Program] ComparisonInstruction with single expression \""
-            + left_ + "\" created with invalid type: " + cmpToString(cmpType_));
+        throw std::invalid_argument(
+            "[Program] ComparisonInstruction with single expression \"" + left_ +
+            "\" created with invalid type: " + cmpToString(cmpType_));
     }
 }
 
@@ -157,8 +165,9 @@ ComparisonInstruction::ComparisonInstruction(const std::string &left, const std:
 {
     if (cmpType_ == ComparisonType::None || cmpType_ == ComparisonType::Neg)
     {
-        throw std::invalid_argument("[Program] ComparisonInstruction with two expressions \""
-            + left_ + "\" and \"" + right_ + "\" created with invalid type: " + cmpToString(cmpType_));
+        throw std::invalid_argument(
+            "[Program] ComparisonInstruction with two expressions \"" + left_ + "\" and \"" + right_ +
+            "\" created with invalid type: " + cmpToString(cmpType_));
     }
 }
 
@@ -191,7 +200,7 @@ std::vector<std::unique_ptr<IInstruction>> IfInstruction::extractInstructions()
     return std::move(instructions_);
 }
 
-const std::unique_ptr<ComparisonInstruction>& IfInstruction::getCondition() const
+const std::unique_ptr<ComparisonInstruction> &IfInstruction::getCondition() const
 {
     return condition_;
 }
@@ -364,7 +373,7 @@ std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semico
 
 BlockInstruction::BlockInstruction() {}
 
-const std::unique_ptr<IInstruction>& BlockInstruction::frontInstruction() const
+const std::unique_ptr<IInstruction> &BlockInstruction::frontInstruction() const
 {
     return instructions_.front();
 }

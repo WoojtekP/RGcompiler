@@ -5,9 +5,6 @@
 
 #include <compiler/graphOperations/BaseOperator.hpp>
 
-const std::string pragmaSimpleApply = "SimpleApply";
-const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
-
 struct SimpleApplySwitchTreeNode
 {
     std::unordered_map<std::string, std::shared_ptr<SimpleApplySwitchTreeNode>> children_;
@@ -66,6 +63,8 @@ private:
     // Main node means that it node without simpleApply pragma have edge to this node
     std::set<std::string> mainNodeNames_;
     std::set<std::string> nodesWithAnyEmptyTagSequence_;
+    const std::string pragmaSimpleApply = "SimpleApply";
+    const std::string pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 
 public:
     PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph);

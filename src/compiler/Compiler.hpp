@@ -143,7 +143,6 @@ private:
     void initializePragmaSimpleApply();
     void initializePragmas();
     void generateStateCaches();
-    std::string getTypeForVariable(const std::string &variableName);
     std::string getTagValueString(const std::shared_ptr<IAction> &action, const std::shared_ptr<Edge> &edge);
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;

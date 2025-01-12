@@ -391,20 +391,6 @@ void Compiler::generateConstants()
         playerCountConstantName, std::move(playerCountConstantType), std::move(playerCountConstantValue)));
 }
 
-//TODO This function have complexity n we need to make it constant
-std::string Compiler::getTypeForVariable(const std::string& variableName)
-{
-    for (const auto& variable : parser_.getVariables())
-    {
-        const std::string identifier = variable["identifier"].get<std::string>();
-        if (identifier == variableName)
-        {
-            return generateType(variable["type"])->toString();
-        }
-    }
-    return "";
-}
-
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
     std::unique_ptr<Function> comparisionFunction = std::make_unique<Function>("operator==", "bool", "", true, true);

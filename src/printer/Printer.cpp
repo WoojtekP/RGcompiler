@@ -292,7 +292,7 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     return acc;
 }
 
-size_t hash(const std::vector<int>& v)
+[[maybe_unused]] size_t hash(const std::vector<int>& v)
 {
     size_t x = 0;
     for (int t : v)

@@ -75,22 +75,17 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& hs, std::string& hs2)
+void Printer::endHeaderFile(std::string& hs)
 {
-    std::string ss = "struct hasher3{";
-    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
-    ss += hs + "^ std::get<2>(gs)" + ";";
-    ss += "}};";
-    // std::string ss2 = "struct hasher2{";
-    // ss2 += "size_t operator()(const GameState& gs) const{";
-    // ss2 += "return " + hs2 + ";";
-    // ss2 += "}};";
-    std::string stateCacheDeclaration =
-        "std::unordered_set<std::tuple<GameState,move_representation,int>, hasher3> state_cache;";
+    std::string stateCacheHasher = "struct stateCacheHasher{";
+    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
+    stateCacheHasher += hs + "^ std::get<2>(gs)" + ";";
+    stateCacheHasher += "}};";
 
-    //  program_.addVariableDeclaration(
-    //  std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
-    headerFile_ << "namespace {" + ss + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
+    std::string stateCacheDeclaration =
+        "std::unordered_set<std::tuple<GameState, move_representation,int>, stateCacheHasher> state_cache;";
+
+    headerFile_ << "namespace {" + stateCacheHasher + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
 }
 
 void Printer::endSourceFile()

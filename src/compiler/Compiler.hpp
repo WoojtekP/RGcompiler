@@ -26,7 +26,7 @@ struct Options
 class Compiler
 {
     std::string hs_;
-    std::string hs2_;
+    std::string gameStateHasher_;
 
 public:
     Compiler(const Parser &parser, const Options &options);

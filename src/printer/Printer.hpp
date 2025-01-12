@@ -24,12 +24,12 @@ public:
     void printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
-    void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& xd);
+    void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& gameStateHasher);
     void printVariables(
         const std::vector<std::unique_ptr<IVariable>>& variables,
         bool isPublic,
         const std::string& prefix,
-        const std::string& xd);
+        const std::string& gameStateHasher);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printNonGameStateFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation);

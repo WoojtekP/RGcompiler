@@ -412,10 +412,10 @@ void Compiler::generateSourceCode(
     printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
     printer.printNonGameStateFunctions(program_.getNonGameStateFunctions());
     printer.initializeMainClass();
-    printer.printVariables(program_.getVariables(), hs2_);
+    printer.printVariables(program_.getVariables(), gameStateHasher_);
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.endHeaderFile(hs_, hs2_);
+    printer.endHeaderFile(hs_);
     printer.endSourceFile();
 }
 
@@ -478,12 +478,9 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("gs", "const GameState&"));
 
-    std::unique_ptr<Function> function2 = std::make_unique<Function>("operator()", "size_t");
-
-    function2->addArgument(
-        std::make_unique<VariableDeclarationInstruction>("gs", "const std::pair<GameState, move_representation>&"));
     std::string cmp;
     std::string hs;
+    std::string gameStateHasherBody;
 
     for (const auto& variable : parser_.getVariables())
     {
@@ -494,7 +491,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value), true));
         cmp += identifier + " == " + "gs." + identifier + "&&";
         hs += "hash(std::get<0>(gs)." + identifier + ") ^";
-        hs2_ += "hash(gs.first." + identifier + ") ^";
+        gameStateHasherBody += "hash(gs.first." + identifier + ") ^";
     }
 
     if (!cmp.empty())
@@ -502,10 +499,11 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         cmp.pop_back();
         cmp.pop_back();
         hs.pop_back();
-        hs2_ += "gs.second";
-        // hs2_.pop_back();
+        gameStateHasherBody += "gs.second";
     }
 
+    gameStateHasher_ = "struct gameStateHasher{size_t operator()(const std::pair<GameState, int>& gs)const{";
+    gameStateHasher_ += "return " + gameStateHasherBody + ";}};";
     // program_.addVariableDeclaration()
 
     function->addInstruction(std::make_unique<CustomInstruction>("return " + cmp));
@@ -550,7 +548,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         program_.addVariableDeclaration(std::make_unique<Variable>(
             customDeclaration,
             std::make_unique<ElementaryType>("using"),
-            std::make_unique<SingleValue>("std::unordered_set<std::pair<GameState,int>, hasher2>")));
+            std::make_unique<SingleValue>("std::unordered_set<std::pair<GameState,int>, gameStateHasher>")));
 
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }

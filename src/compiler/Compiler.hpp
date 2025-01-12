@@ -62,9 +62,6 @@ private:
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence,
         std::vector<int> &minValues);
-    std::vector<std::shared_ptr<IAction>> getAssignmentsList(
-        const std::vector<int> &edges, const std::shared_ptr<Graph> &graph, int commonPrefixSize = 0) const;
-    //int getCommonPrefixSize(const std::vector<TagAndListOfEdges> &tagsAndEdges) const;
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -106,7 +103,6 @@ private:
         const std::string &prefix,
         int patternId = 0);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
-    //void generateRunApplyEdgeFunction(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
     void generateGetStateDescription();

@@ -2,20 +2,20 @@
 
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include <compiler/ValueAssigner.hpp>
 #include <parser/Parser.hpp>
-
 
 BitsetCache::BitsetCache(
     const std::string& nodeName,
     const std::vector<std::string>& identifiers,
     const Parser& parser,
     const ValueAssigner& valueAssigner)
-: cacheName_("state_cache_" + nodeName), identifiers_(identifiers), parser_(parser), valueAssigner_(valueAssigner)
-{
-}
+: cacheName_("state_cache_" + nodeName)
+, identifiers_(identifiers)
+, parser_(parser)
+, valueAssigner_(valueAssigner)
+{}
 
 std::string BitsetCache::getCacheType() const
 {

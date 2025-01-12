@@ -136,7 +136,6 @@ private:
         const std::shared_ptr<Edge> &edge, std::unique_ptr<BlockInstruction> blockInstruction) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
-    int getDomain(const std::string &s);
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
     void initializePragmaUnique();
@@ -158,7 +157,6 @@ private:
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
-    std::map<std::tuple<std::string, std::string, int>, std::set<std::string>> variablesInPatternGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool printOriginalNames_;

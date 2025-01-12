@@ -312,73 +312,6 @@ void Compiler::initializePatternGraphs(
                     valueAssigner_));
         }
     }
-
-    if (!optNoCycleDetection_)
-    {
-        for (const auto& [from, to, graph] : patterns)
-        {
-            variablesInPatternGraphs_[std::make_tuple(from, to, patternId)] = std::set<std::string>();
-            variablesInPatternGraphs_.at({from, to, patternId}) =
-                graphOperatorManager_->getOperator<GetVariableOperator>(graph)->getVariables();
-            const auto& variables = variablesInPatternGraphs_.at({from, to, patternId});
-            std::vector<std::pair<std::string, int>> variableAndDomain;
-            // for (const auto& name : variables)
-            // {
-            //     variableAndDomain.emplace_back(std::make_pair(name, getDomain(name)));
-            // }
-            containerChooser_.add({from, to, patternId}, variableAndDomain, graph_->getMaximalNodeId());
-        }
-    }
-}
-
-// TODO this function need to be tested
-int Compiler::getDomain(const std::string& s)
-{
-    int check = 0;
-    int open = 0;
-    int cnt = 0;
-    for (int i = 0; i < s.size(); i++)
-    {
-        char c = s[i];
-        if (c == '[')
-        {
-            if (check == 0)
-            {
-                check = i;
-            }
-            if (open == 0)
-            {
-                cnt++;
-            }
-            open++;
-        }
-        else if (c == ']')
-        {
-            open--;
-        }
-    }
-
-    std::string k = s;
-
-    if (check > 0)
-    {
-        k = s.substr(0, check);
-    }
-
-    std::string type = parser_.findTypeOfVariable(k)["identifier"];
-
-    while (cnt)
-    {
-        type = parser_.getDestinationType(parser_.findTypeByIdentifier(type)["type"])["identifier"];
-        cnt--;
-    }
-
-    if (parser_.findTypeByIdentifier(type)["type"]["kind"] == "Arrow")
-    {
-        return -1;
-    }
-
-    return valueAssigner_.getTypeDomainSize(type);
 }
 
 std::pair<std::string, int> Compiler::getMoveRepresentation()
@@ -538,11 +471,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             "verificationCache",
             std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
     }
-    //std::string stateCacheDeclaration = "std::unordered_set<std::pair<GameState,move_representation>, GameState>";
-
-    // program_.addVariableDeclaration(
-    //   std::make_unique<Variable>("state_cache", std::move(std::make_shared<CustomType>(stateCacheDeclaration))));
-    // TODO: this is too tricky (declaring variable with type using), need proper implementation
 
     for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())
     {

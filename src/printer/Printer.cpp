@@ -75,11 +75,11 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& hs)
+void Printer::endHeaderFile(std::string& gameStateAndMoveAndNodeIdHasherBody)
 {
     std::string stateCacheHasher = "struct stateCacheHasher{";
-    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
-    stateCacheHasher += hs + "^ std::get<2>(gs)" + ";";
+    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
+    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
     stateCacheHasher += "}};";
 
     std::string stateCacheDeclaration =
@@ -264,7 +264,7 @@ size_t hash(int x)
 }
 
 template<typename T, size_t N>
-size_t hash(std::array<T, N> a)
+size_t hash(const std::array<T, N> &a)
 {
     size_t acc = 0;
     for (size_t i = 0; i < N; i++)

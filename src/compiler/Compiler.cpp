@@ -415,7 +415,7 @@ void Compiler::generateSourceCode(
     printer.printVariables(program_.getVariables(), gameStateHasher_);
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.endHeaderFile(hs_);
+    printer.endHeaderFile(gameStateAndMoveAndNodeIdHasherBody_);
     printer.endSourceFile();
 }
 
@@ -474,12 +474,11 @@ std::string Compiler::getTypeForVariable(const std::string& variableName)
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
-    std::unique_ptr<Function> function = std::make_unique<Function>("operator==", "bool", "", true, true);
+    std::unique_ptr<Function> comparisionFunction = std::make_unique<Function>("operator==", "bool", "", true, true);
 
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>("gs", "const GameState&"));
+    comparisionFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("gameState", "const GameState&"));
 
-    std::string cmp;
-    std::string hs;
+    std::string comparisionFunctionBody;
     std::string gameStateHasherBody;
 
     for (const auto& variable : parser_.getVariables())
@@ -489,35 +488,37 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         const std::string identifier = variable["identifier"].get<std::string>();
         program_.addVariableDeclaration(
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value), true));
-        cmp += identifier + " == " + "gs." + identifier + "&&";
-        hs += "hash(std::get<0>(gs)." + identifier + ") ^";
-        gameStateHasherBody += "hash(gs.first." + identifier + ") ^";
+        comparisionFunctionBody += identifier + " == " + "gameState." + identifier + "&&";
+        gameStateAndMoveAndNodeIdHasherBody_ += "hash(std::get<0>(gameState)." + identifier + ") ^";
+        gameStateHasherBody += "hash(gameState.first." + identifier + ") ^";
     }
 
-    if (!cmp.empty())
+    if (!comparisionFunctionBody.empty())
     {
-        cmp.pop_back();
-        cmp.pop_back();
-        hs.pop_back();
-        gameStateHasherBody += "gs.second";
+        comparisionFunctionBody.pop_back();
+        comparisionFunctionBody.pop_back();
+        gameStateAndMoveAndNodeIdHasherBody_.pop_back();
+        gameStateHasherBody += "gameState.second";
     }
+    comparisionFunction->addInstruction(std::make_unique<CustomInstruction>("return " + comparisionFunctionBody));
 
-    gameStateHasher_ = "struct gameStateHasher{size_t operator()(const std::pair<GameState, int>& gs)const{";
+    gameStateAndMoveAndNodeIdHasherBody_ = "return hash(std::get<1>(gameState)) ^ " +
+                                           gameStateAndMoveAndNodeIdHasherBody_ + "^ std::get<2>(gameState)" + ";";
+
+    gameStateHasher_ = "struct gameStateHasher{size_t operator()(const std::pair<GameState, int>& gameState) const{";
     gameStateHasher_ += "return " + gameStateHasherBody + ";}};";
-    // program_.addVariableDeclaration()
 
-    function->addInstruction(std::make_unique<CustomInstruction>("return " + cmp));
-    hs_ = "return hash(std::get<1>(gs)) ^ " + hs;
-
-    std::string ss = "struct {";
-    ss += "size_t operator()(const std::tuple<GameState,move_representation,int>& gs) const{";
-    ss += hs_ + "^ std::get<2>(gs)" + ";";
-    ss += "}};";
+    std::string gameStateAndMoveAndNodeIdHasher = "struct {";
+    gameStateAndMoveAndNodeIdHasher +=
+        "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
+    gameStateAndMoveAndNodeIdHasher += gameStateAndMoveAndNodeIdHasherBody_;
+    gameStateAndMoveAndNodeIdHasher += "}};";
     program_.addVariableDeclaration(std::make_unique<Variable>(
-        "hasher", std::make_unique<ElementaryType>("using"), std::make_unique<SingleValue>(ss)));
-    // function2->addInstruction(std::make_unique<CustomInstruction>("return hash(gs.second) ^ " + hs));
-    program_.addFunction(std::move(function));
-    //program_.addFunction(std::move(function2));
+        "gameStateAndMoveAndNodeIdHasher",
+        std::make_unique<ElementaryType>("using"),
+        std::make_unique<SingleValue>(gameStateAndMoveAndNodeIdHasher)));
+
+    program_.addFunction(std::move(comparisionFunction));
 
     std::string initialState = std::to_string(graph->getNodeId("begin"));
 
@@ -1146,7 +1147,7 @@ void Compiler::generateBoolStateFunctions(
                     std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
                 function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                     cacheName,
-                    "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>&"));
+                    "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>&"));
             }
 
             if (!(pragmaUniqueData_.count(node->getAlternativeName()) || allUnique_) && !skipStateCache)
@@ -1256,7 +1257,8 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     if (!skipStateCache)
     {
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
+            "std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>" +
+            cacheName));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
     }
 
@@ -2032,7 +2034,8 @@ void Compiler::generateApplyAnyMove()
     {
         auto tmpBlockInstruction = std::make_unique<BlockInstruction>();
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "std::unordered_set<std::tuple<GameState, move_representation, int>, hasher>" + cacheName));
+            "std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>" +
+            cacheName));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
         function->addInstruction(std::move(tmpBlockInstruction));
     }

@@ -19,7 +19,7 @@ public:
     void initializeSourceFile();
     void initializeMainClass();
     void endMainClass();
-    void endHeaderFile(std::string& hs);
+    void endHeaderFile(std::string& gameStateAndMoveAndNodeIdHasherBody);
     void endSourceFile();
     void printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations);
     void printSymbolValues();

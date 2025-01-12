@@ -35,7 +35,7 @@ struct rg_hash
   }
 
   template<typename T, size_t N>
-  size_t hash(std::array<T, N> a) const
+  size_t hash(const std::array<T, N> &a) const
   {
     size_t acc = 0;
     for (size_t i=0;i<N;i++)

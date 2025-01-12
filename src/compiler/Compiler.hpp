@@ -76,6 +76,7 @@ private:
         bool addReturn = false,
         bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
+        const std::shared_ptr<Node> &node,
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>> &listOfActionsToPlayerChangeAndEndNode,
         const bool isExhaustive,
@@ -135,7 +136,7 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
-        const std::shared_ptr<Edge>& edge, std::unique_ptr<BlockInstruction> blockInstruction) const;
+        const std::shared_ptr<Edge> &edge, std::unique_ptr<BlockInstruction> blockInstruction) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     int getDomain(const std::string &s);

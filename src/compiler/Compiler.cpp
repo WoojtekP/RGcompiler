@@ -703,6 +703,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                              ->isMainSimpleApply(node->getName()))
         {
             function->addInstruction(generateVoidEdgeInstruction(
+                node,
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->getActionListToTags(node),
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
@@ -949,6 +950,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 }
 
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
+    const std::shared_ptr<Node>& node,
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
     std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>& listOfActionsToPlayerChangeAndEndNode,
     const bool isExhaustive,
@@ -959,6 +961,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]]const move_representation&"));
+    const auto& binding = node->getBinding();
 
     if (!optNoCycleDetection_)
     {
@@ -966,6 +969,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
     }
 
+    if (binding)
+    {
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>(
+            binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
+    }
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
     if (!listOfActionsToTags->empty())
@@ -1047,7 +1055,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     program_.addFunction(std::move(function));
 
     blockInstruction = std::make_unique<BlockInstruction>();
-    std::string functionCall = functionName + "(mr, " + mainCacheName_ + ")";
+    std::string functionCall =
+        functionName + "(mr, " + mainCacheName_ + (binding ? ", " + binding->getVariableName() : "") + ")";
     if (isExhaustive)
     {
         blockInstruction->pushInstructionBack((std::make_unique<ReturnInstruction>(functionCall)));
@@ -1265,6 +1274,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     tmpBlockInstruction->pushInstructionBack(std::move(ifInstruction));
     return std::move(tmpBlockInstruction);
 }
+
 template<typename TPtrNode, typename TPtrAction>
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Graph>& graph,
@@ -1276,7 +1286,8 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::string stateTo = toNode->getName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    if (actions.back()->getType() == ActionType::Assignment && actions.back()->getLeftSide() == "player")
+    if (!actions.empty() && actions.back()->getType() == ActionType::Assignment &&
+        actions.back()->getLeftSide() == "player")
     {
         if (applyEdgeMode)
         {
@@ -2135,7 +2146,6 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
     }
     return std::make_unique<MapValue>(std::move(idToValueMap), std::move(defaultValue));
 }
-
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
     const std::shared_ptr<Edge>& edge, std::unique_ptr<BlockInstruction> blockInstruction) const

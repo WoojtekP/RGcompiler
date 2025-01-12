@@ -8,7 +8,6 @@ void SimpleApplySwitchTreeNode::insert(
 {
     if (currTagPos == tags.size())
     {
-        assert(listOfActions_.empty());
         listOfActions_ = std::move(actions);
         endNode_ = std::move(endNode);
         return;
@@ -45,10 +44,16 @@ void PragmaSimpleApplyOperator::parseItem(
     for (const auto& tag : item["tags"])
     {
         std::string tagVarName = tag["tag"].get<std::string>();
-        std::string tagType = tag["type"]["identifier"];
-        data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
+        if (tag["type"] != nullptr)
+        {
+            std::string tagType = tag["type"]["identifier"];
+            data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
+        }
+        else
+        {
+            data.tagNames_.push_back(tagVarName);
+        }
     }
-    std::vector<std::unique_ptr<IAction>> actions;
 
     for (const auto& action : item["assignments"])
     {

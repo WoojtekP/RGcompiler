@@ -237,3 +237,16 @@ int Graph::getNumberOfNodes() const
 {
     return maxNodeId_;
 }
+
+int Graph::getEdgeIID(int edgeId) const
+{
+    for (auto &[edge, iid] : edgesWithIID_)
+    {
+        if (getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid))
+        {
+            return iid;
+        }
+    }
+
+    return -1;
+}

@@ -75,22 +75,19 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& gameStateAndMoveAndNodeIdHasherBody)
+void Printer::endHeaderFile()
 {
-    std::string stateCacheHasher = "struct stateCacheHasher{";
-    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
-    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
-    stateCacheHasher += "}};";
-
-    std::string stateCacheDeclaration =
-        "std::unordered_set<std::tuple<GameState, move_representation,int>, stateCacheHasher> state_cache;";
-
-    headerFile_ << "namespace {" + stateCacheHasher + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
+    headerFile_ << "}  // namespace reasoner" << std::endl;
 }
 
-void Printer::endSourceFile()
+void Printer::endSourceFile(const std::string& gameStateAndMoveAndNodeIdHasherBody)
 {
-    sourceFile_ << "}  // namespace reasoner" << std::endl;
+    std::string stateCacheHasher =
+        "size_t StateCacheHasher::operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
+    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
+    stateCacheHasher += "};";
+
+    sourceFile_ << stateCacheHasher + "\n}  // namespace reasoner" << std::endl;
 }
 
 void Printer::printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations)

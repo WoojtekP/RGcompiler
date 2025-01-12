@@ -75,28 +75,13 @@ std::string ContainerChooser::getIsSetMethodDeclaration(const IdType &id, int no
     return idTypeToContainer_.at(id)->getIsSetMethodDeclaration(node);
 }
 
-std::string ContainerChooser::getAdditionalData() const
+std::string ContainerChooser::getAdditionalData(const std::string& gameStateAndMoveAndNodeIdHasherBody) const
 {
-    std::string result = "";
-    std::set<ContainerType> containerTypes;
-    std::set<IdType> bitArrayContainers;
+    std::string result = "struct StateCacheHasher{";
+    result += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const;\n";
+    result += "};\n\n";
 
-    for (const auto &[id, container] : idTypeToContainer_)
-    {
-        auto type = container->getContainerType();
-        if (ContainerType::BitArray == type)
-        {
-            bitArrayContainers.insert(id);
-        }
-        if (containerTypes.count(type) == 0)
-        {
-            result += container->getAdditionalData();
-        }
-        containerTypes.insert(type);
-    }
-
-    result += createCache(bitArrayContainers);
-
+    result += createCache() + "\n";
     result += R"(struct vector_hash
 {
   size_t operator()(const move_representation &v) const
@@ -120,16 +105,12 @@ std::string ContainerChooser::getCustomName(const IdType &id) const
     return "container_" + std::get<0>(id) + "_" + std::get<1>(id) + "_" + std::to_string(std::get<2>(id));
 }
 
-std::string ContainerChooser::createCache(const std::set<IdType> &patterns) const
+std::string ContainerChooser::createCache() const
 {
     std::string rgCache = "class " + cacheName_ + "{\n";
     rgCache += "public:\n";
-    for (const auto &id : patterns)
-    {
-        rgCache += "bitarray<" + getType(id) + "> " + getCustomName(id) + ";\n";
-    }
+    rgCache += "std::unordered_set<std::tuple<GameState, move_representation,int>, StateCacheHasher> state_cache;\n";
     rgCache += "};\n";
-
     return rgCache;
 }
 

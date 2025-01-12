@@ -342,14 +342,14 @@ void Compiler::generateSourceCode(
     printer.printSymbolValues();
     printer.printConstants(program_.getConstants());
     printer.printMoveRepresentationDeclaration(getMoveRepresentation());
-    printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData());
+    printer.printAdditionDataForCycleHandling(containerChooser_.getAdditionalData(gameStateAndMoveAndNodeIdHasherBody_));
     printer.printNonGameStateFunctions(program_.getNonGameStateFunctions());
     printer.initializeMainClass();
     printer.printVariables(program_.getVariables(), gameStateHasher_);
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.endHeaderFile(gameStateAndMoveAndNodeIdHasherBody_);
-    printer.endSourceFile();
+    printer.endHeaderFile();
+    printer.endSourceFile(gameStateAndMoveAndNodeIdHasherBody_);
 }
 
 void Compiler::generateTypes()
@@ -601,7 +601,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 nodeId += " + " + binding->getVariableName();
             }
             const std::string cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
-            const std::string cacheName = "state_cache";
+            const std::string cacheName = mainCacheName_ + ".state_cache";
 
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -1643,7 +1643,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
-    std::string clearingCaches = "state_cache.clear();";
+    std::string clearingCaches = mainCacheName_ + ".state_cache.clear();";
 
     for (const auto& nodeAndVariables : pragmaRepeatData_)
     {

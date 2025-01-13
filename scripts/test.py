@@ -131,9 +131,10 @@ for game in games:
   else:
     expectedList = [avgDepth] + avgScores
     stats = decodeOutput(result.stdout).strip().split(' ')
-    resStates = int(stats[0])
+    resSims = int(stats[0])
+    resStates = int(stats[1])
     resultList = [resStates / sims] # avgDepth
-    stats = stats[6:]
+    stats = stats[7:]
     for p in range(len(stats)): resultList.append(int(stats[p]) / sims) # avgScores
     if not verifyWithTolerance(expectedList, resultList):
       info = f'{util.ERROR} expected {util.CYAN}{" ".join(f"{x:1.2f}" for x in expectedList)}{util.RESET} but got {util.CYAN}{" ".join(f"{x:1.2f}" for x in resultList)}{util.RESET}'

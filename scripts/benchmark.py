@@ -129,7 +129,9 @@ for game in games:
     print(f'{util.ERROR} exitcode {result.returncode}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
   else:
-    statesCount = int(decodeOutput(result.stdout).strip().split(' ')[0])
+    resOut = decodeOutput(result.stdout).strip().split(' ')
+    simCount = int(resOut[0])
+    statesCount = int(resOut[1])
     if usePerf:
       output = decodeOutput(result.stderr)
       if str.isnumeric(output.split(' ')[0]):

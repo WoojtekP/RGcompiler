@@ -5,7 +5,7 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 
 parser = argparse.ArgumentParser(description='Compile and run simulations.')
 parser.add_argument('game', nargs=1, help='game file')
-parser.add_argument('sims', nargs=1, help='number of simulations (int) or time in seconds (float, ended with "s")')
+parser.add_argument('limit', nargs=1, help='number of simulations (int) or time in seconds (float, ended with "s")')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 parser.add_argument('-skipcompilation', action='store_true', help='skip compile.py and use the existing reasoner sources')
 parser.add_argument('-perf', action='store_true', help='count instructions by perf')
@@ -16,16 +16,15 @@ cpp_flags_group.add_argument('-benchmark', action='store_true', help='maximum sp
 
 args = parser.parse_args()
 game = args.game[0]
-if args.sims[0].endswith('s'):
+if args.limit[0].endswith('s'):
   useTime = 1
-  sims = int(float(args.sims[0][:-1]) * 1000)
+  limit = int(float(args.limit[0][:-1]) * 1000)
 else:
   useTime = 0
-  sims = int(args.sims[0])
+  limit = int(args.limit[0])
 translateOptions = '"' + args.translateOptions + '"'
 
 if not args.skipcompilation:
-  print(f'Translate options: {translateOptions}')
   run(f'python3 scripts/compile.py {game} -t{translateOptions}')
 
 HEAD_FORMATTER = '{: <14} '
@@ -58,43 +57,45 @@ elapsedTime = time.time() - startTime
 print(f'g++ {infoGccFlags} flags: {gccFlags}')
 print(FULL_FORMATTER.format('g++:',elapsedTime))
 
-print(HEAD_FORMATTER.format(f'sims {str(sims)}:'),end='',flush=True)
+if useTime:
+  print(HEAD_FORMATTER.format(f'time {str(limit*0.001)}s:'),end='',flush=True)
+else:
+  print(HEAD_FORMATTER.format(f'sims {str(limit)}:'),end='',flush=True)
 startTime = time.time()
 if usePerf:
-  result = runCap(f'perf stat -e instructions -x " " {cfg.BUILD_TEST_DIR}/sims {sims}')
+  result = runCap(f'perf stat -e instructions -x " " {cfg.BUILD_TEST_DIR}/sims {limit}')
 else:
-  result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
+  result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {limit}')
 elapsedTime = time.time() - startTime
 if result.returncode != 0:
   print(f'{util.ERROR} exitcode {result.returncode}')
   print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
-else:
-  statesCount = int(decodeOutput(result.stdout).strip().split(' ')[0])
-  if usePerf:
-    output = decodeOutput(result.stderr)
-    if str.isnumeric(output.split(' ')[0]):
-      elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
-      print((TIME_FORMATTER+INSTR_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, elapsedInstr, statesCount/elapsedTime, sims/elapsedTime).replace(',',' '))
-    else:
-      print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
-      print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
-  else:
-    print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, statesCount/elapsedTime, sims/elapsedTime))
-
-if result.returncode != 0:
   print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
   exit(2)
+
 stats = decodeOutput(result.stdout).strip().split(' ')
-resStates = int(stats[0])
-resAvgDepth = resStates / sims
-resMinDepth = int(stats[1])
-resMaxDepth = int(stats[2])
-resMoves = int(stats[3])
-resMinMoves = int(stats[4])
-resMaxMoves = int(stats[5])
-stats = stats[6:]
+resSims = int(stats[0])
+resStates = int(stats[1])
+if usePerf:
+  output = decodeOutput(result.stderr)
+  if str.isnumeric(output.split(' ')[0]):
+    elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
+    print((TIME_FORMATTER+INSTR_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
+  else:
+    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
+else:
+  print((TIME_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, resStates/elapsedTime, resSims/elapsedTime))
+
+resAvgDepth = resStates / resSims
+resMinDepth = int(stats[2])
+resMaxDepth = int(stats[3])
+resMoves = int(stats[4])
+resMinMoves = int(stats[5])
+resMaxMoves = int(stats[6])
+stats = stats[7:]
 resAvgScores = []
-for p in range(len(stats)): resAvgScores.append(int(stats[p]) / sims)
+for p in range(len(stats)): resAvgScores.append(int(stats[p]) / resSims)
 print(f'states: {resStates}')
 print(f'depth: min {resMinDepth} avg {resAvgDepth:1.2f} max {resMaxDepth}')
 print(f'scores: avg {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}')

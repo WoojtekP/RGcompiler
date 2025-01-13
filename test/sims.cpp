@@ -17,7 +17,7 @@ reasoner::GameState initial;
 reasoner::RgCache cache;
 std::vector<reasoner::Move> moves;
 
-ulong numSimulations;
+ulong numSims;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 ulong sumScores[1+reasoner::PLAYERS_COUNT];
@@ -93,22 +93,21 @@ int main(int argc, char** argv) {
     std::chrono::steady_clock::time_point end_time;
     std::chrono::steady_clock::time_point start_time(std::chrono::steady_clock::now());
     std::chrono::steady_clock::time_point planned_end_time = start_time + simulation_duration;
-    for (numSimulations = 0; ; numSimulations++) {
+    for (numSims = 0; ; numSims++) {
       doSimulation();
       end_time = std::chrono::steady_clock::now();
       if (end_time >= planned_end_time) break;
     }
   } else {
-    numSimulations = std::stoi(argv[1]);
-    for (uint i = 0; i < numSimulations; i++) doSimulation();
+    numSims = std::stoi(argv[1]);
+    for (uint i = 0; i < numSims; i++) doSimulation();
   }
   
   if (maxMoves == 0) maxMoves = minMoves;
   if (maxDepth == 0) maxDepth = minDepth;
 
-  std::cout << std::fixed;
-  std::cout.precision(2);
-  std::cout << numStates << " " << minDepth << " " << maxDepth;
+  std::cout << std::fixed; std::cout.precision(2);
+  std::cout << numSims << " " << numStates << " " << minDepth << " " << maxDepth;
   std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
   for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) std::cout << " " << sumScores[player];
   std::cout << std::endl;

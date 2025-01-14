@@ -642,18 +642,15 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 int cnt = 0;
                 std::set<std::string> visited;
 
-                if (!disjointExhaustive)
+                visited.insert(vectorOfNodeNames.begin(), vectorOfNodeNames.end());
+                for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
                 {
-                    visited.insert(vectorOfNodeNames.begin(), vectorOfNodeNames.end());
-                    for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+                    if (!visited.count(outgoingEdge->getRightNode()->getName()))
                     {
-                        if (!visited.count(outgoingEdge->getRightNode()->getName()))
-                        {
-                            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
-                        }
+                        function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
                     }
-                    visited.clear();
                 }
+                visited.clear();
 
                 for (const auto& nodeName : vectorOfNodeNames)
                 {

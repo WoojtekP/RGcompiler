@@ -22,10 +22,8 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
-  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas --expand-generator-nodes'
-  #DEFAULT_TRANSLATE_OPTIONS += ' --calculate-disjoints --calculate-repeats --calculate-tag-indexes --calculate-uniques '
   #DEFAULT_TRANSLATE_OPTIONS += ' --calculate-disjoints --calculate-repeats --calculate-tag-indexes --calculate-uniques --calculate-simple-apply'
-  DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1'
+  DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --max-move-len -1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 0'
 
   result = runCap('g++ --version')
@@ -33,10 +31,10 @@ class cfg:
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto'
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto -DNDEBUG'
   else:
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
-    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
-    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -Og -ggdb3 -march=native -ftracer'
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
+    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -Og -ggdb3 -march=native -ftracer'
+    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
     # -finline-limit=100
 
 class util:

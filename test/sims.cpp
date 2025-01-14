@@ -93,7 +93,7 @@ int main(int argc, char** argv) {
     std::chrono::steady_clock::time_point end_time;
     std::chrono::steady_clock::time_point start_time(std::chrono::steady_clock::now());
     std::chrono::steady_clock::time_point planned_end_time = start_time + simulation_duration;
-    for (numSims = 0; ; numSims++) {
+    for (numSims = 1; ; numSims++) {
       doSimulation();
       end_time = std::chrono::steady_clock::now();
       if (end_time >= planned_end_time) break;

@@ -51,15 +51,15 @@ tests['knightthrough.hrg'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,252130
 tests['amazons.hrg'] = (200,71.46,[50.10,49.90], [1,2176]) # 4307152
 
 tests['repeatTest.rg'] = (100,1.0,[100.0], [1,1,0])
-tests['repeatTestBig.rg'] = (100,1.0,[100.0], [1,2,0])
+tests['repeatTestBig.rg'] = (1000,1.0,[100.0], [1,2,0])
 tests['repeatTestHard.rg'] = (1000,1.0,[12.5], [1,16,0])
-tests['simpleApplyTest0.rg'] = (100,1.0,[0.0,0.0], [1,2,0])
-tests['simpleApplyTest1.rg'] = (100,2.0,[0.0,50.0], [1,3,5,0])
-tests['simpleApplyTest2.rg'] = (100,2.0,[0.0,100.0], [1,2,2,0])
-tests['simpleApplyTest3.rg'] = (100,2.0,[0.0,75.0], [1,2,3,0])
-tests['simpleApplyTest4.rg'] = (100,2.0,[0.0,50.0], [1,1,3,0])
-tests['simpleApplyTest5.rg'] = (100,1.0,[0.0,50.0], [1,2,0])
-tests['simpleApplyTest6.rg'] = (100,2.0,[0.0,50.0], [1,3,5,0])
+tests['simpleApplyTest0.rg'] = (1000,1.0,[0.0], [1,2,0])
+tests['simpleApplyTest1.rg'] = (1000,2.0,[0.0,50.0], [1,2,4,0])
+tests['simpleApplyTest2.rg'] = (1000,2.0,[0.0,100.0], [1,2,2,0])
+tests['simpleApplyTest3.rg'] = (1000,2.0,[0.0,75.0], [1,2,3,0])
+tests['simpleApplyTest4.rg'] = (1000,2.0,[0.0,50.0], [1,1,3,0])
+tests['simpleApplyTest5.rg'] = (1000,1.0,[0.0,50.0], [1,2,0])
+tests['simpleApplyTest6.rg'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
 
 
 if "all" in games:

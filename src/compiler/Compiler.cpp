@@ -713,12 +713,12 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         if (tagVar)
         {
             tag = *tagVar;
+            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+                tag,
+                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
+                    std::to_string(minValues[curentPos - 1]),
+                "[[maybe_unused]] auto"));
         }
-        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-            tag,
-            "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                std::to_string(minValues[curentPos - 1]),
-            "[[maybe_unused]] auto"));
         curentPos++;
     }
 

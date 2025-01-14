@@ -1,5 +1,54 @@
 #include "ContainerChooser.hpp"
 
+namespace {
+const auto VECTOR_HASH = R"(struct vector_hash
+{
+    size_t operator()(const move_representation &v) const
+    {
+        int res = 0;
+        for (int x : v)
+        {
+            res ^= x;
+        }
+        return res;
+    }
+};
+)";
+
+const auto INIT_CACHE = R"(RgCache()
+{
+    state_cache.reserve(2);
+    state_cache.resize(1);
+}
+)";
+
+const auto CLEAR_CURRENT = R"(inline void clearCurrent()
+{
+    state_cache[depth].clear();
+}
+)";
+
+const auto INC_DEPTH = R"(inline void incDepth()
+{
+    ++depth;
+    if (depth >= state_cache.size())
+    {
+        state_cache.resize(depth + 1);
+    }
+    else
+    {
+        state_cache[depth].clear();
+    }
+}
+)";
+
+const auto DEC_DEPTH = R"(inline void decDepth()
+{
+    --depth;
+}
+)";
+}
+
 ContainerChooser::ContainerChooser(const std::string &cacheName)
 : smallDomainMaxiumSize_(1000)
 , cacheName_(cacheName)
@@ -80,23 +129,8 @@ std::string ContainerChooser::getAdditionalData(const std::string& gameStateAndM
     std::string result = "struct StateCacheHasher{";
     result += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const;\n";
     result += "};\n\n";
-
     result += createCache() + "\n";
-    result += R"(struct vector_hash
-{
-  size_t operator()(const move_representation &v) const
-  {
-    int res = 0;
-    for (int x : v)
-    {
-      res ^= x;
-    }
-
-    return res;
-  }
-};
-)";
-
+    result += VECTOR_HASH;
     return result;
 }
 
@@ -109,7 +143,13 @@ std::string ContainerChooser::createCache() const
 {
     std::string rgCache = "class " + cacheName_ + "{\n";
     rgCache += "public:\n";
-    rgCache += "std::unordered_set<std::tuple<GameState, move_representation,int>, StateCacheHasher> state_cache;\n";
+    rgCache += INIT_CACHE;
+    rgCache += CLEAR_CURRENT;
+    rgCache += INC_DEPTH;
+    rgCache += DEC_DEPTH;
+    rgCache += "\n";
+    rgCache += "unsigned depth = 0;\n";
+    rgCache += "std::vector<std::unordered_set<std::tuple<GameState, move_representation,int>, StateCacheHasher>> state_cache;\n";
     rgCache += "};\n";
     return rgCache;
 }

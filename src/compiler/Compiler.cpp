@@ -601,7 +601,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 nodeId += " + " + binding->getVariableName();
             }
             const std::string cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
-            const std::string cacheName = mainCacheName_ + ".state_cache";
+            const std::string cacheName = mainCacheName_ + ".state_cache[" + mainCacheName_ + ".depth]";
 
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -931,7 +931,7 @@ void Compiler::generateBoolStateFunctions(
     bool skipStateCache)
 {
     std::string name = patternIdToPrefixName[patternId];
-    std::string cacheName = "cache";
+    const std::string cacheName = mainCacheName_ + ".state_cache[" + mainCacheName_ + ".depth]";
     std::string prefix = "is_legal_" + name;
     for (auto& node : graph->getOuterNodes())
     {
@@ -961,9 +961,6 @@ void Compiler::generateBoolStateFunctions(
             {
                 function->addArgument(
                     std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]] move_representation&"));
-                function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                    cacheName,
-                    "[[maybe_unused]] std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>&"));
             }
 
             if (!(pragmaUniqueData_.count(node->getAlternativeName()) || allUnique_) && !skipStateCache)
@@ -975,7 +972,7 @@ void Compiler::generateBoolStateFunctions(
                 }
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "cache.insert(std::make_tuple(*this, mr, " + nodeId + ")).second", ComparisonType::Neg));
+                        cacheName + ".insert(std::make_tuple(*this, mr, " + nodeId + ")).second", ComparisonType::Neg));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
 
                 function->addInstruction(std::move(ifInstruction));
@@ -1051,7 +1048,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     functionArguments += mainCacheName_;
     if (!skipStateCache)
     {
-        functionArguments += ",mr_" + cacheName + ".mr," + cacheName;
+        functionArguments += ",mr_" + cacheName + ".mr";
     }
     //     std::string cacheDecl = containerChooser_.getCustomName(typeId);
     //     if (containerChooser_.isInCache(typeId))
@@ -1067,9 +1064,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 
     if (!skipStateCache)
     {
-        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>" +
-            cacheName));
+        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".incDepth()"));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
     }
 
@@ -1083,6 +1078,10 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         ifInstruction->addInstruction(std::move(returnInstruction));
     }
     tmpBlockInstruction->pushInstructionBack(std::move(ifInstruction));
+    if (!skipStateCache)
+    {
+        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".decDepth()"));
+    }
     return std::move(tmpBlockInstruction);
 }
 
@@ -1343,7 +1342,6 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     int edgeIdx,
     const std::shared_ptr<Edge>& edge,
     int iid,
-    const std::string& cacheName,
     const std::string& prefix,
     int patternId)
 {
@@ -1362,7 +1360,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         functionArguments = mainCacheName_;
         if (!bSkipStateCache)
         {
-            functionArguments += ", mr, " + cacheName;
+            functionArguments += ", mr";
         }
     }
     if (const auto binding = edge->getRightNode()->getBinding())
@@ -1408,8 +1406,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 {
     const std::string& stateFrom = edge->fromName();
     const std::string& stateTo = edge->toName();
-    std::string cacheName = "cache";
-
     std::string prefix = "is_legal_" + functionType;
 
     if (preserveOriginalNames_)
@@ -1425,7 +1421,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
     const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
     std::unique_ptr<BlockInstruction> blockInstruction = prepareBaseInstructions(
-        graph, actions, from, to, edgeIdx, edge, iid, cacheName, prefix, functionType.empty() ? 0 : 2);
+        graph, actions, from, to, edgeIdx, edge, iid, prefix, functionType.empty() ? 0 : 2);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 
@@ -1643,8 +1639,8 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
-    std::string clearingCaches = mainCacheName_ + ".state_cache.clear();";
-
+    std::string clearingCaches = mainCacheName_ + ".depth = 0;\n";
+    clearingCaches += mainCacheName_ + ".clearCurrent();";
     for (const auto& nodeAndVariables : pragmaRepeatData_)
     {
         clearingCaches += "state_cache_" + nodeAndVariables.first + ".clear();" + "\n";
@@ -1729,7 +1725,7 @@ void Compiler::generateApplyAnyMove()
                 cacheNeeded |= !skipStateCache;
                 if (!skipStateCache)
                 {
-                    functionArguments += ",mr_" + cacheName + ".mr," + cacheName;
+                    functionArguments += ",mr_" + cacheName + ".mr";
                 }
             }
 
@@ -1750,7 +1746,7 @@ void Compiler::generateApplyAnyMove()
             block->pushInstructionBack(std::move(ifInstruction));
             if (cacheNeeded)
             {
-                block->pushInstructionBack(std::make_unique<CustomInstruction>(cacheName + "= {}"));
+                block->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".clearCurrent()"));
                 block->pushInstructionBack(std::make_unique<CustomInstruction>("mr_" + cacheName + "= {}"));
             }
         }
@@ -1761,9 +1757,8 @@ void Compiler::generateApplyAnyMove()
     if (cacheNeeded)
     {
         auto tmpBlockInstruction = std::make_unique<BlockInstruction>();
-        tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
-            "std::unordered_set<std::tuple<GameState, move_representation, int>, gameStateAndMoveAndNodeIdHasher>" +
-            cacheName));
+        tmpBlockInstruction->pushInstructionBack(
+            std::make_unique<CustomInstruction>(mainCacheName_ + ".clearCurrent()"));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("Move mr_" + cacheName));
         function->addInstruction(std::move(tmpBlockInstruction));
     }

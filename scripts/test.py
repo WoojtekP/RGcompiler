@@ -45,7 +45,8 @@ tests['simpleApplyTest4'] = (1000,2.0,[0.0,50.0], [1,1,3,0])
 tests['simpleApplyTest5'] = (1000,1.0,[50.0], [1,2,0])
 tests['simpleApplyTest6'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
 
-tests['amazons'] = (200,71.46,[50.10,49.90], [1,2176])# 4307152
+tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])# 4307152
+tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152])# 4307152
 tests['bombardment'] = (10000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
 tests['breakthrough'] = (10000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])# 149264638
 tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])# 117649 823536 5673234
@@ -92,6 +93,8 @@ if "all" in games:
   
   games.append('amazons.hrg')
   games.append('amazons.rbg')
+  
+  games.append('amazons_split2.hrg')
 
 buildInterpreter()
 

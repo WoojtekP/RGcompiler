@@ -39,7 +39,10 @@ else:
   
 if "all" in games:
   games = []
-  #games.append('breakthrough.rg')
+  games.append('breakthrough.hrg')
+  games.append('connect4.hrg')
+  games.append('knightthrough.hrg')
+  
   #games.append('ticTacToe.rg')
 
   games.append('amazons.hrg')
@@ -88,6 +91,8 @@ if "all" in games:
   #games.append('doubleChess.rbg')
   #games.append('englishDraughts.rbg')
   #games.append('gess.rbg')
+
+buildInterpreter()
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')

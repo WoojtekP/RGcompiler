@@ -292,7 +292,20 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     }
     return x;
 }
-}  // namespace)";
+}  // namespace
+
+struct vector_hash
+{
+    size_t operator()(const move_representation& v) const
+    {
+        int res = 0;
+        for (int x : v)
+        {
+            res ^= x;
+        }
+        return res;
+    }
+};)";
 
     headerFile_ << "using move_representation = " << moveContainer << "<int";
     if (moveSize != -1)
@@ -302,11 +315,12 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     headerFile_ << ">;" << std::endl;
 
     headerFile_ << "class GameState;" << std::endl << std::endl;
+    headerFile_ << "class RgCache;" << std::endl;
     headerFile_ << structMoveDefinition << std::endl << std::endl;
     headerFile_ << hashFunctions << std::endl << std::endl;
 }
 
-void Printer::printAdditionDataForCycleHandling(const std::string& s)
+void Printer::printMainCache(const std::string& s)
 {
     headerFile_ << s << std::endl << std::endl;
 }

@@ -33,7 +33,7 @@ public:
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printNonGameStateFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation);
-    void printAdditionDataForCycleHandling(const std::string& s);
+    void printMainCache(const std::string& s);
 
 private:
     const Parser& parser_;

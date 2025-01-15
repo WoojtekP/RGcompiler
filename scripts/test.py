@@ -45,12 +45,13 @@ tests['simpleApplyTest4'] = (1000,2.0,[0.0,50.0], [1,1,3,0])
 tests['simpleApplyTest5'] = (1000,1.0,[50.0], [1,2,0])
 tests['simpleApplyTest6'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
 
-tests['amazons'] = (200,71.46,[50.10,49.90], [1,2176]) # 4307152
-tests['breakthrough'] = (10000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818]) # 149264638
-tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807]) # 117649 823536 5673234
-tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454]) # 3929482778
-tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720]) # 148176 200448 127872
-
+tests['amazons'] = (200,71.46,[50.10,49.90], [1,2176])# 4307152
+tests['bombardment'] = (10000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
+tests['breakthrough'] = (10000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])# 149264638
+tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])# 117649 823536 5673234
+tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#,2495102400
+tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454])# 3929482778
+tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])# 148176 200448 127872
 
 tests['hex2'] = (1000,3.50,[50.00,50.00], [1,4,12,24,12,0])
 tests['hex9'] = (1000,71.02,[53.03,46.97], [1,81,6480]) # 511920 39929760
@@ -61,7 +62,7 @@ if "all" in games:
   games.append('repeatTest.rg')
   games.append('repeatTestBig.rg')
   games.append('repeatTestHard.rg')
-
+  
   games.append('simpleApplyTest0.rg')
   games.append('simpleApplyTest1.rg')
   games.append('simpleApplyTest2.rg')
@@ -69,7 +70,7 @@ if "all" in games:
   games.append('simpleApplyTest4.rg')
   games.append('simpleApplyTest5.rg')
   games.append('simpleApplyTest6.rg')
-
+  
   games.append('ticTacToe.rg')
   games.append('ticTacToe.hrg')
   games.append('ticTacToe.rbg')
@@ -84,6 +85,10 @@ if "all" in games:
   
   games.append('knightthrough.hrg')
   games.append('knightthrough.rbg')
+
+  games.append('gomoku_freeStyle.hrg')
+
+  games.append('bombardment.hrg')
   
   games.append('amazons.hrg')
   games.append('amazons.rbg')

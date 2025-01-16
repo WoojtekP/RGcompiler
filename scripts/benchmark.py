@@ -116,10 +116,9 @@ gamesOK = []
 
 #######################################################################################################################
 for game in games:
-  nameExt = game.split('.')
-  baseName = game.split('-')[0]
-  gameRef = baseName + '.' + nameExt[1]
-  gameFile = nameExt[1] + '/' + game
+  parsed = parseGameName(game)
+  if parsed == None: continue
+  (gameName,gameFile) = parsed
   
   print(HEAD_FORMATTER.format(f'{game}:'),end='',flush=True)
   

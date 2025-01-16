@@ -22,8 +22,11 @@ def decodeOutput(output):
 
 def parseGameName(game):
   nameWithExt = game.split('.')
-  if len(nameWithExt) != 2:
-    print(f'Invalid game name: {game}')
+  if len(nameWithExt) == 1:
+    print(f'Invalid game name (no extension): {game}')
+    return None
+  if len(nameWithExt) > 2:
+    print(f'Invalid game name (too many dots): {game}')
     return None
   baseName = nameWithExt[0].split('-')[0]
   gameFile = nameWithExt[1] + '/' + game

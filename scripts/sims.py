@@ -61,10 +61,9 @@ print(f'g++ {infoGccOptions} options: {gccOptions}')
 if usePerf: print(f'Using perf')
 print()
 
-nameExt = game.split('.')
-baseName = game.split('-')[0]
-gameRef = baseName + '.' + nameExt[1]
-gameFile = nameExt[1] + '/' + game
+parsed = parseGameName(game)
+if parsed == None: exit(1)
+(gameName,gameFile) = parsed
     
 #######################################################################################################################
 

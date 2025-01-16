@@ -142,15 +142,12 @@ totalStartTime = time.time()
 for game in games:
   print()
 
-  nameWithExt = game.split('.')
-  if len(nameWithExt) != 2:
-    print(f'Invalid game name: {game})')    
-  baseName = nameWithExt[0].split('-')[0]
-  gameFile = nameWithExt[1] + '/' + game
-  if baseName in tests:
-    gameRef = baseName
-  else:
-    print(f'No tests for game {game}')
+  parsed = parseGameName(game)
+  if parsed == None: exit(1)
+  (gameName,gameFile) = parsed
+
+  if gameName not in tests:
+    print(f'No tests for game {gameName} for {game}')
     continue
 
   ######## Compile ########
@@ -188,9 +185,9 @@ for game in games:
   isOK = True
 
   ######## Sims ########
-  sims = tests[gameRef][0]
-  avgDepth = tests[gameRef][1]
-  avgScores = tests[gameRef][2]
+  sims = tests[gameName][0]
+  avgDepth = tests[gameName][1]
+  avgScores = tests[gameName][2]
   print(HEAD_FORMATTER.format(f'{game} sims {sims:}:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {sims}')
@@ -218,7 +215,7 @@ for game in games:
   if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   ######## Perft ########
-  expectedPerft = tests[gameRef][3]
+  expectedPerft = tests[gameName][3]
   for depth in range(len(expectedPerft)):
     print(HEAD_FORMATTER.format(f'{game} perft {depth}:'),end='',flush=True)
     startTime = time.time()

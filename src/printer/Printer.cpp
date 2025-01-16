@@ -75,22 +75,19 @@ void Printer::endMainClass()
     headerFile_ << "};" << std::endl;
 }
 
-void Printer::endHeaderFile(std::string& gameStateAndMoveAndNodeIdHasherBody)
+void Printer::endHeaderFile()
 {
-    std::string stateCacheHasher = "struct stateCacheHasher{";
-    stateCacheHasher += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
-    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
-    stateCacheHasher += "}};";
-
-    std::string stateCacheDeclaration =
-        "std::unordered_set<std::tuple<GameState, move_representation,int>, stateCacheHasher> state_cache;";
-
-    headerFile_ << "namespace {" + stateCacheHasher + stateCacheDeclaration + "}}  // namespace reasoner" << std::endl;
+    headerFile_ << "}  // namespace reasoner" << std::endl;
 }
 
-void Printer::endSourceFile()
+void Printer::endSourceFile(const std::string& gameStateAndMoveAndNodeIdHasherBody)
 {
-    sourceFile_ << "}  // namespace reasoner" << std::endl;
+    std::string stateCacheHasher =
+        "size_t StateCacheHasher::operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
+    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
+    stateCacheHasher += "};";
+
+    sourceFile_ << stateCacheHasher + "\n}  // namespace reasoner" << std::endl;
 }
 
 void Printer::printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations)
@@ -295,7 +292,20 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     }
     return x;
 }
-}  // namespace)";
+}  // namespace
+
+struct vector_hash
+{
+    size_t operator()(const move_representation& v) const
+    {
+        int res = 0;
+        for (int x : v)
+        {
+            res ^= x;
+        }
+        return res;
+    }
+};)";
 
     headerFile_ << "using move_representation = " << moveContainer << "<int";
     if (moveSize != -1)
@@ -305,11 +315,12 @@ size_t hash(const boost::container::static_vector<T, N> &v)
     headerFile_ << ">;" << std::endl;
 
     headerFile_ << "class GameState;" << std::endl << std::endl;
+    headerFile_ << "class RgCache;" << std::endl;
     headerFile_ << structMoveDefinition << std::endl << std::endl;
     headerFile_ << hashFunctions << std::endl << std::endl;
 }
 
-void Printer::printAdditionDataForCycleHandling(const std::string& s)
+void Printer::printMainCache(const std::string& s)
 {
     headerFile_ << s << std::endl << std::endl;
 }

@@ -99,7 +99,6 @@ private:
         int edgeIdx,
         const std::shared_ptr<Edge> &edge,
         int iid,
-        const std::string &cacheName,
         const std::string &prefix,
         int patternId = 0);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);

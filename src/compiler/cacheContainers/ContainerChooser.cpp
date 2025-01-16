@@ -1,5 +1,51 @@
 #include "ContainerChooser.hpp"
 
+namespace {
+const auto INIT_CACHE = R"(RgCache()
+{
+    pattern_cache.reserve(2);
+    pattern_cache.resize(1);
+}
+)";
+
+const auto RESET_MAIN_PART = R"(inline void reset()
+{
+    depth = 0;
+    pattern_cache[0].clear();
+    state_cache.clear();
+)";
+
+const auto CLEAR_CURRENT = R"(inline void clearCurrent() { pattern_cache[depth].clear(); }
+)";
+
+const auto INC_DEPTH = R"(inline void incDepth()
+{
+    ++depth;
+    if (depth >= pattern_cache.size())
+    {
+        pattern_cache.resize(depth + 1);
+    }
+    else
+    {
+        pattern_cache[depth].clear();
+    }
+}
+)";
+
+const auto DEC_DEPTH = R"(inline void decDepth() { --depth; }
+)";
+
+std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache)
+{
+    std::string clearingCaches;
+    for (const auto& [_, cache] : stateToCache)
+    {
+        clearingCaches += cache->getCacheName() + ".clear();\n";
+    }
+    return RESET_MAIN_PART + clearingCaches + "}\n";
+}
+}  // namespace
+
 ContainerChooser::ContainerChooser(const std::string &cacheName)
 : smallDomainMaxiumSize_(1000)
 , cacheName_(cacheName)
@@ -75,43 +121,14 @@ std::string ContainerChooser::getIsSetMethodDeclaration(const IdType &id, int no
     return idTypeToContainer_.at(id)->getIsSetMethodDeclaration(node);
 }
 
-std::string ContainerChooser::getAdditionalData() const
+std::string ContainerChooser::getAdditionalData(
+    const std::string& gameStateAndMoveAndNodeIdHasherBody,
+    const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const
 {
-    std::string result = "";
-    std::set<ContainerType> containerTypes;
-    std::set<IdType> bitArrayContainers;
-
-    for (const auto &[id, container] : idTypeToContainer_)
-    {
-        auto type = container->getContainerType();
-        if (ContainerType::BitArray == type)
-        {
-            bitArrayContainers.insert(id);
-        }
-        if (containerTypes.count(type) == 0)
-        {
-            result += container->getAdditionalData();
-        }
-        containerTypes.insert(type);
-    }
-
-    result += createCache(bitArrayContainers);
-
-    result += R"(struct vector_hash
-{
-  size_t operator()(const move_representation &v) const
-  {
-    int res = 0;
-    for (int x : v)
-    {
-      res ^= x;
-    }
-
-    return res;
-  }
-};
-)";
-
+    std::string result = "struct StateCacheHasher{";
+    result += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const;\n";
+    result += "};\n\n";
+    result += createCache(stateToCache) + "\n";
     return result;
 }
 
@@ -120,16 +137,25 @@ std::string ContainerChooser::getCustomName(const IdType &id) const
     return "container_" + std::get<0>(id) + "_" + std::get<1>(id) + "_" + std::to_string(std::get<2>(id));
 }
 
-std::string ContainerChooser::createCache(const std::set<IdType> &patterns) const
+std::string ContainerChooser::createCache(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const
 {
     std::string rgCache = "class " + cacheName_ + "{\n";
     rgCache += "public:\n";
-    for (const auto &id : patterns)
+    rgCache += INIT_CACHE;
+    rgCache += getResetMethod(stateToCache);
+    rgCache += CLEAR_CURRENT;
+    rgCache += INC_DEPTH;
+    rgCache += DEC_DEPTH;
+    rgCache += "\n";
+    rgCache += "unsigned depth = 0;\n";
+    rgCache += "std::unordered_set<std::tuple<GameState, move_representation, int>, StateCacheHasher> state_cache;\n";
+    rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::gameStateHasher>> pattern_cache;\n";
+    for (const auto& [_, cache] : stateToCache)
     {
-        rgCache += "bitarray<" + getType(id) + "> " + getCustomName(id) + ";\n";
+        rgCache += "std::unordered_map<move_representation," + cache->getCacheType() + ", vector_hash> " +
+                   cache->getCacheName() + ";\n";
     }
     rgCache += "};\n";
-
     return rgCache;
 }
 

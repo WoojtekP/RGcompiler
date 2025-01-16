@@ -12,6 +12,8 @@
 #include "SetContainer.hpp"
 #include "UnorderedSetContainer.hpp"
 
+#include <compiler/stateCache/IStateCache.hpp>
+
 using IdType = std::tuple<std::string, std::string, int>;
 using VariableAndDomain = std::vector<std::pair<std::string, int>>;
 
@@ -30,9 +32,11 @@ public:
     std::string getContainerDeclaration(const IdType &id) const;
     std::string getSetMethodDeclaration(const IdType &id, int node) const;
     std::string getIsSetMethodDeclaration(const IdType &id, int node) const;
-    std::string getAdditionalData() const;
+    std::string getAdditionalData(
+        const std::string& gameStateAndMoveAndNodeIdHasherBody,
+        const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
     std::string getCustomName(const IdType &id) const;
-    std::string createCache(const std::set<IdType> &patterns) const;
+    std::string createCache(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
     bool isInCache(const IdType &id) const;
     std::string getFromCache(const IdType &id) const;
     const std::map<IdType, std::string> &getIdTypeToCustomDeclaration() const;

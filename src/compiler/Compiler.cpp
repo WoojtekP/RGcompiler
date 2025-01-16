@@ -348,7 +348,7 @@ void Compiler::generateSourceCode(
     printer.printVariables(program_.getVariables(), gameStateHasher_);
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.printMainCache(containerChooser_.getAdditionalData(gameStateAndMoveAndNodeIdHasherBody_));
+    printer.printMainCache(containerChooser_.getAdditionalData(gameStateAndMoveAndNodeIdHasherBody_, stateToCache_));
     printer.endHeaderFile();
     printer.endSourceFile(gameStateAndMoveAndNodeIdHasherBody_);
 }
@@ -467,14 +467,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 
-    for (const auto& [_, cache] : stateToCache_)
-    {
-        program_.addVariableDeclaration(std::make_unique<Variable>(
-            cache->getCacheName(),
-            std::make_unique<CustomType>(
-                "std::unordered_map<move_representation," + cache->getCacheType() + ", vector_hash>")));
-    }
-
     auto initialType = std::make_shared<CustomType>("static constexpr int");
     auto initialValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
@@ -581,8 +573,8 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         {
             const auto stateCache = getStateCacheSafe(state);
             const std::string cacheVarName = "cache";
-            function->addInstruction(
-                std::make_unique<AssignmentInstruction>(cacheVarName, stateCache->getCacheName() + "[mr]", "auto&"));
+            function->addInstruction(std::make_unique<AssignmentInstruction>(
+                cacheVarName, mainCacheName_ + "." + stateCache->getCacheName() + "[mr]", "auto&"));
 
             auto testCacheInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(cacheVarName + stateCache->getTestInstruction()));
@@ -1635,11 +1627,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getAllMovesFunction->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
     std::string clearingCaches = mainCacheName_ + ".reset();\n";
-    for (const auto& nodeAndVariables : pragmaRepeatData_)
-    {
-        clearingCaches += "state_cache_" + nodeAndVariables.first + ".clear();" + "\n";
-    }
-
     if (verification_)
     {
         clearingCaches += "verificationCache.clear();\n";
@@ -1650,11 +1637,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
-    for (const auto& nodeAndVariables : pragmaRepeatData_)
-    {
-        applyMoveFunction->addInstruction(
-            std::make_unique<CustomInstruction>("state_cache_" + nodeAndVariables.first + ".clear()"));
-    }
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
         R"(const move_representation &v = m.mr;
         currentMrId = 0;

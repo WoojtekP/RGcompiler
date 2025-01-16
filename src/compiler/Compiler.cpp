@@ -214,13 +214,14 @@ void Compiler::initializePragmaRepeat()
     };
     for (const auto& pragma : parser_.getPragmas("Repeat"))
     {
+        if (std::any_of(pragma["identifiers"].begin(), pragma["identifiers"].end(), isVariableOfFunctionType))
+        {
+            continue;
+        }
         for (const auto& edge : pragma["edgeNames"])
         {
-            if (std::any_of(pragma["identifiers"].begin(), pragma["identifiers"].end(), isVariableOfFunctionType))
-            {
-                continue;
-            }
             const auto& nodeName = edge["parts"][0]["identifier"];
+            pragmaRepeatData_[nodeName] = {};
             for (const auto& variableName : pragma["identifiers"])
             {
                 pragmaRepeatData_[nodeName].push_back(variableName);

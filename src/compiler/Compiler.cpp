@@ -1638,6 +1638,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
+        mainCacheName_ + ".reset();" +
         R"(const move_representation &v = m.mr;
         currentMrId = 0;
     runApplyState(currentState, v, rgCache);

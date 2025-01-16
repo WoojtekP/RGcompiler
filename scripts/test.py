@@ -49,6 +49,7 @@ tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])# 4307152
 tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152])# 4307152
 tests['bombardment'] = (10000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
 tests['breakthrough'] = (10000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])# 149264638
+tests['clobber'] = (10000,64.63,[48.88,51.12], [1,180,31252,5231000])
 tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])# 117649 823536 5673234
 tests['gomoku_standard'] = (10000,112.59,[50.97,49.03], [1,225,50400,11239200])#,2495102400
 tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#,2495102400
@@ -83,6 +84,8 @@ if "all" in games:
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
   
+  games.append('clobber.hrg')
+
   games.append('connect4.hrg')
   games.append('connect4.rbg')
   

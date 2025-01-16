@@ -8,18 +8,42 @@ parser.add_argument('game', nargs=1, help='game file')
 parser.add_argument('depth', nargs=1, help='perft depth')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 parser.add_argument('-skipcompilation', action='store_true', help='skip compile.py and use the existing reasoner sources')
+cpp_flags_group = parser.add_mutually_exclusive_group(required=False)
+cpp_flags_group.add_argument('-debug', action='store_true', help='compile with gdb symbols')
+cpp_flags_group.add_argument('-profile', action='store_true', help='generate profiler information')
+cpp_flags_group.add_argument('-benchmark', action='store_true', help='maximum speed flags')
 
 args = parser.parse_args()
 game = args.game[0]
 depth = args.depth[0]
-translateOptions = '"' + args.translateOptions + '"'
+translateOptions = args.translateOptions
+if args.profile:
+  gccOptions = cfg.GCC_PROFILE_FLAGS
+  infoGccOptions = "profile"
+elif args.debug:
+  gccOptions = cfg.GCC_DEBUG_FLAGS
+  infoGccOptions = "debug"
+elif args.benchmark:
+  gccOptions = cfg.GCC_BENCHMARK_FLAGS
+  infoGccOptions = "benchmark"
+else:
+  gccOptions = cfg.GCC_TEST_FLAGS
+  infoGccOptions = "test"
 
 parsed = parseGameName(game)
 if parsed == None: exit(1)
 (gameName,gameFile) = parsed
 
+print(f'Testing: {game}')
+print(f'Translate options: {translateOptions}')
+print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
+print(f'g++ {infoGccOptions} options: {gccOptions}')
+#if usePerf: print(f'Using perf')
+
+#######################################################################################################################
+
 if not args.skipcompilation:
-  run(f'python3 scripts/compile.py {gameFile} -t{translateOptions} -silent')
+  run(f'python3 scripts/compile.py {gameFile} -t"{translateOptions}" -silent')
 
 HEAD_FORMATTER = '{: <14} '
 TIME_FORMATTER = '{:9.3f} s'
@@ -40,7 +64,6 @@ if result.returncode != 0:
   print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
   exit(2)
 stats = decodeOutput(result.stdout).strip().split(' ')
-#print(stats)
 resLeaves = int(stats[0])
 resStates = int(stats[1])
 resTerminals = int(stats[2])

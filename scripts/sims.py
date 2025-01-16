@@ -56,7 +56,7 @@ else:
 
 print(f'Testing: {game}')
 print(f'Translate options: {translateOptions}')
-print(f'rbg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
+print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
 print(f'g++ {infoGccOptions} options: {gccOptions}')
 if usePerf: print(f'Using perf')
 print()

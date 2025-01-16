@@ -94,7 +94,7 @@ if "all" in games:
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
-print(f'rbg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
+print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
 print(f'g++ {infoGccOptions} options: {gccOptions}')
 if useTime: print(f'Limit: {limitS}s')
 else: print(f'Limit: {limit} sims')

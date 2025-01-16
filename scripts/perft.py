@@ -14,8 +14,12 @@ game = args.game[0]
 depth = args.depth[0]
 translateOptions = '"' + args.translateOptions + '"'
 
+parsed = parseGameName(game)
+if parsed == None: exit(1)
+(gameName,gameFile) = parsed
+
 if not args.skipcompilation:
-  run(f'python3 scripts/compile.py {game} -t{translateOptions}')
+  run(f'python3 scripts/compile.py {gameFile} -t{translateOptions} -silent')
 
 HEAD_FORMATTER = '{: <14} '
 TIME_FORMATTER = '{:9.3f} s'
@@ -40,6 +44,6 @@ stats = decodeOutput(result.stdout).strip().split(' ')
 resLeaves = int(stats[0])
 resStates = int(stats[1])
 resTerminals = int(stats[2])
-print(f'leaves: {resLeaves}')
-print(f'states: {resStates}  ({resStates/elapsedTime:9,.3f} states/s)')
-print(f'terminals: {resTerminals}')
+print(f'Leaves: {resLeaves}')
+print(f'States: {resStates}  ({resStates/elapsedTime:9,.0f} states/s)')
+print(f'Terminals: {resTerminals}')

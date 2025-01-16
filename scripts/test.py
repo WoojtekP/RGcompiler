@@ -53,12 +53,12 @@ tests['clobber'] = (10000,64.63,[48.88,51.12], [1,180,31252,5231000])
 tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])# 117649 823536 5673234
 tests['gomoku_standard'] = (10000,112.59,[50.97,49.03], [1,225,50400,11239200])#,2495102400
 tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#,2495102400
-tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454])# 3929482778
-tests['pentago'] = (10000,29.07,[53.57,46.43], [1,288,80640,21934080])
-tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])# 148176 200448 127872
-
 tests['hex'] = (1000,107.52,[52.27,47.73], [1,121,14520,1727880])
 tests['hex_9x9'] = (10000,71.02,[53.03,46.97], [1,81,6480,511920])# 39929760
+tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454])# 3929482778
+tests['pentago'] = (10000,29.07,[53.57,46.43], [1,288,80640,21934080])
+tests['pentago_split'] = (10000,54.74,[54.67,45.33], [1,36,288,10080,80640,2741760])
+tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])# 148176 200448 127872
 
 
 if "all" in games:
@@ -108,6 +108,11 @@ if "all" in games:
   
   games.append('amazons_split2.hrg')
   #games.append('amazons_split2.rbg') # Too slow for now
+  
+  games.append('pentago.hrg')
+  games.append('pentago.rbg')
+  games.append('pentago_split.hrg')
+  games.append('pentago_split.rbg')
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')

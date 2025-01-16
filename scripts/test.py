@@ -89,7 +89,10 @@ if "all" in games:
   games.append('knightthrough.rbg')
 
   games.append('gomoku_standard.hrg')
+  games.append('gomoku_standard.rbg')
+
   games.append('gomoku_freeStyle.hrg')
+  games.append('gomoku_freeStyle.rbg')
 
   games.append('bombardment.hrg')
   
@@ -97,6 +100,7 @@ if "all" in games:
   games.append('amazons.rbg')
   
   games.append('amazons_split2.hrg')
+  #games.append('amazons_split2.rbg') # Too slow for now
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
@@ -232,7 +236,7 @@ gamesError = [game for game in games if game not in gamesOK]
 
 print()
 print((HEAD_FORMATTER+RESULT_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
-print(f'Games with {util.OK}: {" ".join(gamesOK)}')
+print(f'Games {util.OK}: {" ".join(gamesOK)}')
 if len(gamesError) == 0:
   print(f'No errors.')
 else:

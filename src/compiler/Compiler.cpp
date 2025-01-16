@@ -747,6 +747,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         tags.push_back(pairFullTagAndChild.first);
         auto innerInstructions = std::move(makeSwitchForTags(
             pairFullTagAndChild.second, tags, depth + 1, isExhaustive, hasAnyEmptyTagSequence, minValues));
+        minValues.pop_back();
         tags.pop_back();
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
         if (!pairFullTagAndChild.second->children_.empty())

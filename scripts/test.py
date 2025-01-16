@@ -50,6 +50,7 @@ tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152]
 tests['bombardment'] = (10000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
 tests['breakthrough'] = (10000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])# 149264638
 tests['connect4'] = (10000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])# 117649 823536 5673234
+tests['gomoku_standard'] = (10000,112.59,[50.97,49.03], [1,225,50400,11239200])#,2495102400
 tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#,2495102400
 tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454])# 3929482778
 tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])# 148176 200448 127872
@@ -87,6 +88,7 @@ if "all" in games:
   games.append('knightthrough.hrg')
   games.append('knightthrough.rbg')
 
+  games.append('gomoku_standard.hrg')
   games.append('gomoku_freeStyle.hrg')
 
   games.append('bombardment.hrg')
@@ -95,8 +97,6 @@ if "all" in games:
   games.append('amazons.rbg')
   
   games.append('amazons_split2.hrg')
-
-buildInterpreter()
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
@@ -127,6 +127,8 @@ for game in games:
   print()
 
   nameWithExt = game.split('.')
+  if len(nameWithExt) != 2:
+    print(f'Invalid game name: {game})')    
   baseName = nameWithExt[0].split('-')[0]
   gameFile = nameWithExt[1] + '/' + game
   if baseName in tests:

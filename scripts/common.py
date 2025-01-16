@@ -8,7 +8,8 @@ def run(cmd):
     exit(2)
 
 def buildInterpreter():
-  run(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml --help >/dev/null 2>/dev/null')
+  #run(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml --help >/dev/null 2>/dev/null')
+  run(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml --help')
 
 def runCap(cmd):
   return subprocess.run(cmd, shell=True, capture_output=True)
@@ -18,6 +19,15 @@ def isProgramAvailable(name):
 
 def decodeOutput(output):
   return output.decode('UTF-8')
+
+def parseGameName(game):
+  nameWithExt = game.split('.')
+  if len(nameWithExt) != 2:
+    print(f'Invalid game name: {game}')
+    return None
+  baseName = nameWithExt[0].split('-')[0]
+  gameFile = nameWithExt[1] + '/' + game
+  return (baseName, gameFile)
 
 class cfg:
   BUILD_DIR = 'build'

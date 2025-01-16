@@ -92,8 +92,6 @@ if "all" in games:
   #games.append('englishDraughts.rbg')
   #games.append('gess.rbg')
 
-buildInterpreter()
-
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
 print(f'rbg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')

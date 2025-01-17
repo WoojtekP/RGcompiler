@@ -130,8 +130,9 @@ print(f'g++ {infoGccOptions} options: {gccOptions}')
 #######################################################################################################################
 
 HEAD_FORMATTER = '{: <50} '
-RESULT_FORMATTER = '{: <20}{:9.3f} s'
-STAT_FORMATTER = '  {:15,.3f} states/s'
+TIME_FORMATTER = '{: <20}{:9.3f} s'
+SIMS_FORMATTER = '{: <20}{:9.3f} s  {:15,.0f} states/s  {:15,.0f} sims/s'
+PERFT_FORMATTER = '{: <20}{:9.3f} s  {:15,.0f} states/s'
 
 def printResult(info, elapsedTime, count=0):
   print(RESULT_FORMATTER.format(info, elapsedTime) + ("" if count == 0 else STAT_FORMATTER.format(count/elapsedTime).replace(',',' ')))
@@ -167,7 +168,7 @@ for game in games:
     info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
   else:
     info = f'{util.OK}'
-  printResult(info, elapsedTime)
+  print(TIME_FORMATTER.format(info, elapsedTime))
   if result.returncode != 0:
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
     continue
@@ -183,7 +184,7 @@ for game in games:
     info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
   else:
     info = f'{util.OK}'
-  printResult(info, elapsedTime)
+  print(TIME_FORMATTER.format(info, elapsedTime))
   if not args.quiet:
     errOutput = decodeOutput(result.stderr).strip()
     if errOutput != "":
@@ -219,7 +220,7 @@ for game in games:
     else:
       info = f'{util.OK}'
     errInfo = None
-  printResult(info, elapsedTime, resStates)
+  print(SIMS_FORMATTER.format(info, elapsedTime, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
   if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   ######## Perft ########
@@ -243,7 +244,7 @@ for game in games:
       else:
         info = f'{util.OK}'
       errInfo = None
-    printResult(info, elapsedTime, resStates)
+    print(PERFT_FORMATTER.format(info, elapsedTime, resStates/elapsedTime))
     if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   if isOK: gamesOK.append(game)
@@ -252,7 +253,7 @@ totalElapsedTime = time.time() - totalStartTime
 gamesError = [game for game in games if game not in gamesOK]
 
 print()
-print((HEAD_FORMATTER+RESULT_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
+print((HEAD_FORMATTER+TIME_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
 print(f'Games {util.OK}: {" ".join(gamesOK)}')
 if len(gamesError) == 0:
   print(f'No errors.')

@@ -40,7 +40,14 @@ std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCac
     std::string clearingCaches;
     for (const auto& [_, cache] : stateToCache)
     {
-        clearingCaches += cache->getCacheName() + ".clear();\n";
+        if (cache->getCacheType() == "bool")
+        {
+            clearingCaches += cache->getCacheName() + " = false;\n";
+        }
+        else
+        {
+            clearingCaches += cache->getCacheName() + ".reset();\n";
+        }
     }
     return RESET_MAIN_PART + clearingCaches + "}\n";
 }
@@ -152,8 +159,7 @@ std::string ContainerChooser::createCache(const std::map<std::string, std::share
     rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::gameStateHasher>> pattern_cache;\n";
     for (const auto& [_, cache] : stateToCache)
     {
-        rgCache += "std::unordered_map<move_representation," + cache->getCacheType() + ", vector_hash> " +
-                   cache->getCacheName() + ";\n";
+        rgCache += cache->getCacheType() + " " + cache->getCacheName() + ";\n";
     }
     rgCache += "};\n";
     return rgCache;

@@ -221,11 +221,41 @@ void Compiler::initializePragmaRepeat()
         for (const auto& edge : pragma["edgeNames"])
         {
             const auto& nodeName = edge["parts"][0]["identifier"];
-            pragmaRepeatData_[nodeName] = {};
+            auto& identifiers = pragmaRepeatStateToIdentifiers_[nodeName];
             for (const auto& variableName : pragma["identifiers"])
             {
-                pragmaRepeatData_[nodeName].push_back(variableName);
+                identifiers.push_back(variableName);
             }
+        }
+    }
+
+    initializePragmaRepeatForGraphs(patternReachabilityGraphs_, 0);
+    initializePragmaRepeatForGraphs(patternAnyGraphs_, 1);
+    initializePragmaRepeatForGraphs(applyAnyMoveGraphs_, 2);
+}
+
+void Compiler::initializePragmaRepeatForGraphs(
+        const std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& graphs, const int patternId)
+{
+    std::set<std::string> repeatNodes;
+    std::ranges::transform(
+        pragmaRepeatStateToIdentifiers_,
+        std::inserter(repeatNodes, std::begin(repeatNodes)),
+        [](const auto& stateToIds) { return stateToIds.first; });
+
+    for (const auto& [from, to, graph] : graphs)
+    {
+        std::set<int> repeatNodesForGraph;
+        for (const auto& node : graph->getAllNodes())
+        {
+            if (repeatNodes.count(node->getName()))
+            {
+                repeatNodesForGraph.insert(graph_->getNodeId(node->getName()));
+            }
+        }
+        if (!repeatNodesForGraph.empty())
+        {
+            typeOfGraphToStatesToClear_.emplace(std::make_tuple(from, to, patternId), repeatNodesForGraph);
         }
     }
 }
@@ -247,7 +277,7 @@ void Compiler::initializePragmas()
 void Compiler::generateStateCaches()
 {
     StateCacheFactory factory(parser_, valueAssigner_);
-    for (const auto& [nodeName, variables] : pragmaRepeatData_)
+    for (const auto& [nodeName, variables] : pragmaRepeatStateToIdentifiers_)
     {
         stateToCache_.emplace(nodeName, std::move(factory.createStateCache(nodeName, variables)));
     }
@@ -570,12 +600,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (pragmaRepeatData_.count(state))
+        if (pragmaRepeatStateToIdentifiers_.count(state))
         {
-            const auto stateCache = getStateCacheSafe(state);
+            const auto& stateCache = getStateCacheSafe(state);
             const std::string cacheVarName = "cache";
             function->addInstruction(std::make_unique<AssignmentInstruction>(
-                cacheVarName, mainCacheName_ + "." + stateCache->getCacheName() + "[mr]", "auto&"));
+                cacheVarName, mainCacheName_ + "." + stateCache->getCacheName(), "auto&"));
 
             auto testCacheInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(cacheVarName + stateCache->getTestInstruction()));
@@ -955,7 +985,22 @@ void Compiler::generateBoolStateFunctions(
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 
-            if (!(pragmaUniqueData_.count(node->getName()) || allUnique_) && !skipStateCache)
+            if (pragmaRepeatStateToIdentifiers_.count(state))
+            {
+                const auto& stateCache = getStateCacheSafe(state);
+                const std::string cacheVarName = "cache";
+                function->addInstruction(std::make_unique<AssignmentInstruction>(
+                    cacheVarName, mainCacheName_ + "." + stateCache->getCacheName(), "auto&"));
+
+                auto testCacheInstruction = std::make_unique<IfInstruction>(
+                    std::make_unique<ComparisonInstruction>(cacheVarName + stateCache->getTestInstruction()));
+                addReturnInstruction(testCacheInstruction, true);
+                function->addInstruction(std::move(testCacheInstruction));
+
+                const auto insertInstruction = cacheVarName + stateCache->getInsertInstruction();
+                function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));
+            }
+            else if (!(pragmaUniqueData_.count(node->getName()) || allUnique_) && !skipStateCache)
             {
                 auto nodeId = std::to_string(graph_->getNodeId(state));
                 if (const auto binding = node->getBinding())
@@ -1056,6 +1101,29 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     {
         const auto functionResultVar = "result_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".incDepth()"));
+        if (action->getType() == ActionType::Reachability)
+        {
+            const auto statesToClearIt = typeOfGraphToStatesToClear_.find({action->getLeftSide(), action->getRightSide(), 0});
+            if (statesToClearIt != typeOfGraphToStatesToClear_.end())
+            {
+                for (const auto& cacheToClear : statesToClearIt->second)
+                {
+                    const auto stateName = graph_->getNode(cacheToClear)->getName();
+                    const auto& stateCache = getStateCacheSafe(stateName);
+                    const auto fullCacheName = mainCacheName_ + "." + stateCache->getCacheName();
+                    if (stateCache->getCacheType() == "bool")
+                    {
+                        tmpBlockInstruction->pushInstructionBack(
+                            std::make_unique<CustomInstruction>(fullCacheName + " = 0"));
+                    }
+                    else
+                    {
+                        tmpBlockInstruction->pushInstructionBack(
+                            std::make_unique<CustomInstruction>(fullCacheName + ".reset()"));
+                    }
+                }
+            }
+        }
         tmpBlockInstruction->pushInstructionBack(
             std::make_unique<AssignmentInstruction>(functionResultVar, functionCall, "const auto"));
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".decDepth()"));
@@ -1198,6 +1266,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         skipFirstInstructionIter--;
     }
 
+    std::set<std::string> repeatNodes;
+    std::ranges::transform(
+        pragmaRepeatStateToIdentifiers_,
+        std::inserter(repeatNodes, std::begin(repeatNodes)),
+        [](const auto& stateToIds) { return stateToIds.first; });
+    const auto edgeToStatesRequiringClear =
+        graphOperatorManager_->getOperator<PragmaRepeatOperator>(graph)->getEdgeToStatesForWhichCacheShouldBeCleared(
+            repeatNodes, graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionTag());
+
     std::vector<std::shared_ptr<Node>> nodes = {edge->getLeftNode()};
     nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
     assert(nodes.size() == baseActions.size());
@@ -1254,6 +1331,27 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Tag)
         {
+            const auto cachesToClear = edgeToStatesRequiringClear.find(edge);
+            if (cachesToClear != edgeToStatesRequiringClear.end())
+            {
+                for (const auto& cacheToClear : cachesToClear->second)
+                {
+                    const auto stateName = graph->getNode(cacheToClear)->getName();
+                    const auto& stateCache = getStateCacheSafe(stateName);
+                    const auto fullCacheName = mainCacheName_ + "." + stateCache->getCacheName();
+                    if (stateCache->getCacheType() == "bool")
+                    {
+                        blockInstruction->pushInstructionFront(
+                            std::make_unique<CustomInstruction>(fullCacheName + " = 0"));
+                    }
+                    else
+                    {
+                        blockInstruction->pushInstructionFront(
+                            std::make_unique<CustomInstruction>(fullCacheName + ".reset()"));
+                    }
+                }
+            }
+
             const auto tagValueStr = getTagValueString(action, edge);
             if (applyEdgeMode)
             {
@@ -1419,6 +1517,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 
+
+    std::set<std::string> repeatNodes;
+    std::ranges::transform(
+        pragmaRepeatStateToIdentifiers_,
+        std::inserter(repeatNodes, std::begin(repeatNodes)),
+        [](const auto& stateToIds) { return stateToIds.first; });
+    const auto edgeToStatesRequiringClear =
+        graphOperatorManager_->getOperator<PragmaRepeatOperator>(graph)->getEdgeToStatesForWhichCacheShouldBeCleared(
+            repeatNodes, graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionTag());
+
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
@@ -1443,7 +1551,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
-        }  // Ignore tags in patterns
+        }
+        if (action->getType() == ActionType::Tag && !bSkipStateCache)
+        {
+            const auto cachesToClear = edgeToStatesRequiringClear.find(edge);
+            if (cachesToClear != edgeToStatesRequiringClear.end())
+            {
+                for (const auto& cacheToClear : cachesToClear->second)
+                {
+                    const auto stateName = graph->getNode(cacheToClear)->getName();
+                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("// clear " + stateName));
+                }
+            }
+        }
+        // Ignore tags in patterns
         /*else if (action->getType() == ActionType::Tag && !bSkipStateCache)
         {
             const auto tagValueStr = getTagValueString(action, edge);

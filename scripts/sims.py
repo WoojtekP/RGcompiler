@@ -60,10 +60,6 @@ print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
 print(f'g++ {infoGccOptions} options: {gccOptions}')
 if usePerf: print(f'Using perf')
 print()
-
-parsed = parseGameName(game)
-if parsed == None: exit(1)
-(gameName,gameFile) = parsed
     
 #######################################################################################################################
 
@@ -71,7 +67,7 @@ if parsed == None: exit(1)
 if not args.skipcompilation:
   print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
   startTime = time.time()
-  run(f'python3 scripts/compile.py {gameFile} -t"{translateOptions}" -silent')
+  run(f'python3 scripts/compile.py {game} -t"{translateOptions}" -silent')
   elapsedTime = time.time() - startTime
   print(TIME_FORMATTER.format(elapsedTime))
 

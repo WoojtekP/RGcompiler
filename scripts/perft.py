@@ -30,10 +30,6 @@ else:
   gccOptions = cfg.GCC_TEST_FLAGS
   infoGccOptions = "test"
 
-parsed = parseGameName(game)
-if parsed == None: exit(1)
-(gameName,gameFile) = parsed
-
 print(f'Testing: {game}')
 print(f'Translate options: {translateOptions}')
 print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
@@ -43,7 +39,7 @@ print(f'g++ {infoGccOptions} options: {gccOptions}')
 #######################################################################################################################
 
 if not args.skipcompilation:
-  run(f'python3 scripts/compile.py {gameFile} -t"{translateOptions}" -silent')
+  run(f'python3 scripts/compile.py {game} -t"{translateOptions}" -silent')
 
 HEAD_FORMATTER = '{: <14} '
 TIME_FORMATTER = '{:9.3f} s'

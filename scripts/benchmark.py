@@ -116,17 +116,13 @@ gamesOK = []
 
 #######################################################################################################################
 for game in games:
-  parsed = parseGameName(game)
-  if parsed == None: continue
-  (gameName,gameFile) = parsed
-  
   print(HEAD_FORMATTER.format(f'{game}:'),end='',flush=True)
   
   ######## Compile ########
   if not args.skipcompilation:
     print(f' | compile ',end='',flush=True)
     startTime = time.time()
-    result = runCap(f'python3 scripts/compile.py {gameFile} -t"{translateOptions}"')
+    result = runCap(f'python3 scripts/compile.py {game} -t"{translateOptions}"')
     elapsedTime = time.time() - startTime
     if result.returncode != 0:
       print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')

@@ -164,7 +164,7 @@ for game in games:
   ######## Compile ########
   print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
   startTime = time.time()
-  result = runCap(f'python3 scripts/compile.py {gameFile} -t"{translateOptions}"')
+  result = runCap(f'python3 scripts/compile.py {game} -t"{translateOptions}"')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:
     info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'

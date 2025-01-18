@@ -38,7 +38,7 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
-  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --calculate-disjoints --calculate-repeats --calculate-tag-indexes --calculate-uniques --calculate-simple-apply'
+  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --calculate-disjoints --calculate-repeats-and-uniques --calculate-tag-indexes --calculate-simple-apply'
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --max-move-len -1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 0'
 

@@ -848,12 +848,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             listOfActionsToPlayerChangeAndEndNode.second,
             true));
 
-        blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
-
         std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
             std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
-        blockInstruction->pushInstructionFront(std::move(ifInstruction));
+        blockInstruction->pushInstructionBack(std::move(ifInstruction));
+        blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
 
     if (!isExhaustive || hasAnyEmptyTagSequence)

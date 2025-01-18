@@ -853,7 +853,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
             std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
-        blockInstruction->pushInstructionBack(std::move(ifInstruction));
+        blockInstruction->pushInstructionFront(std::move(ifInstruction));
     }
 
     if (!isExhaustive || hasAnyEmptyTagSequence)

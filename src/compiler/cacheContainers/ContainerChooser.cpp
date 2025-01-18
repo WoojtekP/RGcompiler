@@ -23,7 +23,7 @@ const auto INC_DEPTH = R"(inline void incDepth()
     ++depth;
     if (depth >= pattern_cache.size())
     {
-        pattern_cache.resize(depth + 1);
+        pattern_cache.push_back({});
     }
     else
     {

@@ -1517,16 +1517,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 
-
-    std::set<std::string> repeatNodes;
-    std::ranges::transform(
-        pragmaRepeatStateToIdentifiers_,
-        std::inserter(repeatNodes, std::begin(repeatNodes)),
-        [](const auto& stateToIds) { return stateToIds.first; });
-    const auto edgeToStatesRequiringClear =
-        graphOperatorManager_->getOperator<PragmaRepeatOperator>(graph)->getEdgeToStatesForWhichCacheShouldBeCleared(
-            repeatNodes, graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionTag());
-
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
@@ -1551,18 +1541,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             ifInstruction->addInstruction(std::move(blockInstruction));
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
-        }
-        if (action->getType() == ActionType::Tag && !bSkipStateCache)
-        {
-            const auto cachesToClear = edgeToStatesRequiringClear.find(edge);
-            if (cachesToClear != edgeToStatesRequiringClear.end())
-            {
-                for (const auto& cacheToClear : cachesToClear->second)
-                {
-                    const auto stateName = graph->getNode(cacheToClear)->getName();
-                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("// clear " + stateName));
-                }
-            }
         }
         // Ignore tags in patterns
         /*else if (action->getType() == ActionType::Tag && !bSkipStateCache)

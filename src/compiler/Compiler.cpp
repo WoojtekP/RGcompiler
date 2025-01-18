@@ -419,7 +419,8 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     }
     comparisionFunction->addInstruction(std::make_unique<CustomInstruction>("return " + comparisionFunctionBody));
 
-    gameStateAndMoveAndNodeIdHasherBody_ = "return hash(std::get<1>(gameState)) ^ " + gameStateAndMoveAndNodeIdHasherBody_;
+    gameStateAndMoveAndNodeIdHasherBody_ =
+        "return hash(std::get<1>(gameState)) ^ " + gameStateAndMoveAndNodeIdHasherBody_;
 
     gameStateHasher_ = "struct gameStateHasher{size_t operator()(const std::tuple<GameState, int>& gameState) const{";
     gameStateHasher_ += gameStateAndMoveAndNodeIdHasherBody_ + ";}};";
@@ -848,6 +849,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             true));
 
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
+
+        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+            std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
+        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+        blockInstruction->pushInstructionBack(std::move(ifInstruction));
     }
 
     if (!isExhaustive || hasAnyEmptyTagSequence)
@@ -856,6 +862,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));
         blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>("currentMrId", "tmpCurrentMrId"));
     }
+
     function->addInstruction(std::move(blockInstruction));
     function->addInstruction(std::make_unique<ReturnInstruction>("false"));
 
@@ -1061,8 +1068,8 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     }
 
     const auto cmpType = action->getNegated() ? ComparisonType::Neg : ComparisonType::None;
-    std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        std::make_unique<ComparisonInstruction>(comparisonExpression, cmpType));
+    std::unique_ptr<IfInstruction> ifInstruction =
+        std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(comparisonExpression, cmpType));
 
     ifInstruction->addInstruction(std::move(blockInstruction));
     if (returnInstruction)
@@ -1408,8 +1415,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     bool bSkipStateCache = areAllNodesInPatternGraphUnique_.count({from, to});
 
     const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
-    std::unique_ptr<BlockInstruction> blockInstruction = prepareBaseInstructions(
-        graph, actions, from, to, edgeIdx, edge, iid, prefix, functionType.empty() ? 0 : 2);
+    std::unique_ptr<BlockInstruction> blockInstruction =
+        prepareBaseInstructions(graph, actions, from, to, edgeIdx, edge, iid, prefix, functionType.empty() ? 0 : 2);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
 

@@ -21,6 +21,7 @@ public:
     std::string getCacheName() const override;
     std::string getInsertInstruction() const override;
     std::string getTestInstruction() const override;
+    std::string getResetInstruction() const override;
 
 private:
     std::string getMethodCall(const std::string& method) const;

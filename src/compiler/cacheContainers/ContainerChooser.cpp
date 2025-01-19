@@ -40,14 +40,7 @@ std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCac
     std::string clearingCaches;
     for (const auto& [_, cache] : stateToCache)
     {
-        if (cache->getCacheType() == "bool")
-        {
-            clearingCaches += cache->getCacheName() + " = false;\n";
-        }
-        else
-        {
-            clearingCaches += cache->getCacheName() + ".reset();\n";
-        }
+        clearingCaches += cache->getCacheName() + cache->getResetInstruction() + ";\n";
     }
     return RESET_MAIN_PART + clearingCaches + "}\n";
 }

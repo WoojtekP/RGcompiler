@@ -9,6 +9,7 @@
 #include <graph/Graph.hpp>
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
+#include <compiler/pragma/RepeatFlat.hpp>
 
 struct Options
 {
@@ -135,8 +136,6 @@ private:
     void initializePragmaDisjoint();
     void initializePragmaUnique();
     void initializePragmaRepeat();
-    void initializePragmaRepeatForGraphs(
-        const std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& graphs, const int patternId);
     void initializePragmaSimpleApply();
     void initializePragmas();
     void generateStateCaches();
@@ -172,8 +171,7 @@ private:
     std::shared_ptr<GraphOperatorManager> graphOperatorManager_;
     std::set<std::string> pragmaUniqueData_;
     std::set<std::string> pragmaSimpleApplyData_;
-    std::map<std::string, std::vector<std::string>> pragmaRepeatStateToIdentifiers_;
-    std::map<std::tuple<std::string, std::string, int>, std::set<int>> typeOfGraphToStatesToClear_;
+    RepeatFlatData pragmaRepeatFlatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
     std::string gameStateAndMoveAndNodeIdHasherBody_;

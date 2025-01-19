@@ -203,61 +203,11 @@ void Compiler::initializePragmaRepeat()
         return;
     }
 
-    const auto isVariableOfFunctionType = [this](const auto& variableName) {
-        const auto& variableType = parser_.findTypeOfVariable(variableName);
-        if (variableType["kind"] == "TypeReference")
-        {
-            const auto& typeDefinition = parser_.findTypeByIdentifier(variableType["identifier"]);
-            return typeDefinition["type"]["kind"] == "Arrow";
-        }
-        return variableType["kind"] == "Arrow";
-    };
-    for (const auto& pragma : parser_.getPragmas("Repeat"))
-    {
-        if (std::any_of(pragma["identifiers"].begin(), pragma["identifiers"].end(), isVariableOfFunctionType))
-        {
-            continue;
-        }
-        for (const auto& edge : pragma["edgeNames"])
-        {
-            const auto& nodeName = edge["parts"][0]["identifier"];
-            auto& identifiers = pragmaRepeatStateToIdentifiers_[nodeName];
-            for (const auto& variableName : pragma["identifiers"])
-            {
-                identifiers.push_back(variableName);
-            }
-        }
-    }
+    pragmaRepeatFlatData_.parse(parser_);
 
-    initializePragmaRepeatForGraphs(patternReachabilityGraphs_, 0);
-    initializePragmaRepeatForGraphs(patternAnyGraphs_, 1);
-    initializePragmaRepeatForGraphs(applyAnyMoveGraphs_, 2);
-}
-
-void Compiler::initializePragmaRepeatForGraphs(
-        const std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& graphs, const int patternId)
-{
-    std::set<std::string> repeatNodes;
-    std::ranges::transform(
-        pragmaRepeatStateToIdentifiers_,
-        std::inserter(repeatNodes, std::begin(repeatNodes)),
-        [](const auto& stateToIds) { return stateToIds.first; });
-
-    for (const auto& [from, to, graph] : graphs)
-    {
-        std::set<int> repeatNodesForGraph;
-        for (const auto& node : graph->getAllNodes())
-        {
-            if (repeatNodes.count(node->getName()))
-            {
-                repeatNodesForGraph.insert(graph_->getNodeId(node->getName()));
-            }
-        }
-        if (!repeatNodesForGraph.empty())
-        {
-            typeOfGraphToStatesToClear_.emplace(std::make_tuple(from, to, patternId), repeatNodesForGraph);
-        }
-    }
+    pragmaRepeatFlatData_.initializeDataForGraphs(patternReachabilityGraphs_, graph_, 0);
+    pragmaRepeatFlatData_.initializeDataForGraphs(patternAnyGraphs_, graph_, 1);
+    pragmaRepeatFlatData_.initializeDataForGraphs(applyAnyMoveGraphs_, graph_, 2);
 }
 
 void Compiler::initializePragmaSimpleApply()
@@ -277,7 +227,7 @@ void Compiler::initializePragmas()
 void Compiler::generateStateCaches()
 {
     StateCacheFactory factory(parser_, valueAssigner_);
-    for (const auto& [nodeName, variables] : pragmaRepeatStateToIdentifiers_)
+    for (const auto& [nodeName, variables] : pragmaRepeatFlatData_.getStateToIdentifiersMap())
     {
         stateToCache_.emplace(nodeName, std::move(factory.createStateCache(nodeName, variables)));
     }
@@ -600,7 +550,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(debugInstruction(prefix + state));
         }
 
-        if (pragmaRepeatStateToIdentifiers_.count(state))
+        if (pragmaRepeatFlatData_.getStateToIdentifiersMap().count(state))
         {
             const auto& stateCache = getStateCacheSafe(state);
             const std::string cacheVarName = "cache";
@@ -985,7 +935,7 @@ void Compiler::generateBoolStateFunctions(
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 
-            if (pragmaRepeatStateToIdentifiers_.count(state))
+            if (pragmaRepeatFlatData_.getStateToIdentifiersMap().count(state))
             {
                 const auto& stateCache = getStateCacheSafe(state);
                 const std::string cacheVarName = "cache";
@@ -1103,24 +1053,17 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
         tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(mainCacheName_ + ".incDepth()"));
         if (action->getType() == ActionType::Reachability)
         {
-            const auto statesToClearIt = typeOfGraphToStatesToClear_.find({action->getLeftSide(), action->getRightSide(), 0});
-            if (statesToClearIt != typeOfGraphToStatesToClear_.end())
+            const auto& typeOfGraphToStates = pragmaRepeatFlatData_.getTypeOfGraphToStatesMap();
+            const auto statesToClearIt = typeOfGraphToStates.find({action->getLeftSide(), action->getRightSide(), 0});
+            if (statesToClearIt != typeOfGraphToStates.end())
             {
                 for (const auto& cacheToClear : statesToClearIt->second)
                 {
                     const auto stateName = graph_->getNode(cacheToClear)->getName();
                     const auto& stateCache = getStateCacheSafe(stateName);
                     const auto fullCacheName = mainCacheName_ + "." + stateCache->getCacheName();
-                    if (stateCache->getCacheType() == "bool")
-                    {
-                        tmpBlockInstruction->pushInstructionBack(
-                            std::make_unique<CustomInstruction>(fullCacheName + " = 0"));
-                    }
-                    else
-                    {
-                        tmpBlockInstruction->pushInstructionBack(
-                            std::make_unique<CustomInstruction>(fullCacheName + ".reset()"));
-                    }
+                    tmpBlockInstruction->pushInstructionBack(
+                        std::make_unique<CustomInstruction>(fullCacheName + stateCache->getResetInstruction()));
                 }
             }
         }
@@ -1266,11 +1209,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         skipFirstInstructionIter--;
     }
 
-    std::set<std::string> repeatNodes;
-    std::ranges::transform(
-        pragmaRepeatStateToIdentifiers_,
-        std::inserter(repeatNodes, std::begin(repeatNodes)),
-        [](const auto& stateToIds) { return stateToIds.first; });
+    const auto& repeatNodes = pragmaRepeatFlatData_.getRepeatNodes();
     const auto edgeToStatesRequiringClear =
         graphOperatorManager_->getOperator<PragmaRepeatOperator>(graph)->getEdgeToStatesForWhichCacheShouldBeCleared(
             repeatNodes, graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionTag());
@@ -1339,16 +1278,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     const auto stateName = graph->getNode(cacheToClear)->getName();
                     const auto& stateCache = getStateCacheSafe(stateName);
                     const auto fullCacheName = mainCacheName_ + "." + stateCache->getCacheName();
-                    if (stateCache->getCacheType() == "bool")
-                    {
-                        blockInstruction->pushInstructionFront(
-                            std::make_unique<CustomInstruction>(fullCacheName + " = 0"));
-                    }
-                    else
-                    {
-                        blockInstruction->pushInstructionFront(
-                            std::make_unique<CustomInstruction>(fullCacheName + ".reset()"));
-                    }
+                    blockInstruction->pushInstructionFront(
+                        std::make_unique<CustomInstruction>(fullCacheName + stateCache->getResetInstruction()));
                 }
             }
 

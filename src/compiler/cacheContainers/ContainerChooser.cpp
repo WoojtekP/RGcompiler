@@ -23,7 +23,7 @@ const auto INC_DEPTH = R"(inline void incDepth()
     ++depth;
     if (depth >= pattern_cache.size())
     {
-        pattern_cache.resize(depth + 1);
+        pattern_cache.push_back({});
     }
     else
     {
@@ -40,7 +40,7 @@ std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCac
     std::string clearingCaches;
     for (const auto& [_, cache] : stateToCache)
     {
-        clearingCaches += cache->getCacheName() + ".clear();\n";
+        clearingCaches += cache->getCacheName() + cache->getResetInstruction() + ";\n";
     }
     return RESET_MAIN_PART + clearingCaches + "}\n";
 }
@@ -152,8 +152,7 @@ std::string ContainerChooser::createCache(const std::map<std::string, std::share
     rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::gameStateHasher>> pattern_cache;\n";
     for (const auto& [_, cache] : stateToCache)
     {
-        rgCache += "std::unordered_map<move_representation," + cache->getCacheType() + ", vector_hash> " +
-                   cache->getCacheName() + ";\n";
+        rgCache += cache->getCacheType() + " " + cache->getCacheName() + ";\n";
     }
     rgCache += "};\n";
     return rgCache;

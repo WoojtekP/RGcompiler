@@ -51,20 +51,17 @@ std::string BitsetCache::getCacheName() const
 
 std::string BitsetCache::getInsertInstruction() const
 {
-    if (identifiers_.empty())
-    {
-        return " = true";
-    }
-    return getMethodCall("set");
+    return (identifiers_.empty()) ? " = true" : getMethodCall("set");
 }
 
 std::string BitsetCache::getTestInstruction() const
 {
-    if (identifiers_.empty())
-    {
-        return "";
-    }
-    return getMethodCall("test");
+    return (identifiers_.empty()) ? "" : getMethodCall("test");
+}
+
+std::string BitsetCache::getResetInstruction() const
+{
+    return (identifiers_.empty()) ? " = false" : ".reset()";
 }
 
 std::string BitsetCache::getMethodCall(const std::string& method) const

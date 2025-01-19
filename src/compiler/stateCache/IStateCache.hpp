@@ -10,4 +10,5 @@ public:
     virtual std::string getCacheName() const = 0;
     virtual std::string getInsertInstruction() const = 0;
     virtual std::string getTestInstruction() const = 0;
+    virtual std::string getResetInstruction() const = 0;
 };

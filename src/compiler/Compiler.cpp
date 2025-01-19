@@ -955,7 +955,7 @@ void Compiler::generateBoolStateFunctions(
             function->addArgument(std::make_unique<VariableDeclarationInstruction>(
                 mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 
-            if (!(pragmaUniqueData_.count(node->getAlternativeName()) || allUnique_) && !skipStateCache)
+            if (!(pragmaUniqueData_.count(node->getName()) || allUnique_) && !skipStateCache)
             {
                 auto nodeId = std::to_string(graph_->getNodeId(state));
                 if (const auto binding = node->getBinding())

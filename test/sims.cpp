@@ -31,16 +31,26 @@ void exitWithError(const reasoner::GameState &state, const std::string msg)
 reasoner::Move EMPTY_MOVE;
 
 bool keeperCompletion(reasoner::GameState &state) {
-  while (state.getCurrentPlayer() == reasoner::keeper) {
-    if (state.isTerminal()) return false;
-    if constexpr(KEEPER_APPLY_ANY_MOVE) {
-      state.applyAnyMove(cache);
-    } else {
+  while (state.getCurrentPlayer() <= 0) {
+    if (state.getCurrentPlayer() == reasoner::keeper) {
+      //std::cerr << "keeper" << std::endl;
+      if (state.isTerminal()) return false;
+      if constexpr(KEEPER_APPLY_ANY_MOVE) {
+        state.applyAnyMove(cache);
+      } else {
+        state.getAllMoves(moves, cache);
+        #ifndef NDEBUG
+          if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+        #endif
+        state.applyMove(moves[0], cache);
+      }
+    } else {// random
+      //std::cerr << "random" << std::endl;
       state.getAllMoves(moves, cache);
       #ifndef NDEBUG
-        if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+        if (moves.size() == 0) exitWithError(state, "Random has no move in keeperCompletion");
       #endif
-      state.applyMove(moves[0], cache);
+      state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
     }
   }
   return true;
@@ -50,7 +60,7 @@ void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
   while (true) {
-    //std::cerr << "depth " << depth << std::endl;
+    //std::cerr << "depth " << depth << " player " << state.getCurrentPlayer() << std::endl;
     #ifndef NDEBUG
       if (state.getCurrentPlayer() == reasoner::keeper) exitWithError(state, "Keeper at the beginning of player loop");
     #endif

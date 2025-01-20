@@ -123,12 +123,12 @@ void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
 
 const SymbolToValueMap& ValueAssigner::getSymbolToValueMapForType(const std::string& identifier) const
 {
-    const auto symbolToValuesIt = typeToSymbolToValue_.find(identifier);
-    if (symbolToValuesIt == typeToSymbolToValue_.end())
+    const auto typeToSymbolToValueIt = typeToSymbolToValue_.find(identifier);
+    if (typeToSymbolToValueIt == typeToSymbolToValue_.end())
     {
         throw std::runtime_error("[ValueAssigner] Unknown type: " + identifier);
     }
-    return symbolToValuesIt->second;
+    return typeToSymbolToValueIt->second;
 }
 
 void ValueAssigner::assignValuesForNumbers(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types)
@@ -181,8 +181,12 @@ void ValueAssigner::assignValuesForPlayers(SymbolToTypesMap& reservedValuesPerTy
 
 void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types)
 {
-    std::map<std::string, std::string> symbolToType;
     std::map<std::string, std::set<std::string>> commonSymbolToTypes;
+    std::map<std::string, std::string> symbolToType;
+    for (const auto& [symbol, _] : typeToSymbolToValue_["PlayerOrSystem"])
+    {
+        symbolToType.emplace(symbol, "PlayerOrSystem");
+    }
     for (const auto& el : types)
     {
         const auto typeName = el["identifier"].get<std::string>();
@@ -191,6 +195,10 @@ void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValue
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const auto symbol = identifier.get<std::string>();
+                if (isNumber(symbol))
+                {
+                    continue;
+                }
                 if (symbolToType.count(symbol))
                 {
                     commonSymbolToTypes[symbol].insert(typeName);
@@ -207,9 +215,16 @@ void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValue
     for (const auto& [symbol, types] : commonSymbolToTypes)
     {
         int value = 0;
-        while (isValueReserved(value, types, reservedValuesPerType))
+        if (const auto valueAssignedToPlayer = getValueIfAssignedForPlayer(symbol))
         {
-            ++value;
+            value = *valueAssignedToPlayer;
+        }
+        else
+        {
+            while (isValueReserved(value, types, reservedValuesPerType))
+            {
+                ++value;
+            }
         }
         for (const auto& type : types)
         {
@@ -266,4 +281,18 @@ int ValueAssigner::assignValueForSimpleTag(const std::string& tag, int nextTagVa
         return nextTagValue + 1;
     }
     return nextTagValue;
+}
+
+std::optional<int> ValueAssigner::getValueIfAssignedForPlayer(const std::string& symbol) const
+{
+    const auto playerSymbolToValueIt = typeToSymbolToValue_.find("PlayerOrSystem");
+    if (playerSymbolToValueIt != typeToSymbolToValue_.end())
+    {
+        const auto symbolToValueIt = playerSymbolToValueIt->second.find(symbol);
+        if (symbolToValueIt != playerSymbolToValueIt->second.end())
+        {
+            return symbolToValueIt->second;
+        }
+    }
+    return std::nullopt;
 }

@@ -40,6 +40,7 @@ private:
     void assignValuesForRemainingSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     int assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue);
     int assignValueForSimpleTag(const std::string& tag, int nextTagValue);
+    std::optional<int> getValueIfAssignedForPlayer(const std::string& symbol) const;
 
     TypeToSymbolToValueMap typeToSymbolToValue_;
     SymbolToValueRangeMap tagToValues_;

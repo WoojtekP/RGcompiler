@@ -1653,7 +1653,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
     getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player - 1]"));
 
-    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrKeeper", "", true);
+    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrSystem", "", true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
 
     auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", "", true);

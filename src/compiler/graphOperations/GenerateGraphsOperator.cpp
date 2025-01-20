@@ -90,7 +90,7 @@ std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChange
         const auto &action = edge->getActions().back();
         // TODO: We need better way to check if keeper changed
         if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player" &&
-            (action->getRightSide() == "static_cast<PlayerOrKeeper>(keeper)" || action->getRightSide() == "keeper"))
+            (action->getRightSide() == "static_cast<PlayerOrSystem>(keeper)" || action->getRightSide() == "keeper"))
         {
             nodes.insert(edge->toName());
         }

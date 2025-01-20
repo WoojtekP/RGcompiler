@@ -136,7 +136,7 @@ void ValueAssigner::assignValuesForNumbers(SymbolToTypesMap& reservedValuesPerTy
     for (const auto& el : types)
     {
         const auto typeName = el["identifier"].get<std::string>();
-        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrKeeper")
+        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrSystem")
         {
             for (const auto& identifier : el["type"]["identifiers"])
             {
@@ -159,15 +159,16 @@ void ValueAssigner::assignValuesForPlayers(SymbolToTypesMap& reservedValuesPerTy
         if (el["identifier"] == "Player")
         {
             auto& reservedValuesForPlayers = reservedValuesPerType["Player"];
-            auto& reservedValuesForPlayersOrKeeper = reservedValuesPerType["PlayerOrKeeper"];
-            typeToSymbolToValue_["PlayerOrKeeper"].emplace("keeper", 0);
+            auto& reservedValuesForPlayersOrKeeper = reservedValuesPerType["PlayerOrSystem"];
+            typeToSymbolToValue_["PlayerOrSystem"].emplace("random", -1);
+            typeToSymbolToValue_["PlayerOrSystem"].emplace("keeper", 0);
             reservedValuesForPlayersOrKeeper.insert(0);
             int value = 1;
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const auto symbol = identifier.get<std::string>();
                 typeToSymbolToValue_["Player"].emplace(symbol, value);
-                typeToSymbolToValue_["PlayerOrKeeper"].emplace(symbol, value);
+                typeToSymbolToValue_["PlayerOrSystem"].emplace(symbol, value);
                 reservedValuesForPlayers.insert(value);
                 reservedValuesForPlayersOrKeeper.insert(value);
                 value++;
@@ -185,7 +186,7 @@ void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValue
     for (const auto& el : types)
     {
         const auto typeName = el["identifier"].get<std::string>();
-        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrKeeper")
+        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrSystem")
         {
             for (const auto& identifier : el["type"]["identifiers"])
             {
@@ -224,7 +225,7 @@ void ValueAssigner::assignValuesForRemainingSymbols(
     for (const auto& el : types)
     {
         const auto typeName = el["identifier"].get<std::string>();
-        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrKeeper")
+        if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrSystem")
         {
             for (const auto& identifier : el["type"]["identifiers"])
             {

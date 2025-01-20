@@ -7,6 +7,7 @@
 class GetTagIndexOperator : public BaseOperator
 {
     int containerSize_ = -1;
+    int maxDefinedIndex_ = -1;
     bool allTagsInSamePosition_ = false;
     std::map<std::string, int> nodeNameToTagPosition_;
 
@@ -15,5 +16,6 @@ public:
     void init(const Parser &parser);
     bool allTagsInSamePosition() const;
     int containerSize() const;
+    int maxDefinedIndex() const;
     int getTagPositionForNode(const std::string &nodeName) const;
 };

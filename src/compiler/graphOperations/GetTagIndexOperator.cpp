@@ -27,6 +27,7 @@ void GetTagIndexOperator::init(const Parser& parser)
     }
 
     containerSize_ = maxSize + 1;
+    maxDefinedIndex_ = maxSize;
     allTagsInSamePosition_ = true;
     bool allNodesHaveTagIndexMax = true;
     for (auto& [edge, iid] : graph_->getAllEdges())
@@ -64,9 +65,15 @@ bool GetTagIndexOperator::allTagsInSamePosition() const
 {
     return allTagsInSamePosition_;
 }
+
 int GetTagIndexOperator::containerSize() const
 {
     return containerSize_;
+}
+
+int GetTagIndexOperator::maxDefinedIndex() const
+{
+    return maxDefinedIndex_;
 }
 
 int GetTagIndexOperator::getTagPositionForNode(const std::string& nodeName) const

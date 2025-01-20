@@ -10,6 +10,7 @@
 
 namespace
 {
+constexpr const int SMALL_VECTOR_MOVE_SIZE = 16;
 const std::string UNUSED_TAG_VALUE = "-1";
 
 std::optional<std::string> getTagVar(const std::string& tag)
@@ -310,7 +311,8 @@ std::pair<std::string, int> Compiler::getMoveRepresentation()
     {
         return {"boost::container::static_vector", *maxMoveLen_};
     }
-    return {"std::vector", -1};
+    const auto maxIndexFromPragma = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->maxDefinedIndex();
+    return {"boost::container::small_vector", std::max(SMALL_VECTOR_MOVE_SIZE, maxIndexFromPragma + 1)};
 }
 
 void Compiler::generateSourceCode(
@@ -1122,7 +1124,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
                 ifInstruction->addInstruction(std::make_unique<CustomInstruction>("abort()"));
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
-            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("moves.push_back(mr)"));
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("moves.emplace_back(mr)"));
             actions.pop_back();
         }
     }

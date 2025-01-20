@@ -45,6 +45,7 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <vector>" << std::endl;
     headerFile_ << std::endl;
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
+    headerFile_ << "#include <boost/container/small_vector.hpp>" << std::endl;
 
     headerFile_ << std::endl;
     headerFile_ << "namespace reasoner {" << std::endl;
@@ -274,6 +275,17 @@ size_t hash(const std::array<T, N> &a)
 
 template <typename T, size_t N>
 size_t hash(const boost::container::static_vector<T, N> &v)
+{
+    size_t acc = 0;
+    for (auto x : v)
+    {
+        acc ^= x;
+    }
+    return acc;
+}
+
+template <typename T, size_t N>
+size_t hash(const boost::container::small_vector<T, N> &v)
 {
     size_t acc = 0;
     for (auto x : v)

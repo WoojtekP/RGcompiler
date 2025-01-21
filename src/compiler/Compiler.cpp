@@ -830,8 +830,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             listOfActionsToPlayerChangeAndEndNode.second,
             true));
 
-        std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-            std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
+        bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+
+        std::unique_ptr<IfInstruction> ifInstruction;
+        if (useArray)
+        {
+            ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>("mr[currentMrId]", "-1", ComparisonType::Neq));
+        }
+        else
+        {
+            ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                "static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
+        }
+
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
         blockInstruction->pushInstructionBack(std::move(ifInstruction));
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
@@ -1670,8 +1682,19 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     {
         clearingCaches += "verificationCache.clear();\n";
     }
-    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
+    bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+
+    if (useArray)
+    {
+        getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
+            clearingCaches + "moves.clear();\nMove mr;\nmr.mr.fill(-1);\nrunState(currentState, moves,mr.mr," +
+            mainCacheName_ + ")"));
+    }
+    else
+    {
+        getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
+            clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
+    }
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));

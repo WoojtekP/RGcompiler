@@ -43,7 +43,8 @@ if "all" in games:
   games.append('amazons_split2.hrg')
   games.append('ataxx.hrg')
   games.append('battleships.hrg')
-  games.append('bombardment.hrg')
+  #games.append('bombardment.hrg')
+  games.append('backgammon.hrg')
   games.append('breakthrough.hrg')
   games.append('chess.hrg')
   games.append('clobber.hrg')
@@ -56,6 +57,8 @@ if "all" in games:
   #games.append('oware.hrg')
   games.append('pentago.hrg')
   games.append('pentago_split.hrg')
+  games.append('ticTacDie.hrg')
+  games.append('twentyOne.hrg')
   
   games.append('amazons.rbg')
   games.append('amazons_split2.rbg')

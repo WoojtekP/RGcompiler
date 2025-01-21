@@ -567,7 +567,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             const auto insertInstruction = cacheVarName + stateCache->getInsertInstruction();
             function->addInstruction(std::make_unique<CustomInstruction>(insertInstruction));
         }
-        else if (!applyMode && !(pragmaUniqueData_.count(node->getName()) || allUnique_))
+        else if (!(allUnique_ || pragmaUniqueData_.count(node->getName())))
         {
             auto nodeId = std::to_string(graph_->getNodeId(state));
             if (const auto binding = node->getBinding())

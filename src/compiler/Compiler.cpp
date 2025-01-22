@@ -753,7 +753,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                 }
                 else
                 {
-                    std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                    ifInstruction = std::make_unique<IfInstruction>(
                         std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
                 }
 

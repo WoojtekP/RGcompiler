@@ -299,6 +299,10 @@ void Compiler::initializePatternGraphs(
 std::pair<std::string, int> Compiler::getMoveRepresentation()
 {
     int containerSize = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->containerSize();
+    if (maxMoveLen_)
+    {
+        return {"boost::container::static_vector", *maxMoveLen_};
+    }
     if (graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition())
     {
         return {"std::array", containerSize};
@@ -306,10 +310,6 @@ std::pair<std::string, int> Compiler::getMoveRepresentation()
     if (containerSize != -1)
     {
         return {"boost::container::static_vector", containerSize};
-    }
-    if (maxMoveLen_)
-    {
-        return {"boost::container::static_vector", *maxMoveLen_};
     }
     const auto maxIndexFromPragma = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->maxDefinedIndex();
     return {"boost::container::small_vector", std::max(SMALL_VECTOR_MOVE_SIZE, maxIndexFromPragma + 1)};
@@ -830,7 +830,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             listOfActionsToPlayerChangeAndEndNode.second,
             true));
 
-        bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+        bool useArray =
+            !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
 
         std::unique_ptr<IfInstruction> ifInstruction;
         if (useArray)
@@ -1328,6 +1329,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             else
             {
                 bool useArray =
+                    !maxMoveLen_ &&
                     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
                 if (useArray)
                 {
@@ -1682,7 +1684,8 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     {
         clearingCaches += "verificationCache.clear();\n";
     }
-    bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+    bool useArray =
+        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
 
     if (useArray)
     {

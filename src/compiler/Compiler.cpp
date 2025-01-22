@@ -10,7 +10,7 @@
 
 namespace
 {
-constexpr const int SMALL_VECTOR_MOVE_SIZE = 16;
+constexpr const int SMALL_VECTOR_MOVE_SIZE = 12;
 const std::string UNUSED_TAG_VALUE = "-1";
 
 std::optional<std::string> getTagVar(const std::string& tag)

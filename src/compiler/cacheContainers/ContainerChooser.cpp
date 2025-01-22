@@ -18,6 +18,16 @@ const auto RESET_MAIN_PART = R"(inline void reset()
 const auto CLEAR_CURRENT = R"(inline void clearCurrent() { pattern_cache[depth].clear(); }
 )";
 
+const auto INSERT_2 = R"(inline bool insert(const GameState& gameState, const int nodeId)
+{
+    return pattern_cache[depth].insert(std::make_tuple(gameState, nodeId)).second;
+})";
+
+const auto INSERT_3 = R"(inline bool insert(const GameState& gameState, const move_representation& mr, const int nodeId)
+{
+    return state_cache.insert(std::make_tuple(gameState, mr, nodeId)).second;
+})";
+
 const auto INC_DEPTH = R"(inline void incDepth()
 {
     ++depth;
@@ -139,6 +149,8 @@ std::string ContainerChooser::createCache(const std::map<std::string, std::share
     rgCache += INIT_CACHE;
     rgCache += getResetMethod(stateToCache);
     rgCache += CLEAR_CURRENT;
+    rgCache += INSERT_2;
+    rgCache += INSERT_3;
     rgCache += INC_DEPTH;
     rgCache += DEC_DEPTH;
     rgCache += "\n";

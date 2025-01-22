@@ -533,12 +533,10 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             {
                 nodeId += " + " + binding->getVariableName();
             }
-            const std::string cacheData = "std::make_tuple(*this, mr, " + nodeId + ")";
-            const std::string cacheName = mainCacheName_ + ".state_cache";
-
+            const std::string cacheData = "*this, mr, " + nodeId;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    cacheName + ".insert(" + cacheData + ").second", ComparisonType::Neg));
+                    mainCacheName_ + ".insert(" + cacheData + ")", ComparisonType::Neg));
             addReturnInstruction(ifInstruction, applyMode);
             function->addInstruction(std::move(ifInstruction));
         }
@@ -909,7 +907,6 @@ void Compiler::generateBoolStateFunctions(
     bool skipStateCache)
 {
     std::string name = patternIdToPrefixName[patternId];
-    const std::string cacheName = mainCacheName_ + ".pattern_cache[" + mainCacheName_ + ".depth]";
     std::string prefix = "is_legal_" + name;
     for (auto& node : graph->getOuterNodes())
     {
@@ -959,7 +956,7 @@ void Compiler::generateBoolStateFunctions(
                 }
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        cacheName + ".insert(std::make_tuple(*this, " + nodeId + ")).second", ComparisonType::Neg));
+                        mainCacheName_ + ".insert(*this, " + nodeId + ")", ComparisonType::Neg));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
 
                 function->addInstruction(std::move(ifInstruction));

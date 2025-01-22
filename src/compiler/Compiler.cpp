@@ -741,8 +741,22 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
             }
             else
             {
-                std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-                    std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
+                bool useArray =
+                    !maxMoveLen_ &&
+                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+
+                std::unique_ptr<IfInstruction> ifInstruction;
+                if (useArray)
+                {
+                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
+                }
+                else
+                {
+                    std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                        std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
+                }
+
                 ifInstruction->addInstruction(std::move(innerInstructions));
                 breakInstruction->pushInstructionBack(std::move(ifInstruction));
             }
@@ -808,9 +822,21 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else
         {
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+            std::unique_ptr<IfInstruction> ifInstruction;
+
+            bool useArray = !maxMoveLen_ &&
+                            graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+
+            if (useArray)
+            {
+                ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
+            }
+            else
+            {
+                ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     "static_cast<int>(mr.size())", "currentMrId", ComparisonType::Gr));
+            }
             ifInstruction->addInstruction(std::move(switchBody));
             blockAction = std::move(ifInstruction);
         }

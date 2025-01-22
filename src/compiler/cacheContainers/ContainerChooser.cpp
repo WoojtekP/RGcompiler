@@ -122,14 +122,9 @@ std::string ContainerChooser::getIsSetMethodDeclaration(const IdType &id, int no
 }
 
 std::string ContainerChooser::getAdditionalData(
-    const std::string& gameStateAndMoveAndNodeIdHasherBody,
     const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const
 {
-    std::string result = "struct StateCacheHasher{";
-    result += "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const;\n";
-    result += "};\n\n";
-    result += createCache(stateToCache) + "\n";
-    return result;
+    return createCache(stateToCache);
 }
 
 std::string ContainerChooser::getCustomName(const IdType &id) const
@@ -148,8 +143,8 @@ std::string ContainerChooser::createCache(const std::map<std::string, std::share
     rgCache += DEC_DEPTH;
     rgCache += "\n";
     rgCache += "unsigned depth = 0;\n";
-    rgCache += "std::unordered_set<std::tuple<GameState, move_representation, int>, StateCacheHasher> state_cache;\n";
-    rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::gameStateHasher>> pattern_cache;\n";
+    rgCache += "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
+    rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
     for (const auto& [_, cache] : stateToCache)
     {
         rgCache += cache->getCacheType() + " " + cache->getCacheName() + ";\n";

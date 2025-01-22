@@ -174,6 +174,4 @@ private:
     RepeatFlatData pragmaRepeatFlatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
-    std::string gameStateAndMoveAndNodeIdHasherBody_;
-    std::string gameStateHasher_;
 };

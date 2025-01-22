@@ -32,9 +32,7 @@ public:
     std::string getContainerDeclaration(const IdType &id) const;
     std::string getSetMethodDeclaration(const IdType &id, int node) const;
     std::string getIsSetMethodDeclaration(const IdType &id, int node) const;
-    std::string getAdditionalData(
-        const std::string& gameStateAndMoveAndNodeIdHasherBody,
-        const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
+    std::string getAdditionalData(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
     std::string getCustomName(const IdType &id) const;
     std::string createCache(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
     bool isInCache(const IdType &id) const;

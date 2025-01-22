@@ -81,14 +81,9 @@ void Printer::endHeaderFile()
     headerFile_ << "}  // namespace reasoner" << std::endl;
 }
 
-void Printer::endSourceFile(const std::string& gameStateAndMoveAndNodeIdHasherBody)
+void Printer::endSourceFile()
 {
-    std::string stateCacheHasher =
-        "size_t StateCacheHasher::operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
-    stateCacheHasher += gameStateAndMoveAndNodeIdHasherBody;
-    stateCacheHasher += "};";
-
-    sourceFile_ << stateCacheHasher + "\n}  // namespace reasoner" << std::endl;
+    sourceFile_ << "}  // namespace reasoner" << std::endl;
 }
 
 void Printer::printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations)
@@ -137,15 +132,9 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
 void Printer::printVariables(
     const std::vector<std::unique_ptr<IVariable>>& variables,
     bool isPublic,
-    const std::string& prefix,
-    const std::string& gameStateHasher)
+    const std::string& prefix)
 {
     headerFile_ << prefix << std::endl;
-
-    if (isPublic)
-    {
-        headerFile_ << gameStateHasher;
-    }
 
     if (!std::accumulate(
             variables.begin(), variables.end(), false, [isPublic](bool acc, const std::unique_ptr<IVariable>& f) {
@@ -176,11 +165,10 @@ void Printer::printVariables(
     headerFile_ << std::endl;
 }
 
-void Printer::printVariables(
-    const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& gameStateHasher)
+void Printer::printVariables(const std::vector<std::unique_ptr<IVariable>>& variables)
 {
-    printVariables(variables, true, "public:", gameStateHasher);
-    printVariables(variables, false, "private:", gameStateHasher);
+    printVariables(variables, true, "public:");
+    printVariables(variables, false, "private:");
 }
 
 void Printer::printFunctions(const std::vector<std::unique_ptr<Function>>& functions)
@@ -250,72 +238,33 @@ struct Move
     const auto hashFunctions = R"(
 namespace
 {
-void combine(size_t& acc, size_t x)
+inline void combine(size_t& acc, size_t x) noexcept
 {
     acc ^= x;
 }
 
-template<typename T = int>
-size_t hash(int x)
+inline size_t hash(int x) noexcept
 {
     return x;
 }
 
-template<typename T, size_t N>
-size_t hash(const std::array<T, N> &a)
+template<template<typename, size_t> class Container, typename T, size_t N>
+size_t hash(const Container<T, N>& range) noexcept
 {
     size_t acc = 0;
-    for (size_t i = 0; i < N; i++)
+    for (const auto& x : range)
     {
-        combine(acc, hash(a[i]));
-    }
-
-    return acc;
-}
-
-template <typename T, size_t N>
-size_t hash(const boost::container::static_vector<T, N> &v)
-{
-    size_t acc = 0;
-    for (auto x : v)
-    {
-        acc ^= x;
+        acc ^= hash(x);
     }
     return acc;
-}
-
-template <typename T, size_t N>
-size_t hash(const boost::container::small_vector<T, N> &v)
-{
-    size_t acc = 0;
-    for (auto x : v)
-    {
-        acc ^= x;
-    }
-    return acc;
-}
-
-[[maybe_unused]] size_t hash(const std::vector<int>& v)
-{
-    size_t x = 0;
-    for (int t : v)
-    {
-        x ^= t;
-    }
-    return x;
 }
 }  // namespace
 
-struct vector_hash
+struct move_hash
 {
-    size_t operator()(const move_representation& v) const
+    size_t operator()(const move_representation& move) const noexcept
     {
-        int res = 0;
-        for (int x : v)
-        {
-            res ^= x;
-        }
-        return res;
+        return hash(move);
     }
 };)";
 
@@ -330,6 +279,53 @@ struct vector_hash
     headerFile_ << "class RgCache;" << std::endl;
     headerFile_ << structMoveDefinition << std::endl << std::endl;
     headerFile_ << hashFunctions << std::endl << std::endl;
+}
+
+void Printer::printHashAndComparisonFunctions(const nlohmann::json& variables)
+{
+    const auto hasherDeclaration = R"(struct Hasher
+    {
+        size_t operator()(const std::tuple<GameState, int>& state) const noexcept;
+        size_t operator()(const std::tuple<GameState, move_representation, int>& state) const noexcept;
+    };)";
+    const auto comparisonOperatorDeclaration = "bool operator==(const GameState& rhs) const;";
+
+    std::string hashExpr = "hash(nodeId) ^ ";
+    std::string cmpExpr = "";
+    for (const auto& variable : variables)
+    {
+        const auto variableName = variable["identifier"].get<std::string>();
+        hashExpr += "hash(gameState." + variableName + ") ^ ";
+        cmpExpr += variableName + "==rhs." + variableName + " && ";
+    }
+    if (!cmpExpr.empty())
+    {
+        cmpExpr.resize(cmpExpr.size() - 4);
+        hashExpr.resize(hashExpr.size() - 3);
+    }
+
+    headerFile_ << "public:" << std::endl;
+    headerFile_ << hasherDeclaration << std::endl << std::endl;
+    headerFile_ << comparisonOperatorDeclaration << std::endl;
+
+    sourceFile_ << "size_t GameState::Hasher::operator()"
+                << "(const std::tuple<GameState, int>& state) const noexcept" << std::endl;
+    sourceFile_ << "{" << std::endl;
+    sourceFile_ << "const auto& [gameState, nodeId] = state;" << std::endl;
+    sourceFile_ << "return " << hashExpr << ";" << std::endl;
+    sourceFile_ << "}" << std::endl << std::endl;
+
+    sourceFile_ << "size_t GameState::Hasher::operator()"
+                << "(const std::tuple<GameState, move_representation, int>& state) const noexcept" << std::endl;
+    sourceFile_ << "{" << std::endl;
+    sourceFile_ << "const auto& [gameState, move, nodeId] = state;" << std::endl;
+    sourceFile_ << "return " << hashExpr << " ^ hash(move);" << std::endl;
+    sourceFile_ << "}" << std::endl << std::endl;
+
+    sourceFile_ << "bool GameState::operator==(const GameState& rhs) const" << std::endl;
+    sourceFile_ << "{" << std::endl;
+    sourceFile_ << "return " << cmpExpr << ";" << std::endl;
+    sourceFile_ << "}" << std::endl << std::endl;
 }
 
 void Printer::printMainCache(const std::string& s)

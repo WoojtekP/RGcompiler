@@ -327,12 +327,13 @@ void Compiler::generateSourceCode(
     printer.printMoveRepresentationDeclaration(getMoveRepresentation());
     printer.printNonGameStateFunctions(program_.getNonGameStateFunctions());
     printer.initializeMainClass();
-    printer.printVariables(program_.getVariables(), gameStateHasher_);
+    printer.printVariables(program_.getVariables());
+    printer.printHashAndComparisonFunctions(parser_.getVariables());
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.printMainCache(containerChooser_.getAdditionalData(gameStateAndMoveAndNodeIdHasherBody_, stateToCache_));
+    printer.printMainCache(containerChooser_.getAdditionalData(stateToCache_));
     printer.endHeaderFile();
-    printer.endSourceFile(gameStateAndMoveAndNodeIdHasherBody_);
+    printer.endSourceFile();
 }
 
 void Compiler::generateTypes()
@@ -376,50 +377,14 @@ void Compiler::generateConstants()
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 {
-    std::unique_ptr<Function> comparisionFunction = std::make_unique<Function>("operator==", "bool", "", true, true);
-
-    comparisionFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("gameState", "const GameState&"));
-
-    std::string comparisionFunctionBody;
-
     for (const auto& variable : parser_.getVariables())
     {
         auto valueType = generateType(variable["type"]);
         auto value = generateValue(variable["defaultValue"]);
         const std::string identifier = variable["identifier"].get<std::string>();
         program_.addVariableDeclaration(
-            std::make_unique<Variable>(identifier, std::move(valueType), std::move(value), true));
-        comparisionFunctionBody += identifier + " == " + "gameState." + identifier + "&&";
-        gameStateAndMoveAndNodeIdHasherBody_ += "hash(std::get<0>(gameState)." + identifier + ") ^";
+            std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
-
-    if (!comparisionFunctionBody.empty())
-    {
-        comparisionFunctionBody.pop_back();
-        comparisionFunctionBody.pop_back();
-        gameStateAndMoveAndNodeIdHasherBody_.pop_back();
-    }
-    comparisionFunction->addInstruction(std::make_unique<CustomInstruction>("return " + comparisionFunctionBody));
-
-    gameStateAndMoveAndNodeIdHasherBody_ =
-        "return hash(std::get<1>(gameState)) ^ " + gameStateAndMoveAndNodeIdHasherBody_;
-
-    gameStateHasher_ = "struct gameStateHasher{size_t operator()(const std::tuple<GameState, int>& gameState) const{";
-    gameStateHasher_ += gameStateAndMoveAndNodeIdHasherBody_ + ";}};";
-
-    gameStateAndMoveAndNodeIdHasherBody_ += "^ std::get<2>(gameState);";
-
-    std::string gameStateAndMoveAndNodeIdHasher = "struct {";
-    gameStateAndMoveAndNodeIdHasher +=
-        "size_t operator()(const std::tuple<GameState,move_representation,int>& gameState) const{";
-    gameStateAndMoveAndNodeIdHasher += gameStateAndMoveAndNodeIdHasherBody_;
-    gameStateAndMoveAndNodeIdHasher += "}};";
-    program_.addVariableDeclaration(std::make_unique<Variable>(
-        "gameStateAndMoveAndNodeIdHasher",
-        std::make_unique<ElementaryType>("using"),
-        std::make_unique<SingleValue>(gameStateAndMoveAndNodeIdHasher)));
-
-    program_.addFunction(std::move(comparisionFunction));
 
     std::string initialState = std::to_string(graph->getNodeId("begin"));
 
@@ -437,7 +402,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
             "verificationCache",
-            std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, vector_hash>"))));
+            std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, move_hash>"))));
     }
 
     for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())

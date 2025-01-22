@@ -20,19 +20,19 @@ public:
     void initializeMainClass();
     void endMainClass();
     void endHeaderFile();
-    void endSourceFile(const std::string& gameStateAndMoveAndNodeIdHasherBody);
+    void endSourceFile();
     void printTypeDeclarations(const std::vector<std::shared_ptr<IType>>& typeDeclarations);
     void printSymbolValues();
     void printConstants(const std::vector<std::unique_ptr<IVariable>>& constans);
-    void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables, const std::string& gameStateHasher);
+    void printVariables(const std::vector<std::unique_ptr<IVariable>>& variables);
     void printVariables(
         const std::vector<std::unique_ptr<IVariable>>& variables,
         bool isPublic,
-        const std::string& prefix,
-        const std::string& gameStateHasher);
+        const std::string& prefix);
     void printFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printNonGameStateFunctions(const std::vector<std::unique_ptr<Function>>& functions);
     void printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation);
+    void printHashAndComparisonFunctions(const nlohmann::json& types);
     void printMainCache(const std::string& s);
 
 private:

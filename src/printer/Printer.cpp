@@ -134,16 +134,14 @@ void Printer::printVariables(
     bool isPublic,
     const std::string& prefix)
 {
-    headerFile_ << prefix << std::endl;
-
-    if (!std::accumulate(
-            variables.begin(), variables.end(), false, [isPublic](bool acc, const std::unique_ptr<IVariable>& f) {
-                return acc || (f->isPublic() == isPublic);
-            }))
+    if (std::none_of(variables.begin(), variables.end(), [isPublic](const std::unique_ptr<IVariable>& f) {
+            return f->isPublic() == isPublic;
+        }))
     {
         return;
     }
 
+    headerFile_ << prefix << std::endl;
     for (const auto& variable : variables)
     {
         if (variable->isPublic() == isPublic)

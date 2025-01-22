@@ -386,8 +386,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
             std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
-    std::string initialState = std::to_string(graph->getNodeId("begin"));
-
+    const std::string initialState = std::to_string(graph->getNodeId("begin"));
     auto currentStateType = std::make_shared<CustomType>("int");
     auto currentStateValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
@@ -414,11 +413,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
 
         //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
-
-    auto initialType = std::make_shared<CustomType>("static constexpr int");
-    auto initialValue = std::make_unique<SingleValue>(initialState);
-    program_.addVariableDeclaration(
-        std::make_unique<Variable>("initial", std::move(initialType), std::move(initialValue), true));
 }
 
 template<typename T>
@@ -1649,7 +1643,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 {
     generateRunStateFunction(graph, true);
     generateRunStateFunction(graph);
-    generateGetFromStateForEdge(graph);
     generateGetStateDescription();
 
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true);
@@ -1662,9 +1655,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 
     auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrSystem", "", true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
-
-    auto getCurrentState = std::make_unique<Function>("getCurrentState", "std::string", "", true);
-    getCurrentState->addInstruction(std::make_unique<ReturnInstruction>("std::to_string(currentState)"));
 
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", "", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
@@ -1693,17 +1683,14 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
-    applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(
-        mainCacheName_ + ".reset();" +
-        R"(const move_representation &v = m.mr;
-        currentMrId = 0;
-    runApplyState(currentState, v, rgCache);
-  )"));
+    applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(mainCacheName_ + ".reset()"));
+    applyMoveFunction->addInstruction(std::make_unique<AssignmentInstruction>("currentMrId", "0"));
+    applyMoveFunction->addInstruction(
+        std::make_unique<CustomInstruction>("runApplyState(currentState, m.mr, rgCache)"));
 
     program_.addFunction(std::move(isTerminal));
     program_.addFunction(std::move(getPlayerScore));
     program_.addFunction(std::move(getCurrentPlayer));
-    program_.addFunction(std::move(getCurrentState));
     program_.addFunction(std::move(getAllMovesFunction));
     program_.addFunction(std::move(applyMoveFunction));
 }

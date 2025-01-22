@@ -835,8 +835,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         std::unique_ptr<IfInstruction> ifInstruction;
         if (useArray)
         {
-            ifInstruction = std::make_unique<IfInstruction>(
-                std::make_unique<ComparisonInstruction>("mr[currentMrId]", "-1", ComparisonType::Neq));
+            ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
         }
         else
         {

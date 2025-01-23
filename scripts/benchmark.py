@@ -44,13 +44,13 @@ if "all" in games:
   games.append('ataxx.hrg')
   games.append('battleships.hrg')
   games.append('bombardment.hrg')
-  games.append('backgammon.hrg')
+  games.append('backgammon-opt.hrg')# TODO
   games.append('breakthrough.hrg')
   games.append('chess.hrg')
   games.append('clobber.hrg')
   games.append('connect4.hrg')
   games.append('dotsAndBoxes.hrg')
-  games.append('englishDraughts.hrg')
+  games.append('englishDraughts-extratags.hrg')# TODO
   games.append('foxAndGeese.hrg')
   games.append('gomoku_standard.hrg')
   games.append('knightthrough.hrg')

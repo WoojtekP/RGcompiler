@@ -89,9 +89,10 @@ private:
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
-        int iid,
-        int edgeIdx,
-        const std::string &functionType);
+        const int iid,
+        const int edgeIdx,
+        const int patternId,
+        const bool skipStateCache);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,

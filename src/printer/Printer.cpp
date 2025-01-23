@@ -204,8 +204,9 @@ void Printer::printNonGameStateFunctions(const std::vector<std::unique_ptr<Funct
 void Printer::printMoveRepresentationDeclaration(const std::pair<std::string, int>& moveRepresentation)
 {
     const auto [moveContainer, moveSize] = moveRepresentation;
+    const bool isArray = moveContainer.find("array") != std::string::npos;
     std::string moveInitialization = "move_representation mr";
-    if (moveContainer.find("array") != std::string::npos)
+    if (isArray)
     {
         moveInitialization += " = {";
         const std::string unusedTagValue = "-1";
@@ -223,14 +224,9 @@ struct Move
 )" + moveInitialization + R"(
 
     Move(void) = default;
-    Move(const move_representation& mv)
-    {
-        mr = mv;
-    }
-    bool operator==(const Move& rhs) const
-    {
-        return mr == rhs.mr;
-    }
+    Move(const move_representation& mv) { mr = mv; }
+    inline bool operator==(const Move& rhs) const { return mr == rhs.mr; }
+    inline void reset() { )" + (isArray ? "mr.fill(-1);" : "mr.clear();") + R"(}
 };)";
 
     const auto hashFunctions = R"(

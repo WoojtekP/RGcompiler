@@ -107,12 +107,18 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     std::set<int> visited;
     std::set<int> nodesInPatternGraph;
 
-    generatePathFromNodeToNode(
-        graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
-
-    visited.clear();
-    generatePathFromNodeToNode(
-        graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
+    int lastChanged = -1;
+    while (true)
+    {
+        visited.clear();
+        generatePathFromNodeToNode(
+            graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
+        if (nodesInPatternGraph.size() == lastChanged)
+        {
+            break;
+        }
+        lastChanged = nodesInPatternGraph.size();
+    }
 
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {

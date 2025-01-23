@@ -91,6 +91,8 @@ if "all" in games:
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
   
+  games.append('chess.hrg')
+  
   games.append('clobber.hrg')
 
   games.append('connect4.hrg')

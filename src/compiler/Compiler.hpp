@@ -163,7 +163,7 @@ private:
     const bool optGccInline_;
     const bool allUnique_;
     const std::optional<int> maxMoveLen_;
-    const std::string patternIdToPrefixName[3] = {"", "any_", "any2_"};
+    const std::string patternIdToPrefixName[3] = {"", "any_", "apply_any_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;

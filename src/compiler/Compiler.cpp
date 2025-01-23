@@ -1751,7 +1751,7 @@ void Compiler::generateApplyAnyMove()
             }
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_any2_" + functionName + "(" + functionArguments + ")"));
+                    "is_legal_apply_any_" + functionName + "(" + functionArguments + ")"));
             ifInstruction->addInstruction(
                 std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));

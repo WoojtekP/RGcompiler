@@ -1285,24 +1285,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
-                // TODO: this is an optimization for move application (extracting value of node generator parameter
-                //       from move vector instead of iterating over all values), but does not work for some games
-                // const auto binding = edge->getRightNode()->getBinding();
-                // if (binding && binding->getVariableName() == action->toString())
-                // {
-                //     const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
-                //     const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
-                //     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                //         "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
-
-                //     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                //         binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
-                // }
-                // else
-                // {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
-                // }
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();

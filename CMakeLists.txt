@@ -14,9 +14,6 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# TODO: fix compilations errors/warnings and enable default flags:
-# set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
-
 # Release build flags
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 

@@ -59,7 +59,6 @@ public:
     ActionType getType() const override;
 };
 
-// TODO: pattern need to be implemented
 class ActionPattern : public ActionBase
 {
 public:

@@ -29,7 +29,7 @@ Regular Games to C++ compiler
 ```
 * Perft
 ```
-./scripts/sims.py game depth
+./scripts/perft.py game depth
 
 ```
 

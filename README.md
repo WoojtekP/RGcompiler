@@ -1,36 +1,38 @@
-# RGcompiler
+# RG compiler
 
 Regular Games to C++ compiler
 
 
 ### Requirements
 
-* clone [RG interpreter](https://github.com/radekmie/rg)
+* clone [RG interpreter](https://github.com/radekmie/rg) to the same directory as compiler
 * install [nlohman JSON C++ parser](https://github.com/nlohmann/json)
+* install [boost](http://www.boost.org) libraries:
+    * [program options](http://www.boost.org/libs/program_options/) (*libboost-program-options-dev*)
+    * [container](http://www.boost.org/libs/container/) (*libboost-container-dev*)
 * optional: install [clang-format](https://clang.llvm.org/docs/ClangFormat.html)
 
 ### Compilation
 ```
-mkdir build
-cd build
-cmake ..
-make rg2cpp
+./scripts/rebuild.py
 ```
 
 ### Usage
 
-* Use interpreter to create AST in json format
+* Translate game description to C++
 ```
-node lib [game].rg print-ast > [game]-ast.json
+./scripts/compile.py game
 ```
-* Use generated file as input to rg2cpp compiler
+* Random simulations
 ```
-./build/rg2cpp [game]-ast.json
+./scripts/sims.py game limit
 ```
-* Run `clang-format` on generated file
+* Perft
 ```
-clang-format -style=file -i reasoner.hpp
-clang-format -style=file -i reasoner.cpp
+./scripts/sims.py game depth
+
 ```
 
-You may also use `scripts/compile.sh [game].(rg|hrg)` instead of above steps.
+Use `-h` flag for detailed description about usage of specific script.
+
+All generated files and compiled binaries are placed in `build-test` directory.

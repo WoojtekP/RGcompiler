@@ -129,7 +129,7 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
-        const std::shared_ptr<Edge> &edge, std::unique_ptr<BlockInstruction> blockInstruction) const;
+        const std::shared_ptr<IAction>& actionAssignAny, std::unique_ptr<BlockInstruction> blockInstruction) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);

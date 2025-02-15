@@ -95,6 +95,21 @@ ActionType ActionReachability::getType() const
     return ActionType::Reachability;
 }
 
+
+ActionAssignmentAny::ActionAssignmentAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+: ActionBase(label, expressionFactory)
+{}
+
+std::string ActionAssignmentAny::toString() const
+{
+    return left_->toString() + " = " + right_->toString() + "(*)";
+}
+
+ActionType ActionAssignmentAny::getType() const
+{
+    return ActionType::AssignmentAny;
+}
+
 std::string ActionSkip::toString() const
 {
     return "";

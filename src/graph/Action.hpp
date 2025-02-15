@@ -15,6 +15,7 @@ enum class ActionType
     Skip,
     PatternAny,
     Pattern,
+    AssignmentAny,
     Tag
 };
 
@@ -80,6 +81,14 @@ class ActionReachability : public ActionBase
 {
 public:
     ActionReachability(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    std::string toString() const override;
+    ActionType getType() const override;
+};
+
+class ActionAssignmentAny : public ActionBase
+{
+public:
+    ActionAssignmentAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
     std::string toString() const override;
     ActionType getType() const override;
 };

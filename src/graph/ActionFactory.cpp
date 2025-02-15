@@ -29,6 +29,10 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     {
         return createActionPatternAny(label);
     }
+    if (labelKind == "AssignmentAny")
+    {
+        return createActionAssignmentAny(label);
+    }
     if (labelKind == "Skip")
     {
         return createActionSkip();
@@ -63,6 +67,11 @@ std::shared_ptr<IAction> ActionFactory::createActionComparison(const nlohmann::j
 std::shared_ptr<IAction> ActionFactory::createActionPatternAny(const nlohmann::json& label)
 {
     return std::make_shared<ActionPatternAny>(label, expressionFactory_);
+}
+
+std::shared_ptr<IAction> ActionFactory::createActionAssignmentAny(const nlohmann::json& label)
+{
+    return std::make_shared<ActionAssignmentAny>(label, expressionFactory_);
 }
 
 std::shared_ptr<IAction> ActionFactory::createActionSkip()

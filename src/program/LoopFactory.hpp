@@ -9,13 +9,14 @@ class Node;
 class Binding;
 class Parser;
 class ValueAssigner;
+class IAction;
 
 class LoopFactory
 {
 public:
     LoopFactory(const Parser& parser, const ValueAssigner& valueAssigner);
 
-    std::unique_ptr<ILoopInstruction> createLoopInstruction(const Binding& binding) const;
+    std::unique_ptr<ILoopInstruction> createLoopInstruction(const IAction& action) const;
 
 private:
     const Parser& parser_;

@@ -408,10 +408,21 @@ void Compiler::restoreAssignments(
     for (const auto& action : assignments)
     {
         std::string lvalue = action->getLeftSide();
-
-        function->addInstruction(
-            std::make_unique<AssignmentInstruction>(lvalue, getTemporaryVariableName(cnt, edgeId)));
-        cnt++;
+        if (action->getType() == ActionType::Assignment)
+        {
+            function->addInstruction(
+                std::make_unique<AssignmentInstruction>(lvalue, getTemporaryVariableName(cnt, edgeId)));
+            cnt++;
+        }
+        else if (action->getType() == ActionType::AssignmentAny)
+        {
+            function->addInstruction(
+                std::make_unique<AssignmentInstruction>(lvalue, temporaryVariableNamePrefix_ + "_" + lvalue));
+        }
+        else
+        {
+            throw std::invalid_argument("[Compiler] Cannot restore assignment from action: " + action->toString());
+        }
     }
 }
 
@@ -1206,6 +1217,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     }
     std::reverse(nodes.begin(), nodes.end());
     auto nodeIt = nodes.begin();
+    std::shared_ptr<IAction> assignAnyAction = nullptr;
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
@@ -1334,9 +1346,24 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             blockInstruction = addActionPattern(
                 action, graph, stateFrom, stateTo, iid, std::move(blockInstruction), std::move(returnInstruction));
         }
+        else if (action->getType() == ActionType::AssignmentAny)
+        {
+            if (assignAnyAction != nullptr)
+            {
+                throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
+            }
+            assignAnyAction = action;
+            const auto variableName = action->getLeftSide();
+            blockInstruction->pushInstructionFront(
+                std::make_unique<AssignmentInstruction>(variableName, variableName + "It"));
+        }
     }
 
-    return wrapIntoLoopIfNeeded(edge, std::move(blockInstruction));
+    if (assignAnyAction)
+    {
+        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction));
+    }
+    return blockInstruction;
 }
 
 std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
@@ -1386,7 +1413,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
 
         for (const auto& action : actions)
         {
-            if (action->getType() == ActionType::Assignment)
+            if (action->getType() == ActionType::Assignment || action->getType() == ActionType::AssignmentAny)
             {
                 assignmentActions.push_back(action);
             }
@@ -1429,7 +1456,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         prepareBaseInstructions(graph, actions, from, to, edgeIdx, edge, iid, prefix, functionType.empty() ? 0 : 2);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
-
+    std::shared_ptr<IAction> assignAnyAction = nullptr;
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
@@ -1483,9 +1510,24 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         {
             blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));
         }
+        else if (action->getType() == ActionType::AssignmentAny)
+        {
+            if (assignAnyAction != nullptr)
+            {
+                throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
+            }
+            assignAnyAction = action;
+            const auto variableName = action->getLeftSide();
+            blockInstruction->pushInstructionFront(
+                std::make_unique<AssignmentInstruction>(variableName, variableName + "It"));
+        }
     }
 
-    return wrapIntoLoopIfNeeded(edge, std::move(blockInstruction));
+    if (assignAnyAction)
+    {
+        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction));
+    }
+    return blockInstruction;
 }
 
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
@@ -1866,53 +1908,48 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
 }
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
-    const std::shared_ptr<Edge>& edge, std::unique_ptr<BlockInstruction> blockInstruction) const
+    const std::shared_ptr<IAction>& actionAssignAny, std::unique_ptr<BlockInstruction> blockInstruction) const
 {
-    const auto leftBinding = edge->getLeftNode()->getBinding();
-    const auto rightBinding = edge->getRightNode()->getBinding();
-    if (rightBinding && leftBinding != rightBinding)
+    // Optimization: not create loops when only one value will be accepted
+    const auto variableName = actionAssignAny->getLeftSide();
+    const auto ifInstruction = dynamic_cast<IfInstruction*>(blockInstruction->frontInstruction().get());
+    if (ifInstruction != nullptr && ifInstruction->getCondition()->getType() == ComparisonType::Eq)
     {
-        // Optimization: not create loops when only one value will be accepted
-        const auto ifInstruction = dynamic_cast<IfInstruction*>(blockInstruction->frontInstruction().get());
-        if (ifInstruction != nullptr && ifInstruction->getCondition()->getType() == ComparisonType::Eq)
+        const auto [lhs, rhs] = ifInstruction->getCondition()->getSubexpressions();
+        if (lhs == variableName)
         {
-            const auto [lhs, rhs] = ifInstruction->getCondition()->getSubexpressions();
-            const auto bindParameterName = rightBinding->getVariableName();
-            if (lhs == bindParameterName)
+            auto instructionsInsideIf = ifInstruction->extractInstructions();
+            blockInstruction->popInstructionFront();
+            for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
             {
-                auto instructionsInsideIf = ifInstruction->extractInstructions();
-                blockInstruction->popInstructionFront();
-                for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
-                {
-                    blockInstruction->pushInstructionFront(std::move(insideInstruction));
-                }
-                blockInstruction->pushInstructionFront(
-                    std::make_unique<AssignmentInstruction>(bindParameterName, rhs, "const auto"));
-                return blockInstruction;
+                blockInstruction->pushInstructionFront(std::move(insideInstruction));
             }
-            if (rhs == bindParameterName)
-            {
-                auto instructionsInsideIf = ifInstruction->extractInstructions();
-                blockInstruction->popInstructionFront();
-                for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
-                {
-                    blockInstruction->pushInstructionFront(std::move(insideInstruction));
-                }
-                blockInstruction->pushInstructionFront(
-                    std::make_unique<AssignmentInstruction>(bindParameterName, lhs, "const auto"));
-                return blockInstruction;
-            }
+            blockInstruction->pushInstructionFront(
+                std::make_unique<AssignmentInstruction>(variableName + "It", rhs, "const auto"));
+            return blockInstruction;
         }
-
-        const LoopFactory loopFactory(parser_, valueAssigner_);
-        auto loopInstruction = loopFactory.createLoopInstruction(*rightBinding);
-        loopInstruction->addInstruction(std::move(blockInstruction));
-        auto result = std::make_unique<BlockInstruction>();
-        result->pushInstructionBack(std::move(loopInstruction));
-        return result;
+        if (rhs == variableName)
+        {
+            auto instructionsInsideIf = ifInstruction->extractInstructions();
+            blockInstruction->popInstructionFront();
+            for (auto& insideInstruction : std::ranges::reverse_view(instructionsInsideIf))
+            {
+                blockInstruction->pushInstructionFront(std::move(insideInstruction));
+            }
+            blockInstruction->pushInstructionFront(
+                std::make_unique<AssignmentInstruction>(variableName + "It", lhs, "const auto"));
+            return blockInstruction;
+        }
     }
-
-    return blockInstruction;
+    const LoopFactory loopFactory(parser_, valueAssigner_);
+    auto loopInstruction = loopFactory.createLoopInstruction(*actionAssignAny);
+    loopInstruction->addInstruction(std::move(blockInstruction));
+    auto result = std::make_unique<BlockInstruction>();
+    const auto tmpVariableName = temporaryVariableNamePrefix_ + "_" + variableName;
+    result->pushInstructionBack(std::make_unique<AssignmentInstruction>(tmpVariableName, variableName, "const auto"));
+    result->pushInstructionBack(std::move(loopInstruction));
+    result->pushInstructionBack(std::make_unique<AssignmentInstruction>(variableName, tmpVariableName));
+    return result;
 }
 
 std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionName)

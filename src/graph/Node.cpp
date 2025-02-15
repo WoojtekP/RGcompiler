@@ -44,14 +44,7 @@ const std::string& Binding::getTypeName() const
 
 Node::Node(const nlohmann::json& t)
 {
-    name_ = Parser::getValueFromEntries(t, "Literal", "identifier");
-
-    if (const auto& optBinding = Parser::getPartFromParts(t, "Binding"))
-    {
-        const auto& binding = optBinding->get();
-        assert(binding["type"]["kind"] == "TypeReference");
-        binding_.emplace(binding["identifier"].get<std::string>(), binding["type"]["identifier"]);
-    }
+    name_ = t["identifier"].get<std::string>();
 }
 
 std::string Node::toString() const

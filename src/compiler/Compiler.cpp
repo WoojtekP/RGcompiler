@@ -146,23 +146,7 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
     {
         for (const auto& edge : pragma["edgeNames"])
         {
-            const auto parts = edge["parts"];
-            if (parts.size() == 1)
-            {
-                data.insert(parts[0]["identifier"].get<std::string>());
-            }
-            else if (parts.size() == 2)
-            {
-                const auto nodeName = parts[0]["identifier"].get<std::string>();
-                const auto generatorVariable = parts[1]["identifier"].get<std::string>();
-                const auto generatorType = parts[1]["type"]["identifier"].get<std::string>();
-                data.insert(nodeName + "__bind__" + generatorVariable);
-            }
-            else
-            {
-                throw std::runtime_error(
-                    "Unhandled number of parts in @unique pragma: " + std::to_string(parts.size()));
-            }
+            data.insert(edge["identifier"].get<std::string>());
         }
     }
 }
@@ -243,8 +227,8 @@ void Compiler::initializeGraph()
     for (const auto& edge : parser_.getEdges())
     {
         graph_->addEdge(std::make_shared<Edge>(
-            std::make_shared<Node>(edge["lhs"]["parts"]),
-            std::make_shared<Node>(edge["rhs"]["parts"]),
+            std::make_shared<Node>(edge["lhs"]),
+            std::make_shared<Node>(edge["rhs"]),
             std::vector<std::shared_ptr<IAction>> {actionFactory.createAction(edge["label"])}));
     }
 

@@ -63,10 +63,6 @@ std::unique_ptr<IExpression> ExpressionFactory::createCastExpression(const nlohm
 
 std::unique_ptr<IExpression> ExpressionFactory::createEdgeNameExpression(const nlohmann::json& expression) const
 {
-    if (const auto& node = Parser::getPartFromParts(expression["parts"], "Literal"))
-    {
-        return std::make_unique<ExpressionEdgeName>(node->get()["identifier"].get<std::string>());
-    }
-    throw std::runtime_error(
-        "[ExpressionFactory] Cannot find part: \"Literal\" for " + expression["kind"].get<std::string>());
+    const auto identifier = expression["identifier"].get<std::string>();
+    return std::make_unique<ExpressionEdgeName>(identifier);
 }

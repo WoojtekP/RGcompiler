@@ -36,9 +36,9 @@ void PragmaSimpleApplyOperator::parseItem(
     const nlohmann::json& item, const ExpressionFactory& expressionFactory, bool isExhaustive)
 {
     ParsedSingleSimpleApplyData data;
-    std::unique_ptr<Node> startNode = std::make_unique<Node>(item["lhs"]["parts"]);
+    std::unique_ptr<Node> startNode = std::make_unique<Node>(item["lhs"]);
     data.startNodeName_ = startNode->toString();
-    data.endNode_ = std::make_unique<Node>(item["rhs"]["parts"]);
+    data.endNode_ = std::make_unique<Node>(item["rhs"]);
 
     std::vector<std::string> tags;
     for (const auto& tag : item["tags"])

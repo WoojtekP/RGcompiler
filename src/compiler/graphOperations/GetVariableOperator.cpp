@@ -7,7 +7,8 @@ void GetVariableOperator::init()
         for (const auto &action : edge->getActions())
         {
             const auto &variable = action->getLeftSide();
-            if (action->getType() == ActionType::Assignment && (variables_.find(variable) == variables_.end()))
+            if ((action->getType() == ActionType::Assignment || action->getType() == ActionType::AssignmentAny) &&
+                (variables_.find(variable) == variables_.end()))
             {
                 variables_.insert(variable);
             }

@@ -1,4 +1,7 @@
-#include <compiler/graphOperations/GetTagIndexOperator.hpp>
+#include "GetTagIndexOperator.hpp"
+
+#include <parser/Parser.hpp>
+
 
 void GetTagIndexOperator::init(const Parser& parser)
 {
@@ -39,7 +42,7 @@ void GetTagIndexOperator::init(const Parser& parser)
 
         for (const auto& action : edge->getActions())
         {
-            if (action->getType() == ActionType::Tag)
+            if (action->getType() == ActionType::Tag || action->getType() == ActionType::TagVariable)
             {
                 if (!nodesWithTagIndexMax.count((*fromNodeIt)->getName()))
                 {

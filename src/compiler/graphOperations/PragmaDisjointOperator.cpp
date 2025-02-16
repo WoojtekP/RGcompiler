@@ -1,4 +1,7 @@
-#include <compiler/graphOperations/PragmaDisjointOperator.hpp>
+#include "PragmaDisjointOperator.hpp"
+
+#include <parser/Parser.hpp>
+
 
 void PragmaDisjointOperator::init(const Parser& parser)
 {

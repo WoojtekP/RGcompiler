@@ -1,8 +1,13 @@
+#include "Action.hpp"
+
 #include <string>
 
 #include <nlohmann/json.hpp>
 
-#include <graph/Action.hpp>
+#include <graph/Expression.hpp>
+#include <graph/ExpressionFactory.hpp>
+#include <parser/Parser.hpp>
+
 
 ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : left_(expressionFactory.createExpression(label["lhs"]))
@@ -142,12 +147,12 @@ ActionTag::ActionTag(const nlohmann::json& label)
 
 std::string ActionTag::toString() const
 {
-    return tag_;
+    return "$" + tag_;
 }
 
 std::string ActionTag::getLeftSide() const
 {
-    return "";
+    return tag_;
 }
 
 std::string ActionTag::getRightSide() const
@@ -164,3 +169,35 @@ bool ActionTag::getNegated() const
 {
     return false;
 }
+
+ActionTagVariable::ActionTagVariable(const nlohmann::json& label, const Parser& parser)
+{
+    tag_ = label["identifier"];
+    type_ = parser.findTypeOfVariable(tag_)["identifier"].get<std::string>();
+}
+
+std::string ActionTagVariable::toString() const
+{
+    return "$$" + tag_;
+}
+
+std::string ActionTagVariable::getLeftSide() const
+{
+    return tag_;
+}
+
+std::string ActionTagVariable::getRightSide() const
+{
+    return type_;
+}
+
+ActionType ActionTagVariable::getType() const
+{
+    return ActionType::TagVariable;
+}
+
+bool ActionTagVariable::getNegated() const
+{
+    return false;
+}
+

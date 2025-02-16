@@ -1261,7 +1261,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
-        else if (action->getType() == ActionType::Tag)
+        else if (action->getType() == ActionType::Tag || action->getType() == ActionType::TagVariable)
         {
             const auto cachesToClear = edgeToStatesRequiringClear.find(edge);
             if (cachesToClear != edgeToStatesRequiringClear.end())
@@ -1550,7 +1550,9 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
             sw->addCaseInstruction(
                 graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(std::make_unique<ReturnInstruction>(id)));
         }
-        else if (actionBack->getType() == ActionType::Tag || stateFrom == "begin")
+        else if (
+            actionBack->getType() == ActionType::Tag || actionBack->getType() == ActionType::TagVariable ||
+            stateFrom == "begin")
         {
             const auto path =
                 graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getUnambiguousPathFromNode(stateTo, true);
@@ -1972,20 +1974,16 @@ int Compiler::getNumberOfPlayers()
 
 std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, const std::shared_ptr<Edge>& edge)
 {
-    const auto leftBinding = edge->getLeftNode()->getBinding();
-    if (leftBinding && leftBinding->getVariableName() == action->toString())
+    const auto tagName = action->getLeftSide();
+    if (action->getType() == ActionType::Tag)
     {
-        const auto tagName = leftBinding->toTagStringId();
-        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + leftBinding->getVariableName();
+        return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
     }
-    const auto rightBinding = edge->getRightNode()->getBinding();
-    if (rightBinding && rightBinding->getVariableName() == action->toString())
+    if (action->getType() == ActionType::TagVariable)
     {
-        const auto tagName = rightBinding->toTagStringId();
-        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + rightBinding->getVariableName();
+        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + tagName;
     }
-    const auto tagName = action->toString();
-    return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+    throw std::invalid_argument("[Compiler] Cannot extract tag from action: " + action->toString());
 }
 
 const std::shared_ptr<IStateCache>& Compiler::getStateCacheSafe(const std::string& state) const

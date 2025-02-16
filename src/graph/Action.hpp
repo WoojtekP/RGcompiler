@@ -4,8 +4,10 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/Expression.hpp>
-#include <graph/ExpressionFactory.hpp>
+
+class ExpressionFactory;
+class IExpression;
+class Parser;
 
 enum class ActionType
 {
@@ -16,7 +18,8 @@ enum class ActionType
     PatternAny,
     Pattern,
     AssignmentAny,
-    Tag
+    Tag,
+    TagVariable,
 };
 
 class IAction
@@ -109,6 +112,20 @@ class ActionTag : public IAction
     std::string tag_;
 public:
     ActionTag(const nlohmann::json& label);
+    std::string toString() const override;
+    std::string getLeftSide() const override;
+    std::string getRightSide() const override;
+    ActionType getType() const override;
+    bool getNegated() const override;
+};
+
+class ActionTagVariable : public IAction
+{
+    std::string tag_;
+    std::string type_;
+
+public:
+    ActionTagVariable(const nlohmann::json& label, const Parser& parser);
     std::string toString() const override;
     std::string getLeftSide() const override;
     std::string getRightSide() const override;

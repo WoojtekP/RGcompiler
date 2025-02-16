@@ -6,8 +6,6 @@
 #include <string>
 
 #include <compiler/graphOperations/BaseOperator.hpp>
-#include <graph/Edge.hpp>
-#include <graph/Edge.hpp>
 
 
 class PragmaRepeatOperator : public BaseOperator
@@ -20,5 +18,5 @@ public:
 
     std::map<std::shared_ptr<Edge>, std::set<int>> getEdgeToStatesForWhichCacheShouldBeCleared(
         const std::set<std::string>& repeatNodes,
-        const std::set<std::pair<std::shared_ptr<Edge>, int>>& getEdgesWithActionTag);
+        const std::set<std::pair<std::shared_ptr<Edge>, int>>& edgesWithActionTag);
 };

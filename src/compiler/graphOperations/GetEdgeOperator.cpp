@@ -36,7 +36,9 @@ GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionChangePlayer() co
 
 GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionTag() const
 {
-    return getEdges([](const std::shared_ptr<IAction> &action) { return action->getType() == ActionType::Tag; });
+    return getEdges([](const std::shared_ptr<IAction> &action) {
+        return action->getType() == ActionType::Tag || action->getType() == ActionType::TagVariable;
+    });
 }
 
 std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getEdgeNames()
@@ -61,8 +63,8 @@ std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getUnamb
     while (graph_->getOutgoingEdgesFrom(node).size() == 1)
     {
         const auto &[edge, iid] = graph_->getOutgoingEdgesFrom(node).back();
-
-        if (edge->getActions().front()->getType() == ActionType::Tag)
+        const auto &firstAction = edge->getActions().front();
+        if (firstAction->getType() == ActionType::Tag || firstAction->getType() == ActionType::TagVariable)
         {
             return path;
         }

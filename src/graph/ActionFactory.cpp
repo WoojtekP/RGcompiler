@@ -41,6 +41,10 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     {
         return createActionTag(label);
     }
+    if (labelKind == "TagVariable")
+    {
+        return createActionTagVariable(label);
+    }
     throw std::runtime_error("[ActionFactory] Unknown type of action: " + labelKind);
 }
 
@@ -82,4 +86,9 @@ std::shared_ptr<IAction> ActionFactory::createActionSkip()
 std::shared_ptr<IAction> ActionFactory::createActionTag(const nlohmann::json& label)
 {
     return std::make_shared<ActionTag>(label);
+}
+
+std::shared_ptr<IAction> ActionFactory::createActionTagVariable(const nlohmann::json& label)
+{
+    return std::make_shared<ActionTagVariable>(label, parser_);
 }

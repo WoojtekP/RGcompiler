@@ -13,7 +13,7 @@ namespace
 {
 bool isTagOrPlayerAssignment(const std::shared_ptr<IAction>& action)
 {
-    return action->getType() != ActionType::Tag ||
+    return (action->getType() != ActionType::Tag && action->getType() != ActionType::TagVariable) ||
            (action->getType() == ActionType::Assignment && action->getLeftSide() == "player");
 }
 }
@@ -40,7 +40,7 @@ void PragmaRepeatOperator::dfs(std::set<int>& visited, const int node)
 
 std::map<std::shared_ptr<Edge>, std::set<int>> PragmaRepeatOperator::getEdgeToStatesForWhichCacheShouldBeCleared(
     const std::set<std::string>& repeatNodes,
-    const std::set<std::pair<std::shared_ptr<Edge>, int>>& getEdgesWithActionTag)
+    const std::set<std::pair<std::shared_ptr<Edge>, int>>& edgesWithActionTag)
 {
     std::set<int> repeatNodesIds;
     for (const auto& repeatNode : repeatNodes)
@@ -57,7 +57,7 @@ std::map<std::shared_ptr<Edge>, std::set<int>> PragmaRepeatOperator::getEdgeToSt
     }
     std::map<std::shared_ptr<Edge>, std::set<int>> result;
     std::set<int> visited, repeatNodesToClear;
-    for (const auto& [edge, _] : getEdgesWithActionTag)
+    for (const auto& [edge, _] : edgesWithActionTag)
     {
         visited.clear();
         repeatNodesToClear.clear();

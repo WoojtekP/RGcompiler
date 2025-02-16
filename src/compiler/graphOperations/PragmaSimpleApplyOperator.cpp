@@ -1,4 +1,8 @@
-#include <compiler/graphOperations/PragmaSimpleApplyOperator.hpp>
+#include "PragmaSimpleApplyOperator.hpp"
+
+#include <graph/ExpressionFactory.hpp>
+#include <parser/Parser.hpp>
+
 
 void SimpleApplySwitchTreeNode::insert(
     const std::vector<std::string>& tags,

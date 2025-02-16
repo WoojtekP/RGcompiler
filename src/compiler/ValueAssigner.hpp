@@ -9,8 +9,8 @@
 
 #include <nlohmann/json.hpp>
 
-class Binding;
 class Edge;
+class IAction;
 
 using SymbolToValueMap = std::map<std::string, int>;
 using SymbolToValueRangeMap = std::map<std::string, std::pair<int, int>>;
@@ -38,8 +38,8 @@ private:
     void assignValuesForNumbers(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     void assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     void assignValuesForRemainingSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
-    int assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue);
-    int assignValueForSimpleTag(const std::string& tag, int nextTagValue);
+    int assignValueForTagVariable(const std::shared_ptr<IAction>& action, int nextTagValue);
+    int assignValueForSimpleTag(const std::shared_ptr<IAction>& action, int nextTagValue);
     std::optional<int> getValueIfAssignedForPlayer(const std::string& symbol) const;
 
     TypeToSymbolToValueMap typeToSymbolToValue_;

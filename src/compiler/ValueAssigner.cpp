@@ -4,8 +4,9 @@
 
 #include <nlohmann/json.hpp>
 
-#include <graph/Node.hpp>
+#include <graph/Action.hpp>
 #include <graph/Edge.hpp>
+#include <parser/Parser.hpp>
 
 namespace
 {
@@ -91,6 +92,10 @@ void ValueAssigner::assignValuesForSymbols(const nlohmann::json& types)
 
 void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
 {
+    if (typeToSymbolToValue_.empty())
+    {
+        throw std::runtime_error("[ValueAssigner] Values for symbols should be assigned before tags");
+    }
     tagToValues_.clear();
 
     int nextTagValue = 0;
@@ -100,22 +105,11 @@ void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
         {
             if (action->getType() == ActionType::Tag)
             {
-                const auto leftBinding = edge->getLeftNode()->getBinding();
-                const auto rightBinding = edge->getRightNode()->getBinding();
-                const auto tag = action->toString();
-
-                if (leftBinding && leftBinding->getVariableName() == tag)
-                {
-                    nextTagValue = assignValueForTagFromBinding(leftBinding, nextTagValue);
-                }
-                else if (rightBinding && rightBinding->getVariableName() == tag)
-                {
-                    nextTagValue = assignValueForTagFromBinding(rightBinding, nextTagValue);
-                }
-                else
-                {
-                    nextTagValue = assignValueForSimpleTag(tag, nextTagValue);
-                }
+                nextTagValue = assignValueForSimpleTag(action, nextTagValue);
+            }
+            else if (action->getType() == ActionType::TagVariable)
+            {
+                nextTagValue = assignValueForTagVariable(action, nextTagValue);
             }
         }
     }
@@ -260,22 +254,24 @@ void ValueAssigner::assignValuesForRemainingSymbols(
     }
 }
 
-int ValueAssigner::assignValueForTagFromBinding(const std::optional<Binding>& binding, int nextTagValue)
+int ValueAssigner::assignValueForTagVariable(const std::shared_ptr<IAction>& action, int nextTagValue)
 {
-    const auto tagString = binding->toTagStringId();
+    const auto tagString = action->getLeftSide();
+    const auto tagType = action->getRightSide();
     if (tagToValues_.count(tagString))
     {
         return nextTagValue;
     }
-    const auto [minTypeValue, maxTypeValue] = getTypeMinMaxValues(binding->getTypeName());
+    const auto [minTypeValue, maxTypeValue] = getTypeMinMaxValues(tagType);
     const auto minTagValue = nextTagValue + minTypeValue;
     const auto maxTagValue = nextTagValue + maxTypeValue;
     tagToValues_.emplace(tagString, std::make_pair(minTagValue, maxTagValue));
     return maxTagValue + 1;
 }
 
-int ValueAssigner::assignValueForSimpleTag(const std::string& tag, int nextTagValue)
+int ValueAssigner::assignValueForSimpleTag(const std::shared_ptr<IAction>& action, int nextTagValue)
 {
+    const auto tag = action->getLeftSide();
     if (tagToValues_.emplace(tag, std::make_pair(nextTagValue, nextTagValue)).second)
     {
         return nextTagValue + 1;

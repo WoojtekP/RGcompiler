@@ -366,8 +366,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         auto valueType = generateType(variable["type"]);
         auto value = generateValue(variable["defaultValue"]);
         const std::string identifier = variable["identifier"].get<std::string>();
-        program_.addVariableDeclaration(
-            std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
+        program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
     const std::string initialState = std::to_string(graph->getNodeId("begin"));
@@ -640,7 +639,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
                 tag,
                 "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
                     std::to_string(minValues[curentPos - 1]),
-                "[[maybe_unused]] auto"));
+                ""));
         }
         curentPos++;
     }
@@ -677,7 +676,13 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
-        const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(pairFullTagAndChild.first);
+        std::string tag = pairFullTagAndChild.first;
+        auto newTag = getTagVar(tag);
+        if (newTag)
+        {
+            tag = *newTag;
+        }
+        const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(tag);
         minValues.push_back(minValue);
         tags.push_back(pairFullTagAndChild.first);
         auto innerInstructions = std::move(makeSwitchForTags(

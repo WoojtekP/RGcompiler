@@ -3,7 +3,6 @@
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
 
-
 void SimpleApplySwitchTreeNode::insert(
     const std::vector<std::string>& tags,
     std::vector<std::unique_ptr<IAction>> actions,
@@ -47,10 +46,12 @@ void PragmaSimpleApplyOperator::parseItem(
     std::vector<std::string> tags;
     for (const auto& tag : item["tags"])
     {
-        std::string tagVarName = tag["tag"].get<std::string>();
-        if (tag["type"] != nullptr)
+        const auto& tagVar = tag["Variable"];
+        std::string tagVarName = tagVar["identifier"].get<std::string>();
+
+        if (tagVar["type_"] != nullptr)
         {
-            std::string tagType = tag["type"]["identifier"];
+            std::string tagType = tagVar["type_"]["identifier"];
             data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
         }
         else

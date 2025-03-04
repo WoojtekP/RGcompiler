@@ -99,36 +99,43 @@ if "all" in games:
   games.append('connect4.hrg')
   games.append('connect4.rbg')
   
+  games.append('englishDraughts.hrg')
+  games.append('englishDraughts.rbg')
+  
   games.append('knightthrough.hrg')
   games.append('knightthrough.rbg')
 
-  # games.append('gomoku_standard.hrg')
-  # games.append('gomoku_standard.rbg')
+  games.append('gomoku_standard.hrg')
+  games.append('gomoku_standard.rbg')
 
-  # games.append('gomoku_freeStyle.hrg')
-  # games.append('gomoku_freeStyle.rbg')
+  games.append('gomoku_freeStyle.hrg')
+  games.append('gomoku_freeStyle.rbg')
 
-  # games.append('bombardment.hrg')
+  games.append('bombardment.hrg')
   
-  # games.append('amazons.hrg')
-  # games.append('amazons.rbg')
+  games.append('amazons.hrg')
+  games.append('amazons.rbg')
   
-  # games.append('hex.rbg')
-  # games.append('hex_9x9.rbg')
+  games.append('hex.rbg')
+  games.append('hex_9x9.rbg')
   
-  # games.append('amazons_split2.hrg')
+  games.append('amazons_split2.hrg')
   # #games.append('amazons_split2.rbg') # Too slow for now
   
-  # games.append('pentago.hrg')
-  # games.append('pentago.rbg')
-  # games.append('pentago_split.hrg')
-  # games.append('pentago_split.rbg')
+  # games.append('pentago.hrg') # TODO
+  games.append('pentago.rbg') # TODO
+  # games.append('pentago_split.hrg') # TODO
+  games.append('pentago_split.rbg') # TODO
   
-  # games.append('dotsAndBoxes.hrg')
+  games.append('dotsAndBoxes.hrg')
   
-  # games.append('foxAndGeese.hrg')
+  games.append('foxAndGeese.hrg')
   
-  # games.append('battleships.hrg')
+  # games.append('oware.hrg') # TODO
+  
+  games.append('battleships.hrg')
+  
+  # games.append('backgammon.hrg') # TODO
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')

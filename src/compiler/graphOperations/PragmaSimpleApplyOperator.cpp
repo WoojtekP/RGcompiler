@@ -46,17 +46,28 @@ void PragmaSimpleApplyOperator::parseItem(
     std::vector<std::string> tags;
     for (const auto& tag : item["tags"])
     {
-        const auto& tagVar = tag["Variable"];
-        std::string tagVarName = tagVar["identifier"].get<std::string>();
-
-        if (tagVar["type_"] != nullptr)
+        if (tag.contains("Variable"))
         {
-            std::string tagType = tagVar["type_"]["identifier"];
-            data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
+            const auto& tagVar = tag["Variable"];
+            std::string tagVarName = tagVar["identifier"].get<std::string>();
+            if (tagVar["type_"] != nullptr)
+            {
+                std::string tagType = tagVar["type_"]["identifier"];
+                data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
+            }
+            else
+            {
+                data.tagNames_.push_back(tagVarName);
+            }
+        }
+        else if (tag.contains("Symbol"))
+        {
+            const auto& tagName = tag["Symbol"]["symbol"].get<std::string>();
+            data.tagNames_.push_back(tagName);
         }
         else
         {
-            data.tagNames_.push_back(tagVarName);
+            throw std::runtime_error("[PragmaSimpleApplyOperator] Unknown type of tag");
         }
     }
 

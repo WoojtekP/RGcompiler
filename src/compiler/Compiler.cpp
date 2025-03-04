@@ -416,7 +416,8 @@ void Compiler::restoreAssignments(
         else if (action->getType() == ActionType::AssignmentAny)
         {
             function->addInstruction(
-                std::make_unique<AssignmentInstruction>(lvalue, temporaryVariableNamePrefix_ + "_" + lvalue));
+                std::make_unique<AssignmentInstruction>(lvalue, getTemporaryVariableName(cnt, edgeId)));
+            cnt++;
         }
         else
         {
@@ -1366,7 +1367,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (assignAnyAction)
     {
-        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction));
+        const auto tmpVarName = getTemporaryVariableName(temporaryVariableCnt, edgeId);
+        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction), tmpVarName);
     }
     return blockInstruction;
 }
@@ -1530,7 +1532,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
     if (assignAnyAction)
     {
-        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction));
+        const auto tmpVarName = getTemporaryVariableName(temporaryVariableCnt, edgeId);
+        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction), tmpVarName);
     }
     return blockInstruction;
 }
@@ -1915,7 +1918,9 @@ std::unique_ptr<IValue> Compiler::generateMapValue(const nlohmann::json& value)
 }
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
-    const std::shared_ptr<IAction>& actionAssignAny, std::unique_ptr<BlockInstruction> blockInstruction) const
+    const std::shared_ptr<IAction>& actionAssignAny,
+    std::unique_ptr<BlockInstruction> blockInstruction,
+    const std::string& tmpVariableName) const
 {
     // Optimization: not create loops when only one value will be accepted
     const auto variableName = actionAssignAny->getLeftSide();
@@ -1952,7 +1957,6 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
     auto loopInstruction = loopFactory.createLoopInstruction(*actionAssignAny);
     loopInstruction->addInstruction(std::move(blockInstruction));
     auto result = std::make_unique<BlockInstruction>();
-    const auto tmpVariableName = temporaryVariableNamePrefix_ + "_" + variableName;
     result->pushInstructionBack(std::make_unique<AssignmentInstruction>(tmpVariableName, variableName, "const auto"));
     result->pushInstructionBack(std::move(loopInstruction));
     result->pushInstructionBack(std::make_unique<AssignmentInstruction>(variableName, tmpVariableName));

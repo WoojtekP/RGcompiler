@@ -26,6 +26,21 @@ std::optional<std::string> getTagVar(const std::string& tag)
     return {};
 }
 
+std::optional<std::string> getTagType(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        std::string res = tagTmp.substr(pos + 2);
+        res.pop_back();
+        return res;
+    }
+    return {};
+}
+
 bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
 {
     for (const auto& [edgeA, iid] : edges)
@@ -636,8 +651,18 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         if (tagVar)
         {
             tag = *tagVar;
+            std::string prefix;
+            try
+            {
+                valueAssigner_.getRangeValueForTag(tag);
+            }
+            catch (const std::exception& e)
+            {
+                prefix = "auto ";
+            }
+
             blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                tag,
+                prefix + tag,
                 "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
                     std::to_string(minValues[curentPos - 1]),
                 ""));
@@ -678,12 +703,17 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
         std::string tag = pairFullTagAndChild.first;
-        auto newTag = getTagVar(tag);
-        if (newTag)
+        auto tagType = getTagType(tag);
+        std::pair<int, int> values;
+        if (tagType)
         {
-            tag = *newTag;
+            values = valueAssigner_.getTypeMinMaxValues(*tagType);
         }
-        const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(tag);
+        else
+        {
+            values = valueAssigner_.getRangeValueForTag(tag);
+        }
+        int minValue = values.first, maxValue = values.second;
         minValues.push_back(minValue);
         tags.push_back(pairFullTagAndChild.first);
         auto innerInstructions = std::move(makeSwitchForTags(

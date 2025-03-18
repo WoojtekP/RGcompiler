@@ -258,13 +258,15 @@ int ValueAssigner::assignValueForTagVariable(const std::shared_ptr<IAction>& act
 {
     const auto tagString = action->getLeftSide();
     const auto tagType = action->getRightSide();
-    if (tagToValues_.count(tagString))
+    if (tagToValues_.count(tagType))
     {
+        tagToValues_[tagString] = tagToValues_[tagType];
         return nextTagValue;
     }
     const auto [minTypeValue, maxTypeValue] = getTypeMinMaxValues(tagType);
     const auto minTagValue = nextTagValue + minTypeValue;
     const auto maxTagValue = nextTagValue + maxTypeValue;
+    tagToValues_.emplace(tagType, std::make_pair(minTagValue, maxTagValue));
     tagToValues_.emplace(tagString, std::make_pair(minTagValue, maxTagValue));
     return maxTagValue + 1;
 }

@@ -38,11 +38,9 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
-  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations'
-  #DEFAULT_TRANSLATE_OPTIONS = ' '
-  #DEFAULT_TRANSLATE_OPTIONS += ' --calculate-disjoints --calculate-repeats-and-uniques --calculate-tag-indexes'
-  #DEFAULT_TRANSLATE_OPTIONS += ' --compact-comparisons --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --join-generators --merge-accesses --merge-bindings --propagate-constants --prune-singleton-types --prune-unreachable-nodes --prune-unused-bindings --prune-unused-constants --prune-unused-variables --skip-artificial-tags --skip-generator-comparisons --skip-self-assignments --skip-self-comparisons --skip-unused-tags'
-
+  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --calculate-disjoints --calculate-repeats-and-uniques --calculate-tag-indexes' # No simpleApply
+  #DEFAULT_TRANSLATE_OPTIONS = ' --enable-all-pragmas'
+  #DEFAULT_TRANSLATE_OPTIONS += ' --compact-comparisons --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --merge-accesses --propagate-constants --prune-singleton-types --prune-unreachable-nodes --prune-unused-constants --prune-unused-variables --skip-artificial-tags --skip-self-assignments --skip-self-comparisons --skip-unused-tags'
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --max-move-len -1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0 --gccinline 0'
 
@@ -54,6 +52,7 @@ class cfg:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
     GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -Og -ggdb3 -march=native -ftracer'
+    GCC_DEBUG_FLAGS += ' -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
     GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
     # -finline-limit=100
 

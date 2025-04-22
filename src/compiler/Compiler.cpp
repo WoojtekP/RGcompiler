@@ -703,11 +703,10 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
         std::string tag = pairFullTagAndChild.first;
-        auto tagType = getTagType(tag);
         std::pair<int, int> values;
-        if (tagType)
+        if (auto tagType = getTagType(tag))
         {
-            values = valueAssigner_.getTypeMinMaxValues(*tagType);
+            values = valueAssigner_.getRangeValueForTag(*tagType);
         }
         else
         {

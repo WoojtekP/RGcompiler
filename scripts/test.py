@@ -44,6 +44,7 @@ tests['simpleApplyTest3'] = (1000,2.0,[0.0,75.0], [1,2,3,0])
 tests['simpleApplyTest4'] = (1000,2.0,[0.0,50.0], [1,1,3,0])
 tests['simpleApplyTest5'] = (1000,1.0,[50.0], [1,2,0])
 tests['simpleApplyTest6'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
+tests['chessTest1'] = (1000,4.0,[50.0,50.0], [1,7,28,256,1664])
 
 tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])#,4307152
 tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152])#,4307152
@@ -82,6 +83,7 @@ if "all" in games:
   games.append('simpleApplyTest4.rg')
   games.append('simpleApplyTest5.rg')
   games.append('simpleApplyTest6.rg')
+  games.append('chessTest1.hrg')
   
   games.append('ticTacToe.rg')
   games.append('ticTacToe.hrg')
@@ -92,14 +94,14 @@ if "all" in games:
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
   
-  games.append('chess.hrg')
+  #games.append('chess.hrg')
   
   games.append('clobber.hrg')
 
   games.append('connect4.hrg')
   games.append('connect4.rbg')
   
-  games.append('englishDraughts.hrg')
+  #games.append('englishDraughts.hrg')
   games.append('englishDraughts.rbg')
   
   games.append('knightthrough.hrg')

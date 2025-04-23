@@ -71,6 +71,7 @@ tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#
 
 tests['ticTacDie'] = (100000,7.63,[64.87,35.13], [1,1,9,9,72,72,504,504,3024,3024,15120,13680,54720,49392,148176,100224,200448,127872,127872,0])
 tests['oware'] = (10000,83.58,[49.40,50.60], [1,6,36,190,1014,5219,27332,139157,711414])#,3592872,18137964
+tests['twentyOne'] = (1000000,1.88,[0.37], [1,2,52,104,2464,5304,114128,141848,2309136])#,2622336,22543488
 
 if "all" in games:
   games = []
@@ -194,9 +195,9 @@ for game in games:
   print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
   startTime = time.time()
   result = runCap(f'''
-    g++ -c {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_TEST_FLAGS} -o {cfg.BUILD_TEST_DIR}/reasoner.o &&
-    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_TEST_FLAGS} -o {cfg.BUILD_TEST_DIR}/sims &&
-    g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {cfg.GCC_TEST_FLAGS} -o {cfg.BUILD_TEST_DIR}/perft
+    g++ -c {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/reasoner.o &&
+    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/sims &&
+    g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/perft
   ''')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:

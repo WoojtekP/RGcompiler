@@ -51,7 +51,7 @@ class cfg:
   else:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
-    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -Og -ggdb3 -march=native -ftracer'
+    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -g -Og -ggdb3 -march=native -ftracer'
     GCC_DEBUG_FLAGS += ' -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
     GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
     # -finline-limit=100

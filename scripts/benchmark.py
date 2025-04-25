@@ -143,7 +143,7 @@ for game in games:
   print(f' | g++ ',end='',flush=True)
   startTime = time.time()
   result = runCap(f'''
-    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {cfg.GCC_BENCHMARK_FLAGS} -DUSE_TIME={useTime} -o {cfg.BUILD_TEST_DIR}/sims
+    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {gccOptions} -DUSE_TIME={useTime} -o {cfg.BUILD_TEST_DIR}/sims
   ''')
   elapsedTime = time.time() - startTime
   if result.returncode != 0:

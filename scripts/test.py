@@ -129,6 +129,8 @@ if "all" in games:
   
   games.append('amazons_split2.hrg')
   games.append('amazons_split2.rbg')
+  
+  games.append('ataxx.hrg')
 
   games.append('backgammon.hrg')
 

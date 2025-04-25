@@ -49,6 +49,7 @@ tests['chessTest1'] = (1000,4.0,[50.0,50.0], [1,7,28,256,1664])
 tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])#,4307152
 tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152])#,4307152
 tests['ataxx'] = (10000,115.43,[50.00,50.00], [1,16,256,6424,156520])#,4975152
+tests['backgammon'] = (1000,109.98,[48.00,52.00], [1,36,2574,92664,6545432])#,235635552
 tests['battleships'] = (10000,195.53,[45.47,54.53], [1,120,14400,1850736])
 tests['bombardment'] = (20000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
 tests['breakthrough'] = (20000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])#,149264638
@@ -64,17 +65,18 @@ tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#
 tests['hex'] = (1000,107.52,[52.27,47.73], [1,121,14520,1727880])
 tests['hex_9x9'] = (10000,71.02,[53.03,46.97], [1,81,6480,511920])#,39929760
 tests['knightthrough'] = (10000,33.64,[51.67,48.33], [1,40,1600,63520,2521306,99598454])#,3929482778
+tests['oware'] = (10000,83.58,[49.40,50.60], [1,6,36,190,1014,5219,27332,139157,711414])#,3592872,18137964
 tests['pentago'] = (10000,29.07,[53.57,46.43], [1,288,80640,21934080])
 tests['pentago_split'] = (10000,54.74,[54.67,45.33], [1,36,288,10080,80640,2741760])
 tests['reversi'] = (1000,60.41,[47.51,52.49], [1,4,12,56,244,1396,8200,55092,390216,3005288,24571056])#,1939879668
-tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#,148176,200448,127872
-
 tests['ticTacDie'] = (100000,7.63,[64.87,35.13], [1,1,9,9,72,72,504,504,3024,3024,15120,13680,54720,49392,148176,100224,200448,127872,127872,0])
-tests['oware'] = (10000,83.58,[49.40,50.60], [1,6,36,190,1014,5219,27332,139157,711414])#,3592872,18137964
+tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#,148176,200448,127872
 tests['twentyOne'] = (1000000,1.88,[0.37], [1,2,52,104,2464,5304,114128,141848,2309136])#,2622336,22543488
 
 if "all" in games:
   games = []
+  
+  # Tests
   games.append('repeatTest.rg')
   games.append('repeatTestBig.rg')
   games.append('repeatTestHard.rg')
@@ -88,27 +90,20 @@ if "all" in games:
   games.append('simpleApplyTest6.rg')
   games.append('chessTest1.hrg')
   
-  games.append('ticTacToe.rg')
-  games.append('ticTacToe.hrg')
-  games.append('ticTacToe.rbg')
-  
+  # Simple games
+  games.append('bombardment.hrg')
+
   games.append('breakthrough.rg')
   games.append('breakthrough-simple.rg')
   games.append('breakthrough.hrg')
   games.append('breakthrough.rbg')
-  
-  #games.append('chess.hrg')
-  
+
   games.append('clobber.hrg')
 
   games.append('connect4.hrg')
   games.append('connect4.rbg')
-  
-  #games.append('englishDraughts.hrg')
-  games.append('englishDraughts.rbg')
-  
-  games.append('knightthrough.hrg')
-  games.append('knightthrough.rbg')
+
+  games.append('foxAndGeese.hrg')
 
   games.append('gomoku_standard.hrg')
   games.append('gomoku_standard.rbg')
@@ -116,31 +111,46 @@ if "all" in games:
   games.append('gomoku_freeStyle.hrg')
   games.append('gomoku_freeStyle.rbg')
 
-  games.append('bombardment.hrg')
+  games.append('knightthrough.hrg')
+  games.append('knightthrough.rbg')
+
+  games.append('ticTacDie.rg')
+  games.append('ticTacDie.hrg')
+  games.append('ticTacDie.rbg')
+
+  games.append('ticTacToe.rg')
+  games.append('ticTacToe.hrg')
+  games.append('ticTacToe.rbg')
+  
+  # Complex and large games
   
   games.append('amazons.hrg')
   games.append('amazons.rbg')
   
+  games.append('amazons_split2.hrg')
+  games.append('amazons_split2.rbg')
+
+  games.append('backgammon.hrg')
+
+  games.append('battleships.hrg')
+
+  games.append('chess.hrg')
+  
+  games.append('dotsAndBoxes.hrg')
+
+  games.append('englishDraughts.hrg')
+  games.append('englishDraughts.rbg')
+  
   games.append('hex.rbg')
   games.append('hex_9x9.rbg')
   
-  games.append('amazons_split2.hrg')
-  # #games.append('amazons_split2.rbg') # Too slow for now
-  
-  # games.append('pentago.hrg') # TODO
-  games.append('pentago.rbg') # TODO
-  # games.append('pentago_split.hrg') # TODO
-  games.append('pentago_split.rbg') # TODO
-  
-  games.append('dotsAndBoxes.hrg')
-  
-  games.append('foxAndGeese.hrg')
-  
-  # games.append('oware.hrg') # TODO
-  
-  games.append('battleships.hrg')
-  
-  # games.append('backgammon.hrg') # TODO
+  games.append('oware.hrg')
+
+  games.append('pentago.hrg')
+  games.append('pentago.rbg')
+  games.append('pentago_split.hrg')
+  games.append('pentago_split.rbg')
+
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')

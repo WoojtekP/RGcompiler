@@ -10,6 +10,7 @@ parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate op
 parser.add_argument('-c', dest='compileOptions', nargs='?', help='compile options for rg2cpp', default=cfg.DEFAULT_RG2CPP_OPTIONS)
 parser.add_argument('-skipast', action='store_true', help='skip AST creation and use existing one for given game')
 parser.add_argument('-silent', action='store_true', help='do not print anything unless error')
+parser.add_argument('-format', action='store_true', help='run clang-format')
 
 args = parser.parse_args()
 game = args.game
@@ -53,10 +54,11 @@ elapsedTime = time.time() - startTime
 if not silent: print(FORMATTER.format("rg2cpp:",elapsedTime))
 
 # Format generated files
-if isProgramAvailable('clang-format'):
-  startTime=time.time()
-  run(f"clang-format -style=file -i {outputFile}.hpp {outputFile}.cpp")
-  elapsedTime = time.time() - startTime
-  if not silent: print(FORMATTER.format('clang-format:',elapsedTime))
-else:
-  print(f'ERROR clang-format: omitted because unavailable')
+if args.format:
+  if isProgramAvailable('clang-format'):
+    startTime=time.time()
+    run(f"clang-format -style=file -i {outputFile}.hpp {outputFile}.cpp")
+    elapsedTime = time.time() - startTime
+    if not silent: print(FORMATTER.format('clang-format:',elapsedTime))
+  else:
+    print(f'ERROR clang-format: omitted because unavailable')

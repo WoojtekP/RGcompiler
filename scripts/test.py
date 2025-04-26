@@ -114,9 +114,7 @@ if "all" in games:
   games.append('knightthrough.hrg')
   games.append('knightthrough.rbg')
 
-  games.append('ticTacDie.rg')
   games.append('ticTacDie.hrg')
-  games.append('ticTacDie.rbg')
 
   games.append('ticTacToe.rg')
   games.append('ticTacToe.hrg')

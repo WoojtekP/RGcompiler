@@ -32,12 +32,12 @@ HEAD_FORMATTER = '{: <50} '
 TIME_FORMATTER = '{:7.3f}s'
 FULL_FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
 
-INSTR_SCALE = 1_000_000
+INSTR_SCALE = 1_000
 STATES_STAT_FORMATTER = ' {:15,.0f} states/s'
 STATES_STAT_PRECISE_FORMATTER = ' {:11,.3f} states/s'
 SIMS_STAT_FORMATTER = ' {:15,.0f} sims/s'
 SIMS_STAT_PRECISE_FORMATTER = ' {:11,.3f} sims/s'
-INSTR_FORMATTER = ' {:9,.0f} mil instr'
+INSTR_FORMATTER = ' {:12,.0f} k instr'
 
 usePerf = args.perf
 
@@ -102,7 +102,7 @@ if usePerf:
   output = decodeOutput(result.stderr)
   if str.isnumeric(output.split(' ')[0]):
     elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
-    print((TIME_FORMATTER+INSTR_FORMATTER+STATESSTAT_FORMATTER+SIMSSTAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
+    print((TIME_FORMATTER+INSTR_FORMATTER+STATES_STAT_FORMATTER+SIMS_STAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
     # TODO
   else:
     print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')

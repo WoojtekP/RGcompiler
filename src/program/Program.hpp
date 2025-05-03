@@ -332,7 +332,7 @@ class Function : public IInstruction
     bool isConst_;
     std::string name_;
     std::string returnType_;
-    std::string attribiutes_;
+    std::string attributes_;
     std::string functionNamespace_;
     std::vector<std::unique_ptr<IInstruction>> instructions_;
     std::vector<std::unique_ptr<VariableDeclarationInstruction>> arguments_;
@@ -341,13 +341,14 @@ public:
     Function(
         const std::string &name,
         const std::string &returnType,
-        const std::string &attribiutes = "",
+        const std::string &attributes = "",
         bool isPublic = false,
         bool isConst = false,
         const std::string &functionNamespace = "GameState::");
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
+    void setAttributes(const std::string& attributes);
 
     bool isPublic();
     std::string declarationToString();

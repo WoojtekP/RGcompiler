@@ -485,12 +485,12 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             functionType = "bool";
         }
 
-        std::string attribiutes;
+        std::string attributes;
         if (optGccInline_ && pragmaUniqueData_.count(state))
         {
-            attribiutes += "__attribute__((always_inline))inline";
+            attributes += "__attribute__((always_inline))inline";
         }
-        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, functionType, attribiutes);
+        std::unique_ptr<Function> function = std::make_unique<Function>(functionName, functionType, attributes);
 
         // if (const auto& optBinding = node->getBinding())
         // {
@@ -876,8 +876,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     program_.addFunction(std::move(function));
 
     blockInstruction = std::make_unique<BlockInstruction>();
-    std::string functionCall =
+    const auto functionCall =
         functionName + "(mr, " + mainCacheName_ + (binding ? ", " + binding->getVariableName() : "") + ")";
+    functionCallCounter_[functionName]++;
     if (isExhaustive)
     {
         blockInstruction->pushInstructionBack((std::make_unique<ReturnInstruction>(functionCall)));
@@ -1073,6 +1074,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     // tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
 
     const auto functionCall = functionName + "(" + functionArguments + ")";
+    functionCallCounter_[functionName]++;
     std::string comparisonExpression;
     if (!skipStateCache)
     {
@@ -1181,33 +1183,29 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             }
         }
 
-        std::string functionName = std::to_string(graph->getNodeId(stateTo));
-
-        if (preserveOriginalNames_)
-        {
-            functionName = stateTo;
-        }
+        const auto functionName =
+            stateName + (preserveOriginalNames_ ? stateTo : std::to_string(graph->getNodeId(stateTo)));
+        const auto functionCall = functionName + "(" + stateFunctionArguments + ")";
+        functionCallCounter_[functionName]++;
 
         if (applyEdgeMode)
         {
             if (simpleApplyEdgeMode)
             {
                 blockInstruction->pushInstructionBack(
-                    std::make_unique<ReturnInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
+                    std::make_unique<ReturnInstruction>(functionCall));
             }
             else
             {
                 std::unique_ptr<IfInstruction> ifInstruction =
-                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        stateName + functionName + "(" + stateFunctionArguments + ")"));
+                    std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(functionCall));
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("true")));
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
             }
         }
         else
         {
-            blockInstruction->pushInstructionBack(
-                std::make_unique<CustomInstruction>(stateName + functionName + "(" + stateFunctionArguments + ")"));
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(functionCall));
         }
     }
 
@@ -1432,13 +1430,10 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     {
         functionArguments += "," + binding->getVariableName();
     }
-    std::string name = std::to_string(graph_->getNodeId(stateTo));
-    if (preserveOriginalNames_)
-    {
-        name = stateTo;
-    }
+    const auto functionName = prefix + (preserveOriginalNames_ ? stateTo : std::to_string(graph_->getNodeId(stateTo)));
+    functionCallCounter_[functionName]++;
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
-        std::make_unique<ComparisonInstruction>(prefix + name + "(" + functionArguments + ")"));
+        std::make_unique<ComparisonInstruction>(functionName + "(" + functionArguments + ")"));
 
     if (patternId == 0)
     {
@@ -1628,14 +1623,8 @@ void Compiler::generateGetStateDescription()
 
 void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, bool applyMode)
 {
-    std::string functionName = "runState";
-    std::string prefix = "state_";
-
-    if (applyMode)
-    {
-        functionName = "runApplyState";
-        prefix = "apply_state_";
-    }
+    const auto functionName = (applyMode ? "runApplyState" : "runState");
+    const auto prefix = (applyMode ? "apply_state_" : "state_");
 
     auto function = std::make_unique<Function>(functionName, "void", "", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
@@ -1651,11 +1640,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     }
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
-    std::string functionArguments = "moves, mr";
-    if (applyMode)
-    {
-        functionArguments = "mr";
-    }
+    std::string functionArguments = (applyMode ? "mr" : "moves, mr");
     if (!optNoCycleDetection_)
     {
         functionArguments += "," + mainCacheName_;
@@ -1666,27 +1651,22 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     for (const auto& [edge, iid] :
          graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayer())
     {
-        std::string stateName = std::to_string(graph->getNodeId(edge->toName()));
-        if (preserveOriginalNames_)
-        {
-            stateName = edge->toName();
-        }
+        const auto stateFunctionName =
+            prefix + (preserveOriginalNames_ ? edge->toName() : std::to_string(graph->getNodeId(edge->toName())));
+        functionCallCounter_[stateFunctionName]++;
         auto block = std::make_unique<BlockInstruction>();
         block->pushInstructionBack(
-            std::make_unique<CustomInstruction>(prefix + stateName + "(" + functionArguments + ")"));
+            std::make_unique<CustomInstruction>(stateFunctionName + "(" + functionArguments + ")"));
         block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
     }
 
-    std::string stateBeginName = std::to_string(graph->getNodeId("begin"));
-    if (preserveOriginalNames_)
-    {
-        stateBeginName = "begin";
-    }
+    const auto stateBeginName = prefix + (preserveOriginalNames_ ? "begin" : std::to_string(graph->getNodeId("begin")));
+    functionCallCounter_[stateBeginName]++;
     auto block = std::make_unique<BlockInstruction>();
     block->pushInstructionBack(
-        std::make_unique<CustomInstruction>(prefix + stateBeginName + "(" + functionArguments + ")"));
+        std::make_unique<CustomInstruction>(stateBeginName + "(" + functionArguments + ")"));
     block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
     sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
@@ -1808,9 +1788,11 @@ void Compiler::generateApplyAnyMove()
             {
                 functionName = nodeName + "_" + nodeTo + "_" + nodeName;
             }
+            functionName = "is_legal_apply_any_" + functionName;
+            functionCallCounter_[functionName]++;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "is_legal_apply_any_" + functionName + "(" + functionArguments + ")"));
+                    functionName + "(" + functionArguments + ")"));
             ifInstruction->addInstruction(
                 std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
@@ -1872,8 +1854,18 @@ void Compiler::generateFunctions()
     generatePatternReachabilityFunctions();
     generatePatternAnyFunctions();
     generateApplyAnyMove();
-
     generateSpecialFunctions(graph_);
+
+    if (!optGccInline_)
+    {
+        for (const auto& function : program_.getFunctions())
+        {
+            if (!function->isPublic() && functionCallCounter_[function->getName()] <= 1)
+            {
+                function->setAttributes("inline");
+            }
+        }
+    }
 }
 
 std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)

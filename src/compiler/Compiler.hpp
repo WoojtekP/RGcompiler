@@ -176,4 +176,5 @@ private:
     RepeatFlatData pragmaRepeatFlatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
+    std::map<std::string, int> functionCallCounter_;
 };

@@ -426,13 +426,13 @@ std::string CustomInstruction::toString(int delimiter, int shift, bool semicolon
 Function::Function(
     const std::string &name,
     const std::string &returnType,
-    const std::string &attribiutes,
+    const std::string &attributes,
     bool isPublic,
     bool isConst,
     const std::string &functionNamespace)
 : name_(name)
 , returnType_(returnType)
-, attribiutes_(attribiutes)
+, attributes_(attributes)
 , isPublic_(isPublic)
 , isConst_(isConst)
 , functionNamespace_(functionNamespace)
@@ -448,6 +448,11 @@ void Function::addInstruction(std::unique_ptr<IInstruction> &&instruction)
     instructions_.push_back(std::move(instruction));
 }
 
+void Function::setAttributes(const std::string& attributes)
+{
+    attributes_ = attributes;
+}
+
 bool Function::isPublic()
 {
     return isPublic_;
@@ -456,7 +461,7 @@ bool Function::isPublic()
 std::string Function::declarationToString()
 {
     std::string argumentsList = getArgumentsList();
-    return (attribiutes_.empty() ? attribiutes_ : attribiutes_ + " ") + returnType_ + " " + name_ + "(" +
+    return (attributes_.empty() ? attributes_ : attributes_ + " ") + returnType_ + " " + name_ + "(" +
            argumentsList + ")" + (isConst_ ? "const" : "") + ";";
 }
 

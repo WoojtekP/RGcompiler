@@ -1388,9 +1388,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
             }
             assignAnyAction = action;
-            const auto variableName = action->getLeftSide();
-            blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(variableName, variableName + "It"));
         }
     }
 
@@ -1553,9 +1550,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
                 throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
             }
             assignAnyAction = action;
-            const auto variableName = action->getLeftSide();
-            blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(variableName, variableName + "It"));
         }
     }
 
@@ -1965,8 +1959,6 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
             {
                 blockInstruction->pushInstructionFront(std::move(insideInstruction));
             }
-            blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(variableName + "It", rhs, "const auto"));
             return blockInstruction;
         }
         if (rhs == variableName)
@@ -1977,13 +1969,16 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
             {
                 blockInstruction->pushInstructionFront(std::move(insideInstruction));
             }
-            blockInstruction->pushInstructionFront(
-                std::make_unique<AssignmentInstruction>(variableName + "It", lhs, "const auto"));
             return blockInstruction;
         }
     }
     const LoopFactory loopFactory(parser_, valueAssigner_);
     auto loopInstruction = loopFactory.createLoopInstruction(*actionAssignAny);
+    if (dynamic_cast<RangeLoopInstruction*>(loopInstruction.get()))
+    {
+        blockInstruction->pushInstructionFront(
+            std::make_unique<AssignmentInstruction>(variableName, variableName + "It"));
+    }
     loopInstruction->addInstruction(std::move(blockInstruction));
     auto result = std::make_unique<BlockInstruction>();
     result->pushInstructionBack(std::make_unique<AssignmentInstruction>(tmpVariableName, variableName, "const auto"));

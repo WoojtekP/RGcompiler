@@ -323,7 +323,7 @@ IterLoopInstruction::IterLoopInstruction(
 std::string IterLoopInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result = getLeadingSpaces(delimiter);
-    result += "for (auto " + variableName_ + " = " + lowerBound_ + "; ";
+    result += "for (" + variableName_ + " = " + lowerBound_ + "; ";
     result += variableName_ + " <= " + upperBound_ + "; ";
     result += "++" + variableName_ + ")\n";
     result += getLeadingSpaces(delimiter) + "{\n";

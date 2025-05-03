@@ -40,7 +40,12 @@ int main(const int argc, const char **argv)
             "disjoint",
             po::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
             "Enable pragma 'disjoint'")(
-            "gccinline", po::value<bool>(&options.gccInline_)->default_value(false), "Enable gcc inline attribiute")(
+            "gccinline",
+            po::value<int>(&options.gccInline_)->default_value(0),
+            "Inlining mode:\n"
+            "0: off\n"
+            "1: inline methods which are used at most once\n"
+            "2: force inline for functions representing 'unique' states")(
             "max-move-len",
             po::value<int>(&options.maxMoveLen_)->default_value(-1),
             "Enable setting size of static vector")(
@@ -54,6 +59,13 @@ int main(const int argc, const char **argv)
             return 0;
         }
         po::notify(vm);
+
+        if (options.gccInline_ < 0 || options.gccInline_ > 2)
+        {
+            std::cerr << "Error: inline mode must be 0, 1 or 2, but " << options.gccInline_ << " was given."
+                      << std::endl;
+            return 1;
+        }
     }
     catch (const std::exception &ex)
     {

@@ -19,9 +19,16 @@ struct Options
     bool preserveOriginalNames_;
     bool verification_;
     bool pragmaDisjointEnabled_;
-    bool gccInline_;
     bool allUnique_;
+    int gccInline_;
     int maxMoveLen_;
+};
+
+enum class InlineMode
+{
+    Off = 0,
+    SingleCall = 1,
+    UniqueOnly = 2,
 };
 
 class Compiler
@@ -162,8 +169,8 @@ private:
     const bool verification_;
     const bool optConditionsSimplePathCompression_;
     const bool optNoCycleDetection_;
-    const bool optGccInline_;
     const bool allUnique_;
+    const InlineMode optGccInline_;
     const std::optional<int> maxMoveLen_;
     const std::string patternIdToPrefixName[3] = {"", "any_", "apply_any_"};
     const std::string mainCacheName_;

@@ -129,8 +129,8 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
 , verification_(options.verification_)
 , optConditionsSimplePathCompression_(options.simplePathCompression_)
-, optGccInline_(options.gccInline_)
 , allUnique_(options.allUnique_)
+, optGccInline_(static_cast<InlineMode>(options.gccInline_))
 , maxMoveLen_(options.maxMoveLen_ == -1 ? std::nullopt : std::optional(options.maxMoveLen_))
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
@@ -140,6 +140,8 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , graphOperatorManager_(std::make_shared<GraphOperatorManager>())
 
 {
+    assert(options.gccInline_ >= 0);
+    assert(options.gccInline_ <= 2);
     valueAssigner_.assignValuesForSymbols(parser_.getTypeDeclarations());
     initializeGraph();
     valueAssigner_.assignValuesForTags(graph_->getAllEdges());
@@ -486,7 +488,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
 
         std::string attributes;
-        if (optGccInline_ && pragmaUniqueData_.count(state))
+        if (optGccInline_ == InlineMode::UniqueOnly && pragmaUniqueData_.count(state))
         {
             attributes += "__attribute__((always_inline))inline";
         }
@@ -1856,7 +1858,7 @@ void Compiler::generateFunctions()
     generateApplyAnyMove();
     generateSpecialFunctions(graph_);
 
-    if (!optGccInline_)
+    if (optGccInline_ == InlineMode::SingleCall)
     {
         for (const auto& function : program_.getFunctions())
         {

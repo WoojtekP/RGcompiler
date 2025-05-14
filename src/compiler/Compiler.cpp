@@ -646,36 +646,28 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
 {
     int curentPos = 1;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
-
+    std::map<std::string, std::string> tagToValue;
     for (auto tag : tags)
     {
         auto tagVar = getTagVar(tag);
         if (tagVar)
         {
-            tag = *tagVar;
-            std::string prefix;
-            try
-            {
-                valueAssigner_.getRangeValueForTag(tag);
-            }
-            catch (const std::exception& e)
-            {
-                prefix = "auto ";
-            }
-
-            blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-                prefix + tag,
-                "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "]" + " - " +
-                    std::to_string(minValues[curentPos - 1]),
-                ""));
+            tagToValue[*tagVar] = "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "] - " +
+                                  std::to_string(minValues[curentPos - 1]);
         }
         curentPos++;
     }
 
     for (const auto& action : actions)
     {
+        std::string actionStr = action->getRightSide();
+
+        if (tagToValue.contains(actionStr))
+        {
+            actionStr = tagToValue[actionStr];
+        }
         blockInstruction->pushInstructionBack(
-            std::make_unique<AssignmentInstruction>(action->getLeftSide(), action->getRightSide()));
+            std::make_unique<AssignmentInstruction>(action->getLeftSide(), actionStr));
     }
 
     return std::move(blockInstruction);
@@ -1194,8 +1186,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         {
             if (simpleApplyEdgeMode)
             {
-                blockInstruction->pushInstructionBack(
-                    std::make_unique<ReturnInstruction>(functionCall));
+                blockInstruction->pushInstructionBack(std::make_unique<ReturnInstruction>(functionCall));
             }
             else
             {
@@ -1667,8 +1658,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     const auto stateBeginName = prefix + (preserveOriginalNames_ ? "begin" : std::to_string(graph->getNodeId("begin")));
     functionCallCounter_[stateBeginName]++;
     auto block = std::make_unique<BlockInstruction>();
-    block->pushInstructionBack(
-        std::make_unique<CustomInstruction>(stateBeginName + "(" + functionArguments + ")"));
+    block->pushInstructionBack(std::make_unique<CustomInstruction>(stateBeginName + "(" + functionArguments + ")"));
     block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
     sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
@@ -1792,9 +1782,8 @@ void Compiler::generateApplyAnyMove()
             }
             functionName = "is_legal_apply_any_" + functionName;
             functionCallCounter_[functionName]++;
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    functionName + "(" + functionArguments + ")"));
+            std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
+                std::make_unique<ComparisonInstruction>(functionName + "(" + functionArguments + ")"));
             ifInstruction->addInstruction(
                 std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));

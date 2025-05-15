@@ -71,5 +71,4 @@ class ExpressionEdgeName : public ExpressionUnaryBase
 public:
     ExpressionEdgeName(const std::string& identifier);
     ~ExpressionEdgeName() = default;
-    // std::string toString() const override;
 };

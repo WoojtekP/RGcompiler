@@ -3,13 +3,13 @@
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
+#include <compiler/pragma/RepeatFlat.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
-#include <compiler/pragma/RepeatFlat.hpp>
 
 struct Options
 {
@@ -121,7 +121,6 @@ private:
     void generatePatternFunctions(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, int patternId = 0);
     void generatePatternReachabilityFunctions();
-    void generatePatternAnyFunctions();
     void generateApplyAnyMove();
     void initializePatternGraphs(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
@@ -136,9 +135,9 @@ private:
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
     std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
-        const std::shared_ptr<IAction>& actionAssignAny,
+        const std::shared_ptr<IAction> &actionAssignAny,
         std::unique_ptr<BlockInstruction> blockInstruction,
-        const std::string& tmpVariableName) const;
+        const std::string &tmpVariableName) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
     int getNumberOfPlayers();
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
@@ -159,7 +158,6 @@ private:
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<Graph> unoptimizedGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternAnyGraphs_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
@@ -172,6 +170,7 @@ private:
     const bool allUnique_;
     const InlineMode optGccInline_;
     const std::optional<int> maxMoveLen_;
+    // TODO change to enum and remove any_ as PatternAny no longer exist
     const std::string patternIdToPrefixName[3] = {"", "any_", "apply_any_"};
     const std::string mainCacheName_;
     const std::string mainCacheType_;

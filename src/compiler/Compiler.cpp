@@ -208,8 +208,7 @@ void Compiler::initializePragmaRepeat()
     pragmaRepeatFlatData_.parse(parser_);
 
     pragmaRepeatFlatData_.initializeDataForGraphs(patternReachabilityGraphs_, graph_, 0);
-    pragmaRepeatFlatData_.initializeDataForGraphs(patternAnyGraphs_, graph_, 1);
-    pragmaRepeatFlatData_.initializeDataForGraphs(applyAnyMoveGraphs_, graph_, 2);
+    pragmaRepeatFlatData_.initializeDataForGraphs(applyAnyMoveGraphs_, graph_, 1);
 }
 
 void Compiler::initializePragmaSimpleApply()
@@ -253,8 +252,6 @@ void Compiler::initializeGraph()
 
     patternReachabilityGraphs_ =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
-    patternAnyGraphs_ =
-        graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::PatternAny);
     applyAnyMoveGraphs_ = graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forApplyAnyMove();
 
     if (optConditionsSimplePathCompression_)
@@ -270,8 +267,7 @@ void Compiler::initializeGraph()
     }
 
     initializePatternGraphs(patternReachabilityGraphs_, 0);
-    initializePatternGraphs(patternAnyGraphs_, 1);
-    initializePatternGraphs(applyAnyMoveGraphs_, 2);
+    initializePatternGraphs(applyAnyMoveGraphs_, 1);
 }
 
 void Compiler::initializePatternGraphs(
@@ -402,16 +398,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         program_.addVariableDeclaration(std::make_unique<Variable>(
             "verificationCache",
             std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, move_hash>"))));
-    }
-
-    for (const auto& [id, customDeclaration] : containerChooser_.getIdTypeToCustomDeclaration())
-    {
-        program_.addVariableDeclaration(std::make_unique<Variable>(
-            customDeclaration,
-            std::make_unique<ElementaryType>("using"),
-            std::make_unique<SingleValue>("std::unordered_set<std::pair<GameState,int>, gameStateHasher>")));
-
-        //  std::make_unique<SingleValue>(containerChooser_.getContainerDeclaration(id))));
     }
 }
 
@@ -1355,7 +1341,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 }
             }
         }
-        else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
+        else if (action->getType() == ActionType::Reachability)
         {
             std::unique_ptr<CustomInstruction> returnInstruction = nullptr;
             if (addReturn)
@@ -1527,7 +1513,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
             }
         }*/
-        else if (action->getType() == ActionType::Reachability || action->getType() == ActionType::PatternAny)
+        else if (action->getType() == ActionType::Reachability)
         {
             blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));
         }
@@ -1833,17 +1819,11 @@ void Compiler::generatePatternReachabilityFunctions()
     generatePatternFunctions(patternReachabilityGraphs_);
 }
 
-void Compiler::generatePatternAnyFunctions()
-{
-    generatePatternFunctions(patternAnyGraphs_, 1);
-}
-
 void Compiler::generateFunctions()
 {
     generateVoidStateFunctions(graph_);
     generateVoidStateFunctions(graph_, true);
     generatePatternReachabilityFunctions();
-    generatePatternAnyFunctions();
     generateApplyAnyMove();
     generateSpecialFunctions(graph_);
 

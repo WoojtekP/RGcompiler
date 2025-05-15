@@ -8,7 +8,6 @@
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
 
-
 ActionBase::ActionBase(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : left_(expressionFactory.createExpression(label["lhs"]))
 , right_(expressionFactory.createExpression(label["rhs"]))
@@ -58,34 +57,6 @@ ActionType ActionComparison::getType() const
     return ActionType::Comparison;
 }
 
-ActionPattern::ActionPattern(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
-: ActionBase(label, expressionFactory)
-{}
-
-std::string ActionPattern::toString() const
-{
-    return "";
-}
-
-ActionType ActionPattern::getType() const
-{
-    return ActionType::Pattern;
-}
-
-ActionPatternAny::ActionPatternAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
-: ActionBase(label, expressionFactory)
-{}
-
-std::string ActionPatternAny::toString() const
-{
-    return "any " + left_->toString() + " -> " + right_->toString();
-}
-
-ActionType ActionPatternAny::getType() const
-{
-    return ActionType::PatternAny;
-}
-
 ActionReachability::ActionReachability(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : ActionBase(label, expressionFactory)
 {}
@@ -99,7 +70,6 @@ ActionType ActionReachability::getType() const
 {
     return ActionType::Reachability;
 }
-
 
 ActionAssignmentAny::ActionAssignmentAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
 : ActionBase(label, expressionFactory)
@@ -200,4 +170,3 @@ bool ActionTagVariable::getNegated() const
 {
     return false;
 }
-

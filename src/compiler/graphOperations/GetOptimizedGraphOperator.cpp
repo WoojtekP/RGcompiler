@@ -20,6 +20,7 @@ void GetOptimizedGraphOperator::traverse(
         return;
     }
 
+    // TODO we don't have bidnigs anymore, we should break for assigmentany
     // Break in case of bindings
     if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
     {
@@ -61,18 +62,6 @@ void GetOptimizedGraphOperator::initializeNumberOfIncomingEdges()
     for (const auto &node : graph_->getAllNodes())
     {
         numberOfIncomingEdges_.insert({graph_->getNodeId(node->getName()), 0});
-    }
-}
-
-void GetOptimizedGraphOperator::initializeNodesUsedInReachabilityPattern()
-{
-    for (const auto &[edge, iid] : graph_->getAllEdges())
-    {
-        if (edge->getActions().front()->getType() == ActionType::Reachability)
-        {
-            nodesUsedInReachability_.insert(graph_->getNodeId(edge->fromName()));
-            nodesUsedInReachability_.insert(graph_->getNodeId(edge->toName()));
-        }
     }
 }
 
@@ -177,5 +166,4 @@ GetOptimizedGraphOperator::GetOptimizedGraphOperator(const std::shared_ptr<Graph
 , optimizedGraph_(nullptr)
 {
     initializeNumberOfIncomingEdges();
-    initializeNodesUsedInReachabilityPattern();
 }

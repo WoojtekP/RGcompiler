@@ -1,10 +1,9 @@
 #pragma once
 
-#include <string>
 #include <optional>
+#include <string>
 
 #include <nlohmann/json.hpp>
-
 
 class Binding
 {
@@ -17,8 +16,8 @@ public:
     std::string toTagStringId() const;
     const std::string& getVariableName() const;
     const std::string& getTypeName() const;
-    bool operator==(const Binding &rhs) const;
-    bool operator!=(const Binding &rhs) const;
+    bool operator==(const Binding& rhs) const;
+    bool operator!=(const Binding& rhs) const;
 };
 
 class Node
@@ -27,10 +26,9 @@ class Node
     std::optional<Binding> binding_;
 
 public:
-    Node(const nlohmann::json &t);
+    Node(const nlohmann::json& t);
     std::string toString() const;
     std::string getName() const;
-    std::string getAlternativeName() const;
     const std::optional<Binding>& getBinding() const;
-    bool operator==(const Node &rhs) const;
+    bool operator==(const Node& rhs) const;
 };

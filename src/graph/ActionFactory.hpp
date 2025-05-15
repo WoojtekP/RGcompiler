@@ -15,10 +15,8 @@ public:
 
 private:
     std::shared_ptr<IAction> createActionAssignment(const nlohmann::json& label);
-    std::shared_ptr<IAction> createActionPattern(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionReachability(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionComparison(const nlohmann::json& label);
-    std::shared_ptr<IAction> createActionPatternAny(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionAssignmentAny(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionSkip();
     std::shared_ptr<IAction> createActionTag(const nlohmann::json& label);

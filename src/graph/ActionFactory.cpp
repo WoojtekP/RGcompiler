@@ -13,10 +13,6 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     {
         return createActionAssignment(label);
     }
-    if (labelKind == "Pattern")
-    {
-        return createActionPattern(label);
-    }
     if (labelKind == "Reachability")
     {
         return createActionReachability(label);
@@ -24,10 +20,6 @@ std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label
     if (labelKind == "Comparison")
     {
         return createActionComparison(label);
-    }
-    if (labelKind == "Any")
-    {
-        return createActionPatternAny(label);
     }
     if (labelKind == "AssignmentAny")
     {
@@ -53,11 +45,6 @@ std::shared_ptr<IAction> ActionFactory::createActionAssignment(const nlohmann::j
     return std::make_shared<ActionAssignment>(label, expressionFactory_);
 }
 
-std::shared_ptr<IAction> ActionFactory::createActionPattern(const nlohmann::json& label)
-{
-    return std::make_shared<ActionPattern>(label, expressionFactory_);
-}
-
 std::shared_ptr<IAction> ActionFactory::createActionReachability(const nlohmann::json& label)
 {
     return std::make_shared<ActionReachability>(label, expressionFactory_);
@@ -66,11 +53,6 @@ std::shared_ptr<IAction> ActionFactory::createActionReachability(const nlohmann:
 std::shared_ptr<IAction> ActionFactory::createActionComparison(const nlohmann::json& label)
 {
     return std::make_shared<ActionComparison>(label, expressionFactory_);
-}
-
-std::shared_ptr<IAction> ActionFactory::createActionPatternAny(const nlohmann::json& label)
-{
-    return std::make_shared<ActionPatternAny>(label, expressionFactory_);
 }
 
 std::shared_ptr<IAction> ActionFactory::createActionAssignmentAny(const nlohmann::json& label)

@@ -3,7 +3,9 @@
 #include <gtest/gtest.h>
 
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
+#include <graph/ExpressionFactory.hpp>
 #include <graph/Graph.hpp>
+#include <parser/Parser.hpp>
 
 // TODO Improve base fixture and common function
 namespace GraphCreator

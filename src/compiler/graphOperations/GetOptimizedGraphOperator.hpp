@@ -9,9 +9,9 @@
 
 class GetOptimizedGraphOperator : public BaseOperator
 {
+    using NodeId = int;
     // NodeId to number of incoming edges
-    std::map<int, int> numberOfIncomingEdges_;
-    std::set<int> nodesUsedInReachability_;
+    std::map<NodeId, int> numberOfIncomingEdges_;
     std::shared_ptr<Graph> optimizedGraph_;
 
     void traverseCycle(int node, std::vector<int> &path, std::map<int, bool> &visited) const;
@@ -21,5 +21,5 @@ class GetOptimizedGraphOperator : public BaseOperator
 
 public:
     GetOptimizedGraphOperator(const std::shared_ptr<Graph> &graph);
-    std::shared_ptr<Graph> getGraphWithOptimizedPaths(const ValueAssigner& valueAssigner);
+    std::shared_ptr<Graph> getGraphWithOptimizedPaths(const ValueAssigner &valueAssigner);
 };

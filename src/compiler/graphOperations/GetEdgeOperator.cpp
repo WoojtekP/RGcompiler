@@ -43,15 +43,15 @@ GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionTag() const
 
 std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getEdgeNames()
 {
-    if (!res.empty())
+    if (!edgeNames_.empty())
     {
-        return res;
+        return edgeNames_;
     }
     for (auto [edge, iid] : graph_->getAllEdges())
     {
-        res.push_back({edge->fromName(), edge->toName(), iid});
+        edgeNames_.push_back({edge->fromName(), edge->toName(), iid});
     }
-    return res;
+    return edgeNames_;
 }
 
 std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getUnambiguousPathFromNode(

@@ -4,7 +4,6 @@
 
 #include <nlohmann/json.hpp>
 
-
 class ExpressionFactory;
 class IExpression;
 class Parser;
@@ -15,8 +14,6 @@ enum class ActionType
     Reachability,
     Comparison,
     Skip,
-    PatternAny,
-    Pattern,
     AssignmentAny,
     Tag,
     TagVariable,
@@ -63,23 +60,6 @@ public:
     ActionType getType() const override;
 };
 
-// TODO: pattern need to be implemented
-class ActionPattern : public ActionBase
-{
-public:
-    ActionPattern(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
-    std::string toString() const override;
-    ActionType getType() const override;
-};
-
-class ActionPatternAny : public ActionBase
-{
-public:
-    ActionPatternAny(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
-    std::string toString() const override;
-    ActionType getType() const override;
-};
-
 class ActionReachability : public ActionBase
 {
 public:
@@ -110,6 +90,7 @@ public:
 class ActionTag : public IAction
 {
     std::string tag_;
+
 public:
     ActionTag(const nlohmann::json& label);
     std::string toString() const override;

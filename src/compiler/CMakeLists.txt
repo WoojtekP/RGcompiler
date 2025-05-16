@@ -1,6 +1,9 @@
 add_library(CompilerLib
     Compiler.cpp
     Compiler.hpp
+)
+
+add_library(ValueAssignerLib
     ValueAssigner.cpp
     ValueAssigner.hpp
 )
@@ -16,4 +19,5 @@ target_link_libraries(CompilerLib
     CacheContainersLib
     PragmaLib
     StateCacheLib
+    ValueAssignerLib
 )

@@ -1,5 +1,7 @@
 #include <common/GraphCreator.hpp>
 #include <graph/Action.hpp>
+#include <parser/Parser.hpp>
+#include <graph/ExpressionFactory.hpp>
 
 namespace GraphCreator
 {

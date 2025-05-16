@@ -213,8 +213,8 @@ Compiler::Compiler(const Parser& parser, const Options& options)
     assert(options.gccInline_ >= 0);
     assert(options.gccInline_ <= 2);
     valueAssigner_.assignValuesForSymbols(parser_.getTypeDeclarations());
+    valueAssigner_.assignValuesForTags(parser, parser_.getEdges());
     initializeGraph();
-    valueAssigner_.assignValuesForTags(graph_->getAllEdges());
     initializePragmas();
     generateStateCaches();
 }

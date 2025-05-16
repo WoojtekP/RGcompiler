@@ -9,6 +9,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <parser/Parser.hpp>
+
 class Edge;
 class IAction;
 
@@ -28,7 +30,7 @@ public:
     int getBaseValueForTag(const std::string& tag) const;
     std::pair<int, int> getRangeValueForTag(const std::string& tag) const;
     void assignValuesForSymbols(const nlohmann::json& types);
-    void assignValuesForTags(const EdgesWithIID& edgesWithIid);
+    void assignValuesForTags(const Parser& parser, const nlohmann::json& edges);
 
 private:
     using SymbolToTypesMap = std::map<std::string, std::set<int>>;
@@ -38,8 +40,8 @@ private:
     void assignValuesForNumbers(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     void assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
     void assignValuesForRemainingSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types);
-    int assignValueForTagVariable(const std::shared_ptr<IAction>& action, int nextTagValue);
-    int assignValueForSimpleTag(const std::shared_ptr<IAction>& action, int nextTagValue);
+    int assignValueForTagVariable(const Parser& parser, const std::string& identifier, int nextTagValue);
+    int assignValueForSimpleTag(const std::string& symbol, int nextTagValue);
     std::optional<int> getValueIfAssignedForPlayer(const std::string& symbol) const;
 
     TypeToSymbolToValueMap typeToSymbolToValue_;

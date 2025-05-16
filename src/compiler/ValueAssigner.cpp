@@ -90,7 +90,7 @@ void ValueAssigner::assignValuesForSymbols(const nlohmann::json& types)
     assignValuesForRemainingSymbols(reservedValuesPerType, types);
 }
 
-void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
+void ValueAssigner::assignValuesForTags(const Parser& parser, const nlohmann::json& edges)
 {
     if (typeToSymbolToValue_.empty())
     {
@@ -99,18 +99,17 @@ void ValueAssigner::assignValuesForTags(const EdgesWithIID& edges)
     tagToValues_.clear();
 
     int nextTagValue = 0;
-    for (const auto& [edge, iid] : edges)
+    for (const auto& edge : edges)
     {
-        for (const auto action : edge->getActions())
+        const auto& label = edge["label"];
+        const auto& labelKind = label["kind"].get<std::string>();
+        if (labelKind == "Tag")
         {
-            if (action->getType() == ActionType::Tag)
-            {
-                nextTagValue = assignValueForSimpleTag(action, nextTagValue);
-            }
-            else if (action->getType() == ActionType::TagVariable)
-            {
-                nextTagValue = assignValueForTagVariable(action, nextTagValue);
-            }
+            nextTagValue = assignValueForSimpleTag(label["symbol"].get<std::string>(), nextTagValue);
+        }
+        else if (labelKind == "TagVariable")
+        {
+            nextTagValue = assignValueForTagVariable(parser, label["identifier"].get<std::string>(), nextTagValue);
         }
     }
 }
@@ -254,10 +253,9 @@ void ValueAssigner::assignValuesForRemainingSymbols(
     }
 }
 
-int ValueAssigner::assignValueForTagVariable(const std::shared_ptr<IAction>& action, int nextTagValue)
+int ValueAssigner::assignValueForTagVariable(const Parser& parser, const std::string& tagString, int nextTagValue)
 {
-    const auto tagString = action->getLeftSide();
-    const auto tagType = action->getRightSide();
+    const auto tagType = parser.findTypeOfVariable(tagString)["identifier"].get<std::string>();
     if (tagToValues_.count(tagType))
     {
         tagToValues_[tagString] = tagToValues_[tagType];
@@ -271,10 +269,9 @@ int ValueAssigner::assignValueForTagVariable(const std::shared_ptr<IAction>& act
     return maxTagValue + 1;
 }
 
-int ValueAssigner::assignValueForSimpleTag(const std::shared_ptr<IAction>& action, int nextTagValue)
+int ValueAssigner::assignValueForSimpleTag(const std::string& symbol, int nextTagValue)
 {
-    const auto tag = action->getLeftSide();
-    if (tagToValues_.emplace(tag, std::make_pair(nextTagValue, nextTagValue)).second)
+    if (tagToValues_.emplace(symbol, std::make_pair(nextTagValue, nextTagValue)).second)
     {
         return nextTagValue + 1;
     }

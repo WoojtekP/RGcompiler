@@ -8,6 +8,11 @@ add_library(ValueAssignerLib
     ValueAssigner.hpp
 )
 
+add_library(ValueFactoryLib
+    ValueFactory.cpp
+    ValueFactory.hpp
+)
+
 add_subdirectory(cacheContainers)
 add_subdirectory(graphOperations)
 add_subdirectory(pragma)
@@ -20,4 +25,5 @@ target_link_libraries(CompilerLib
     PragmaLib
     StateCacheLib
     ValueAssignerLib
+    ValueFactoryLib
 )

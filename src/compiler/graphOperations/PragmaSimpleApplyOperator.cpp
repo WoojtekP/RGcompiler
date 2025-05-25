@@ -127,9 +127,9 @@ void PragmaSimpleApplyOperator::parsePragma(
     }
 }
 
-void PragmaSimpleApplyOperator::init(const Parser& parser, const ValueAssigner& valueAssigner)
+void PragmaSimpleApplyOperator::init(const Parser& parser, const SymbolsManager& symbolsManager)
 {
-    ExpressionFactory expressionFactory(parser, valueAssigner);
+    ExpressionFactory expressionFactory(parser, symbolsManager);
     parsePragma(parser, expressionFactory, pragmaSimpleApply);
     parsePragma(parser, expressionFactory, pragmaSimpleApplyExhaustive);
 }

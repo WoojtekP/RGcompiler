@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 
+#include <compiler/SymbolsManager.hpp>
 #include <compiler/graphOperations/BaseOperator.hpp>
 
 struct TagWrapper
@@ -80,7 +81,7 @@ private:
 
 public:
     PragmaSimpleApplyOperator(const std::shared_ptr<Graph>& graph);
-    void init(const Parser& parser, const ValueAssigner& valueAssigner);
+    void init(const Parser& parser, const SymbolsManager& symbolsManager);
     const std::shared_ptr<SimpleApplySwitchTreeNode>& getActionListToTags(const std::shared_ptr<Node>& node) const;
     const std::pair<std::vector<std::shared_ptr<IAction>>, std::unique_ptr<Node>>& getActionListToPlayerChange(
         const std::shared_ptr<Node>& node) const;

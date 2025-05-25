@@ -1,9 +1,9 @@
 #include "ActionFactory.hpp"
 
-ActionFactory::ActionFactory(const Parser& parser, const ValueAssigner& valueAssigner)
+ActionFactory::ActionFactory(const Parser& parser, const SymbolsManager& symbolsManager)
 : parser_(parser)
-, valueAssigner_(valueAssigner)
-, expressionFactory_(parser, valueAssigner)
+, symbolsManager_(symbolsManager)
+, expressionFactory_(parser, symbolsManager)
 {}
 
 std::shared_ptr<IAction> ActionFactory::createAction(const nlohmann::json& label)

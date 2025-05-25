@@ -5,6 +5,7 @@ add_library(GraphCreator
 
 target_link_libraries(GraphCreator PRIVATE
   ParserLib
+  SymbolsManagerLib
   ValueAssignerLib
   LoopFactoryLib
   ProgramLib

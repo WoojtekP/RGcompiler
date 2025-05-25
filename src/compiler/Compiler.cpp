@@ -610,6 +610,8 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         {
             tagToValue[*tagVar] = "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "] - " +
                                   std::to_string(minValues[curentPos - 1]);
+            std::string staticCast = "static_cast<" + *getTagType(tag) + ">(" + *tagVar + ")";
+            tagToValue[staticCast] = tagToValue[*tagVar];
         }
         curentPos++;
     }

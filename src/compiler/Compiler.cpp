@@ -1,6 +1,7 @@
 #include <functional>
 #include <ranges>
 
+#include <common/Common.hpp>
 #include <compiler/Compiler.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/stateCache/StateCacheFactory.hpp>
@@ -12,6 +13,13 @@ namespace
 {
 constexpr const int SMALL_VECTOR_MOVE_SIZE = 12;
 const std::string UNUSED_TAG_VALUE = "-1";
+constexpr std::string_view CUSTOM_TYPE_WORD = "int";
+constexpr std::string_view CURRENT_MR_ID_WORD = "currentMrId";
+constexpr std::string_view APPLY_STATE_WORD = "apply_state_";
+constexpr std::string_view STATE_WORD = "state_";
+constexpr std::string_view IS_LEGAL_WORD = "is_legal_";
+constexpr std::string_view CURRENT_STATE_WORD = "currentState";
+constexpr std::string_view IS_LEGAL_APPLY_ANY_WORD = "is_legal_apply_any_";
 
 std::unique_ptr<IInstruction> debugInstruction(std::string functionName)
 {
@@ -362,7 +370,7 @@ void Compiler::generateConstants()
         program_.addConstantDeclaration(std::make_unique<Constant>(identifier, std::move(valueType), std::move(value)));
     }
 
-    auto playerCountConstantType = std::make_shared<CustomType>("int");
+    auto playerCountConstantType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
     auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
     const std::string playerCountConstantName = "PLAYERS_COUNT";
     program_.addConstantDeclaration(std::make_unique<Constant>(
@@ -379,16 +387,16 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
         program_.addVariableDeclaration(std::make_unique<Variable>(identifier, std::move(valueType), std::move(value)));
     }
 
-    const std::string initialState = std::to_string(graph->getNodeId("begin"));
-    auto currentStateType = std::make_shared<CustomType>("int");
+    const std::string initialState = std::to_string(graph->getNodeId(common::BEGIN_WORD));
+    auto currentStateType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
     auto currentStateValue = std::make_unique<SingleValue>(initialState);
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
-    auto currentMrIdType = std::make_shared<CustomType>("int");
+    auto currentMrIdType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
     auto currentMrIdValue = std::make_unique<SingleValue>("0");
-    program_.addVariableDeclaration(
-        std::make_unique<Variable>("currentMrId", std::move(currentMrIdType), std::move(currentMrIdValue)));
+    program_.addVariableDeclaration(std::make_unique<Variable>(
+        std::string(CURRENT_MR_ID_WORD), std::move(currentMrIdType), std::move(currentMrIdValue)));
 
     if (verification_)
     {
@@ -436,11 +444,11 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
     for (auto& node : graph->getOuterNodes())
     {
         const std::string state = node->toString();
-        std::string prefix = "state_";
+        std::string prefix(STATE_WORD);
         bool isSimpleApply = false;
         if (applyMode)
         {
-            prefix = "apply_state_";
+            prefix = std::string(APPLY_STATE_WORD);
             isSimpleApply = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                                 ->isSimpleApply(node->getName());
         }
@@ -608,7 +616,8 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         auto tagVar = getTagVar(tag);
         if (tagVar)
         {
-            tagToValue[*tagVar] = "mr[currentMrId - " + std::to_string(minValues.size() - curentPos + 1) + "] - " +
+            tagToValue[*tagVar] = "mr[" + std::string(CURRENT_MR_ID_WORD) + " - " +
+                                  std::to_string(minValues.size() - curentPos + 1) + "] - " +
                                   std::to_string(minValues[curentPos - 1]);
             std::string staticCast = "static_cast<" + *getTagType(tag) + ">(" + *tagVar + ")";
             tagToValue[staticCast] = tagToValue[*tagVar];
@@ -650,7 +659,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         return std::move(blockInstructionTmp);
     }
 
-    auto sw = std::make_unique<SwitchInstruction>("mr[currentMrId++]");
+    auto sw = std::make_unique<SwitchInstruction>("mr[" + std::string(CURRENT_MR_ID_WORD) + "++]");
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
@@ -688,12 +697,15 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                 if (useArray)
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
+                        "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                            std::string(CURRENT_MR_ID_WORD) + "]",
+                        "-1",
+                        ComparisonType::Neq));
                 }
                 else
                 {
-                    ifInstruction = std::make_unique<IfInstruction>(
-                        std::make_unique<ComparisonInstruction>("static_cast<int>(mr.size()) > currentMrId"));
+                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        "static_cast<int>(mr.size()) >" + std::string(CURRENT_MR_ID_WORD)));
                 }
 
                 ifInstruction->addInstruction(std::move(innerInstructions));
@@ -764,12 +776,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (useArray)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
+                    "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                        std::string(CURRENT_MR_ID_WORD) + "]",
+                    "-1",
+                    ComparisonType::Neq));
             }
             else
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size())", "currentMrId", ComparisonType::Gr));
+                    "static_cast<int>(mr.size())", std::string(CURRENT_MR_ID_WORD), ComparisonType::Gr));
             }
             ifInstruction->addInstruction(std::move(switchBody));
             blockAction = std::move(ifInstruction);
@@ -796,12 +811,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         if (useArray)
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId]", "-1", ComparisonType::Neq));
+                "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                    std::string(CURRENT_MR_ID_WORD) + "]",
+                "-1",
+                ComparisonType::Neq));
         }
         else
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size())", "currentMrId", ComparisonType::Neq));
+                "static_cast<int>(mr.size())", std::string(CURRENT_MR_ID_WORD), ComparisonType::Neq));
         }
 
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -811,9 +829,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!isExhaustive || hasAnyEmptyTagSequence)
     {
-        blockInstruction->pushInstructionFront(
-            std::make_unique<AssignmentInstruction>("const int tmpCurrentMrId", "currentMrId"));
-        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>("currentMrId", "tmpCurrentMrId"));
+        blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
+            "const int tmp" + std::string(CURRENT_MR_ID_WORD), std::string(CURRENT_MR_ID_WORD)));
+        blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
+            std::string(CURRENT_MR_ID_WORD), "tmp" + std::string(CURRENT_MR_ID_WORD)));
     }
 
     function->addInstruction(std::move(blockInstruction));
@@ -858,7 +877,7 @@ void Compiler::generateBoolStateFunctions(
     bool skipStateCache)
 {
     std::string name(patternIdToPrefixName.at(patternId));
-    std::string prefix = "is_legal_" + name;
+    std::string prefix = std::string(IS_LEGAL_WORD) + name;
     for (auto& node : graph->getOuterNodes())
     {
         const std::string state = node->toString();
@@ -943,7 +962,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 {
     std::string fromNode = std::to_string(graph_->getNodeId(action->getLeftSide()));
     std::string toNode = std::to_string(graph_->getNodeId(action->getRightSide()));
-    std::string prefix = "is_legal_";
+    std::string prefix(IS_LEGAL_WORD);
     std::string functionName = prefix + fromNode + "_" + toNode + "_" + fromNode;
 
     if (preserveOriginalNames_)
@@ -1014,13 +1033,12 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::string stateTo = toNode->getName();
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
-    if (!actions.empty() && actions.back()->getType() == ActionType::Assignment &&
-        actions.back()->getLeftSide() == "player")
+    if (!actions.empty() && common::isActionAssignmentToPlayer(actions.back()))
     {
         if (applyEdgeMode)
         {
-            blockInstruction->pushInstructionBack(
-                std::make_unique<CustomInstruction>("currentState = " + std::to_string(graph->getNodeId(stateTo))));
+            blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
+                std::string(CURRENT_STATE_WORD) + " = " + std::to_string(graph->getNodeId(stateTo))));
             blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("return true"));
         }
         else
@@ -1042,12 +1060,12 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     else
     {
         std::string stateFunctionArguments = "moves, mr";
-        std::string stateName = "state_";
+        std::string stateName(STATE_WORD);
 
         if (applyEdgeMode)
         {
             stateFunctionArguments = "mr";
-            stateName = "apply_state_";
+            stateName = std::string(APPLY_STATE_WORD);
         }
 
         if (!optNoCycleDetection_)
@@ -1114,7 +1132,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
     assert(nodes.size() == baseActions.size());
     nodes.push_back(edge->getRightNode());
-    if (baseActions.back()->getType() == ActionType::Assignment && baseActions.back()->getLeftSide() == "player")
+    if (common::isActionAssignmentToPlayer(baseActions.back()))
     {
         // last action was erased in prepareBaseInstructions call, therefore we need to adjust set of nodes
         nodes.pop_back();
@@ -1183,13 +1201,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             const auto tagValueStr = getTagValueString(action, edge);
             if (applyEdgeMode)
             {
-                blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
+                blockInstruction->pushInstructionFront(
+                    std::make_unique<CustomInstruction>(std::string(CURRENT_MR_ID_WORD) + "++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
 
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
+                    "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                    std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
 
-                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
+                blockInstruction->pushInstructionBack(
+                    std::make_unique<CustomInstruction>(std::string(CURRENT_MR_ID_WORD) + "--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1387,8 +1408,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 
 void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
 {
-    auto function = std::make_unique<Function>("getFromStateForEdge", "int", "", false);
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
+    auto function = std::make_unique<Function>("getFromStateForEdge", std::string(CUSTOM_TYPE_WORD), "", false);
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", std::string(CUSTOM_TYPE_WORD)));
 
     auto sw = std::make_unique<SwitchInstruction>("val");
 
@@ -1400,14 +1421,14 @@ void Compiler::generateGetFromStateForEdge(const std::shared_ptr<Graph>& graph)
         const auto& actionFront = graph->getEdge(stateFrom, stateTo, edgeId)->getActions().front();
         std::string id = std::to_string(graph->getNodeId(stateTo));
 
-        if (actionBack->getType() == ActionType::Assignment && actionBack->getLeftSide() == "player")
+        if (common::isActionAssignmentToPlayer(actionBack))
         {
             sw->addCaseInstruction(
                 graph->getEdgeId(stateFrom, stateTo, edgeId), std::move(std::make_unique<ReturnInstruction>(id)));
         }
         else if (
             actionBack->getType() == ActionType::Tag || actionBack->getType() == ActionType::TagVariable ||
-            stateFrom == "begin")
+            stateFrom == common::BEGIN_WORD)
         {
             const auto path =
                 graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getUnambiguousPathFromNode(stateTo, true);
@@ -1444,8 +1465,9 @@ void Compiler::generateGetStateDescription()
     }
     function->addInstruction(
         std::make_unique<CustomInstruction>("ss << \"currentState = \" << currentState << std::endl"));
-    function->addInstruction(
-        std::make_unique<CustomInstruction>("ss << \"currentMrId = \" << currentMrId << std::endl"));
+    function->addInstruction(std::make_unique<CustomInstruction>(
+        "ss << \"" + std::string(CURRENT_MR_ID_WORD) + " = \" << " + std::string(CURRENT_MR_ID_WORD) +
+        " << std::endl"));
     function->addInstruction(std::make_unique<ReturnInstruction>("ss.str()"));
     program_.addFunction(std::move(function));
 }
@@ -1453,10 +1475,10 @@ void Compiler::generateGetStateDescription()
 void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, bool applyMode)
 {
     const auto functionName = (applyMode ? "runApplyState" : "runState");
-    const auto prefix = (applyMode ? "apply_state_" : "state_");
+    const auto prefix = (applyMode ? std::string(APPLY_STATE_WORD) : std::string(STATE_WORD));
 
     auto function = std::make_unique<Function>(functionName, "void", "", false);
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", "int"));
+    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", std::string(CUSTOM_TYPE_WORD)));
 
     if (applyMode)
     {
@@ -1491,13 +1513,15 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
         sw->addCaseInstruction(graph->getNodeId(edge->toName()), std::move(block));
     }
 
-    const auto stateBeginName = prefix + (preserveOriginalNames_ ? "begin" : std::to_string(graph->getNodeId("begin")));
+    const auto stateBeginName =
+        prefix + (preserveOriginalNames_ ? std::string(common::BEGIN_WORD)
+                                         : std::to_string(graph->getNodeId(common::BEGIN_WORD)));
     functionCallCounter_[stateBeginName]++;
     auto block = std::make_unique<BlockInstruction>();
     block->pushInstructionBack(std::make_unique<CustomInstruction>(stateBeginName + "(" + functionArguments + ")"));
     block->pushInstructionBack(std::make_unique<ReturnInstruction>());
 
-    sw->addCaseInstruction(graph->getNodeId("begin"), std::move(block));
+    sw->addCaseInstruction(graph->getNodeId(common::BEGIN_WORD), std::move(block));
 
     function->addInstruction(std::move(sw));
     program_.addFunction(std::move(function));
@@ -1508,17 +1532,20 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     generateRunStateFunction(graph, true);
     generateRunStateFunction(graph);
     generateGetStateDescription();
-
+    //tutaj
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true);
-    isTerminal->addInstruction(
-        std::make_unique<ReturnInstruction>("currentState == " + std::to_string(graph->getNodeId("end"))));
+    isTerminal->addInstruction(std::make_unique<ReturnInstruction>(
+        std::string(CURRENT_STATE_WORD) + " == " + std::to_string(graph->getNodeId(common::END_WORD))));
 
     auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", "", true);
-    getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>("player", "Player"));
-    getPlayerScore->addInstruction(std::make_unique<ReturnInstruction>("goals[player - 1]"));
+    getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>(
+        std::string(common::PLAYER_WORD), std::string(common::PLAYER_TYPE_WORD)));
+    getPlayerScore->addInstruction(
+        std::make_unique<ReturnInstruction>("goals[" + std::string(common::PLAYER_WORD) + "- 1]"));
 
-    auto getCurrentPlayer = std::make_unique<Function>("getCurrentPlayer", "PlayerOrSystem", "", true);
-    getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>("player"));
+    auto getCurrentPlayer =
+        std::make_unique<Function>("getCurrentPlayer", std::string(common::PLAYER_OR_SYSTEM_TYPE_WORD), "", true);
+    getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>(std::string(common::PLAYER_WORD)));
 
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", "", true);
     getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
@@ -1548,7 +1575,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(mainCacheName_ + ".reset()"));
-    applyMoveFunction->addInstruction(std::make_unique<AssignmentInstruction>("currentMrId", "0"));
+    applyMoveFunction->addInstruction(std::make_unique<AssignmentInstruction>(std::string(CURRENT_MR_ID_WORD), "0"));
     applyMoveFunction->addInstruction(
         std::make_unique<CustomInstruction>("runApplyState(currentState, m.mr, rgCache)"));
 
@@ -1567,7 +1594,7 @@ void Compiler::generateApplyAnyMove()
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
 
-    auto sw = std::make_unique<SwitchInstruction>("currentState");
+    auto sw = std::make_unique<SwitchInstruction>(std::string(CURRENT_STATE_WORD));
 
     auto getNodesForApplyAnyMoveFunction =
         [](const std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& v) {
@@ -1604,12 +1631,12 @@ void Compiler::generateApplyAnyMove()
             {
                 functionName = nodeName + "_" + nodeTo + "_" + nodeName;
             }
-            functionName = "is_legal_apply_any_" + functionName;
+            functionName = std::string(IS_LEGAL_APPLY_ANY_WORD) + functionName;
             functionCallCounter_[functionName]++;
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(functionName + "(" + functionArguments + ")"));
-            ifInstruction->addInstruction(
-                std::make_unique<AssignmentInstruction>("currentState", std::to_string(graph_->getNodeId(nodeTo))));
+            ifInstruction->addInstruction(std::make_unique<AssignmentInstruction>(
+                std::string(CURRENT_STATE_WORD), std::to_string(graph_->getNodeId(nodeTo))));
             ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("true"));
 
             block->pushInstructionBack(std::move(ifInstruction));

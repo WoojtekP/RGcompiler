@@ -169,9 +169,9 @@ void Graph::initialize(const ValueAssigner &valueAssigner)
     initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
 }
 
-int Graph::getNodeId(const std::string &name) const
+int Graph::getNodeId(std::string_view name) const
 {
-    return nodeNameToId_.at(name);
+    return nodeNameToId_.at(std::string(name));
 }
 
 int Graph::getEdgeId(const std::string &from, const std::string &to, int iid) const

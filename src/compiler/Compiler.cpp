@@ -480,11 +480,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         }
         std::unique_ptr<Function> function = std::make_unique<Function>(functionName, functionType, attributes);
 
-        // if (const auto& optBinding = node->getBinding())
-        // {
-        //     function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-        //         optBinding->getVariableName(), optBinding->getTypeName()));
-        // }
         if (applyMode)
         {
             function->addArgument(
@@ -527,10 +522,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         else if (!(allUnique_ || pragmaUniqueData_.count(node->getName())))
         {
             auto nodeId = std::to_string(graph_->getNodeId(state));
-            if (const auto binding = node->getBinding())
-            {
-                nodeId += " + " + binding->getVariableName();
-            }
             const std::string cacheData = "*this, mr, " + nodeId;
             std::unique_ptr<IfInstruction> ifInstruction =
                 std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
@@ -616,11 +607,6 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
         }
 
-        if (const auto binding = node->getBinding())
-        {
-            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
-        }
         program_.addFunction(std::move(function));
     }
 }
@@ -762,7 +748,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     std::unique_ptr<Function> function = std::make_unique<Function>(functionName, "bool");
     function->addArgument(
         std::make_unique<VariableDeclarationInstruction>("mr", "[[maybe_unused]]const move_representation&"));
-    const auto& binding = node->getBinding();
 
     if (!optNoCycleDetection_)
     {
@@ -770,11 +755,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
     }
 
-    if (binding)
-    {
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-            binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
-    }
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
 
     if (!listOfActionsToTags->empty())
@@ -856,8 +836,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     program_.addFunction(std::move(function));
 
     blockInstruction = std::make_unique<BlockInstruction>();
-    const auto functionCall =
-        functionName + "(mr, " + mainCacheName_ + (binding ? ", " + binding->getVariableName() : "") + ")";
+    const auto functionCall = functionName + "(mr, " + mainCacheName_ + ")";
     functionCallCounter_[functionName]++;
     if (isExhaustive)
     {
@@ -961,10 +940,6 @@ void Compiler::generateBoolStateFunctions(
             else if (!(pragmaUniqueData_.count(node->getName()) || allUnique_) && !skipStateCache)
             {
                 auto nodeId = std::to_string(graph_->getNodeId(state));
-                if (const auto binding = node->getBinding())
-                {
-                    nodeId += " + " + binding->getVariableName();
-                }
                 std::unique_ptr<IfInstruction> ifInstruction =
                     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         mainCacheName_ + ".insert(*this, " + nodeId + ")", ComparisonType::Neg));
@@ -1003,11 +978,6 @@ void Compiler::generateBoolStateFunctions(
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
         }
 
-        if (const auto binding = node->getBinding())
-        {
-            function->addArgument(std::make_unique<VariableDeclarationInstruction>(
-                binding->getVariableName(), "[[maybe_unused]]" + binding->getTypeName()));
-        }
         program_.addFunction(std::move(function));
     }
 }
@@ -1151,18 +1121,6 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
             stateFunctionArguments += "," + mainCacheName_;
         }
 
-        if (const auto binding = toNode->getBinding())
-        {
-            if (simpleApplyEdgeMode)
-            {
-                stateFunctionArguments += "," + getVariableValueFromTagString(toNode);
-            }
-            else
-            {
-                stateFunctionArguments += "," + binding->getVariableName();
-            }
-        }
-
         const auto functionName =
             stateName + (preserveOriginalNames_ ? stateTo : std::to_string(graph->getNodeId(stateTo)));
         const auto functionCall = functionName + "(" + stateFunctionArguments + ")";
@@ -1293,24 +1251,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             {
                 blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>("currentMrId++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
-                // TODO: this is an optimization for move application (extracting value of node generator parameter
-                //       from move vector instead of iterating over all values), but does not work for some games
-                // const auto binding = edge->getRightNode()->getBinding();
-                // if (binding && binding->getVariableName() == action->toString())
-                // {
-                //     const auto [minValue, maxValue] = valueAssigner_.getRangeValueForTag(binding->toTagStringId());
-                //     const auto tagInRangeExpression = getValueInRangeExpressionString("mr[currentMrId]", minValue, maxValue);
-                //     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                //         "static_cast<int>(mr.size()) > currentMrId && " + tagInRangeExpression));
 
-                //     blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-                //         binding->getVariableName(), "mr[currentMrId] - " + std::to_string(minValue), "const auto"));
-                // }
-                // else
-                // {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                     "static_cast<int>(mr.size()) > currentMrId && mr[currentMrId] == " + tagValueStr));
-                // }
+
                 blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("currentMrId--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
@@ -1405,10 +1349,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
         //     functionArguments += ", mr";
         // }
     }
-    if (const auto binding = edge->getRightNode()->getBinding())
-    {
-        functionArguments += "," + binding->getVariableName();
-    }
+
     const auto functionName = prefix + (preserveOriginalNames_ ? stateTo : std::to_string(graph_->getNodeId(stateTo)));
     functionCallCounter_[functionName]++;
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
@@ -1990,12 +1931,4 @@ const std::shared_ptr<IStateCache>& Compiler::getStateCacheSafe(const std::strin
         throw std::invalid_argument("[Compiler] Unknown cache for state " + state);
     }
     return it->second;
-}
-
-template<typename TPtrNode>
-std::string Compiler::getVariableValueFromTagString(const TPtrNode& node) const
-{
-    const auto binding = node->getBinding();
-    assert(binding);
-    return "mr[currentMrId-1] -" + std::to_string(valueAssigner_.getBaseValueForTag(binding->toTagStringId()));
 }

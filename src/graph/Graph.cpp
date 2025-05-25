@@ -97,15 +97,7 @@ void Graph::initializeNodeIdToNode(const ValueAssigner &valueAssigner)
     for (auto &&node : allNodes_)
     {
         assignNodeId(node, nextNodeId);
-        if (const auto binding = node->getBinding())
-        {
-            const auto generatorSize = valueAssigner.getTypeRange(binding->getTypeName());
-            nextNodeId += generatorSize;
-        }
-        else
-        {
-            ++nextNodeId;
-        }
+        ++nextNodeId;
     }
     maxNodeId_ = nextNodeId - 1;
 }

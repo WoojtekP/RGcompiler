@@ -22,15 +22,15 @@ void GetOptimizedGraphOperator::traverse(
 
     // TODO we don't have bidnigs anymore, we should break for assigmentany
     // Break in case of bindings
-    if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
-    {
-        // Limit creating simple path - problem with simple apply when node don't exist in optimized graph
-        if (path.size() > 2)
-        {
-            path.pop_back();
-        }
-        return;
-    }
+    // if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
+    // {
+    //     // Limit creating simple path - problem with simple apply when node don't exist in optimized graph
+    //     if (path.size() > 2)
+    //     {
+    //         path.pop_back();
+    //     }
+    //     return;
+    // }
 
     visited.at(nextNodeId) = true;
     traverse(graph_->getOutgoingEdgesFrom(nextNodeId).back().first, path, visited);

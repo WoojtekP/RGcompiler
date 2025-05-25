@@ -19,21 +19,6 @@ std::shared_ptr<Node> createNode(const std::string& nodeName)
     return std::make_shared<Node>(label);
 }
 
-std::shared_ptr<Node> createNode(const NodeData& nodeData)
-{
-    if (nodeData.bindingTypeName_.empty())
-    {
-        return createNode(nodeData.nodeName_);
-    }
-    nlohmann::json label = {
-        {{"kind", "Literal"}, {"identifier", nodeData.nodeName_}},
-        {{"identifier", nodeData.bindingVarName_},
-         {"kind", "Binding"},
-         {"type", {{"identifier", nodeData.bindingTypeName_}, {"kind", "TypeReference"}}}}};
-
-    return std::make_shared<Node>(label);
-}
-
 std::shared_ptr<IAction> createTagAction(const std::string& tag)
 {
     nlohmann::json label = {{"kind", "Tag"}, {"symbol", tag}};
@@ -83,15 +68,5 @@ void addEdge(
 {
     graph->addEdge(std::make_shared<Edge>(
         createNode(fromNodeName), createNode(toNodeName), std::vector<std::shared_ptr<IAction>> {action}));
-}
-
-void addEdge(
-    std::shared_ptr<Graph>& graph,
-    const NodeData& fromNode,
-    const NodeData& toNode,
-    const std::shared_ptr<IAction>& action)
-{
-    graph->addEdge(std::make_shared<Edge>(
-        createNode(fromNode), createNode(toNode), std::vector<std::shared_ptr<IAction>> {action}));
 }
 }  // namespace GraphCreator

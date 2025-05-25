@@ -263,12 +263,12 @@ void Compiler::initializeGraph()
         unoptimizedGraph_ = graph_;
     }
 
-    initializePatternGraphs(patternReachabilityGraphs_, 0);
-    initializePatternGraphs(applyAnyMoveGraphs_, 1);
+    initializePatternGraphs(patternReachabilityGraphs_);
+    initializePatternGraphs(applyAnyMoveGraphs_);
 }
 
 void Compiler::initializePatternGraphs(
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& patterns, int patternId)
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& patterns)
 {
     for (const auto& [from, to, graph] : patterns)
     {
@@ -842,7 +842,7 @@ void Compiler::generateVoidStateOptimizedFunction(
     const std::shared_ptr<Graph>& graph,
     bool applyMode)
 {
-    for (auto [outgoingEdge, iid] : outgoingEdges)
+    for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
     {
         function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
     }
@@ -852,10 +852,10 @@ void Compiler::generateBoolStateFunctions(
     const std::string& from,
     const std::string& to,
     const std::shared_ptr<Graph>& graph,
-    int patternId,
+    BoolFunctionType patternId,
     bool skipStateCache)
 {
-    std::string name = patternIdToPrefixName[patternId];
+    std::string name(patternIdToPrefixName.at(patternId));
     std::string prefix = "is_legal_" + name;
     for (auto& node : graph->getOuterNodes())
     {
@@ -939,21 +939,16 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     std::unique_ptr<BlockInstruction> blockInstruction,
     std::unique_ptr<CustomInstruction> returnInstruction)
 {
-    std::string patterType;
-    int patternId = 0;
-
     std::string fromNode = std::to_string(graph_->getNodeId(action->getLeftSide()));
     std::string toNode = std::to_string(graph_->getNodeId(action->getRightSide()));
-    std::string prefix = "is_legal_" + patterType;
+    std::string prefix = "is_legal_";
     std::string functionName = prefix + fromNode + "_" + toNode + "_" + fromNode;
 
     if (preserveOriginalNames_)
     {
         functionName = prefix + action->getLeftSide() + "_" + action->getRightSide() + "_" + action->getLeftSide();
     }
-    std::tuple<std::string, std::string, int> typeId = {action->getLeftSide(), action->getRightSide(), patternId};
-    std::string cacheName = "cache_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + "_" + patterType +
-                            fromNode + "_" + toNode;
+
     std::string functionArguments;
     std::unique_ptr<BlockInstruction> tmpBlockInstruction = std::make_unique<BlockInstruction>();
 
@@ -1266,7 +1261,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     const std::shared_ptr<Edge>& edge,
     int iid,
     const std::string& prefix,
-    int patternId)
+    BoolFunctionType patternId)
 {
     const std::string& stateFrom = edge->fromName();
     const std::string& stateTo = edge->toName();
@@ -1283,7 +1278,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
         std::make_unique<ComparisonInstruction>(functionName + "(" + functionArguments + ")"));
 
-    if (patternId == 0)
+    if (patternId == BoolFunctionType::Default)
     {
         std::vector<std::shared_ptr<IAction>> assignmentActions;
 
@@ -1328,8 +1323,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     bool bSkipStateCache = areAllNodesInPatternGraphUnique_.count({from, to});
 
     const auto& actions = graph->getEdge(stateFrom, stateTo, iid)->getActions();
-    std::unique_ptr<BlockInstruction> blockInstruction =
-        prepareBaseInstructions(graph, actions, from, to, edgeIdx, edge, iid, prefix, functionType.empty() ? 0 : 2);
+    std::unique_ptr<BlockInstruction> blockInstruction = prepareBaseInstructions(
+        graph,
+        actions,
+        from,
+        to,
+        edgeIdx,
+        edge,
+        iid,
+        prefix,
+        functionType.empty() ? BoolFunctionType::Default : BoolFunctionType::ApplyAny);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
     std::shared_ptr<IAction> assignAnyAction = nullptr;
@@ -1556,7 +1559,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 
 void Compiler::generateApplyAnyMove()
 {
-    generatePatternFunctions(applyAnyMoveGraphs_, 2);
+    generatePatternFunctions(applyAnyMoveGraphs_, BoolFunctionType::ApplyAny);
 
     auto function = std::make_unique<Function>("applyAnyMove", "bool", "", true);
     function->addArgument(
@@ -1630,12 +1633,12 @@ void Compiler::generateApplyAnyMove()
 }
 
 void Compiler::generatePatternFunctions(
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, int patternId)
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, BoolFunctionType patternId)
 {
     for (const auto& [from, to, graph] : patterns)
     {
         bool skipCache = false;
-        if (patternId == 2)
+        if (patternId == BoolFunctionType::ApplyAny)
         {
             skipCache = areAllNodesInApplyAnyGraphUnique_.count({from, to});
         }

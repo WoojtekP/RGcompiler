@@ -31,6 +31,12 @@ enum class InlineMode
     UniqueOnly = 2,
 };
 
+enum class BoolFunctionType
+{
+    Default = 0,
+    ApplyAny = 1,
+};
+
 class Compiler
 {
 public:
@@ -49,7 +55,7 @@ private:
         const std::string &from,
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
-        int patternId = 0,
+        BoolFunctionType patternId = BoolFunctionType::Default,
         bool skipStateCache = false);
     std::unique_ptr<BlockInstruction> addActionPattern(
         const std::shared_ptr<IAction> &action,
@@ -109,7 +115,7 @@ private:
         const std::shared_ptr<Edge> &edge,
         int iid,
         const std::string &prefix,
-        int patternId = 0);
+        BoolFunctionType patternId = BoolFunctionType::Default);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
@@ -120,11 +126,11 @@ private:
         const std::shared_ptr<Graph> &graph,
         bool applyMode = false);
     void generatePatternFunctions(
-        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, int patternId = 0);
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns,
+        BoolFunctionType patternId = BoolFunctionType::Default);
     void generatePatternReachabilityFunctions();
     void generateApplyAnyMove();
-    void initializePatternGraphs(
-        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
+    void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns);
     template<typename T>
     void restoreAssignments(
         const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
@@ -169,8 +175,8 @@ private:
     const bool allUnique_;
     const InlineMode optGccInline_;
     const std::optional<int> maxMoveLen_;
-    // TODO change to enum and remove any_ as PatternAny no longer exist
-    const std::string patternIdToPrefixName[3] = {"", "any_", "apply_any_"};
+    const std::map<BoolFunctionType, std::string_view> patternIdToPrefixName = {
+        {BoolFunctionType::Default, ""}, {BoolFunctionType::ApplyAny, "apply_any_"}};
     const std::string mainCacheName_;
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;

@@ -1,4 +1,5 @@
 #include <common/GraphCreator.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <graph/Action.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
@@ -30,8 +31,8 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
 {
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
     Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    ExpressionFactory expressionFactory(parser, valueAssigner);
+    SymbolsManager symbolsManager(parser);
+    ExpressionFactory expressionFactory(parser, symbolsManager);
     nlohmann::json label = {
         {"lhs", {{"identifier", leftSide}, {"kind", "Reference"}}},
         {"rhs",
@@ -46,8 +47,8 @@ std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, c
 {
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
     Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    ExpressionFactory expressionFactory(parser, valueAssigner);
+    SymbolsManager symbolsManager(parser);
+    ExpressionFactory expressionFactory(parser, symbolsManager);
     nlohmann::json label = {
         {"kind", "Reachability"},
         {"lhs", {{"kind", "EdgeName"}, {"identifier", leftSide}}},

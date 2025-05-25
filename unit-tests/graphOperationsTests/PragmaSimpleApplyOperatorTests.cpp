@@ -124,8 +124,8 @@ TEST_F(GraphFixture, TestSimpleApplyOneTag)
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
     addSimpleApplyDataToParsedJson(parsedJson, data1);
     Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    simpleApplyOperator->init(parser, valueAssigner);
+    SymbolsManager symbolsManager(parser);
+    simpleApplyOperator->init(parser, symbolsManager);
 
     checkExpectations(
         simpleApplyOperator,
@@ -168,8 +168,8 @@ TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
     addSimpleApplyDataToParsedJson(parsedJson, data4);
     addSimpleApplyDataToParsedJson(parsedJson, data5);
     Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    simpleApplyOperator->init(parser, valueAssigner);
+    SymbolsManager symbolsManager(parser);
+    simpleApplyOperator->init(parser, symbolsManager);
 
     const auto& beginActionMap = simpleApplyOperator->getActionListToPlayerChange(createUniqueNode("begin"));
     const auto& beginToSelectPosActions = beginActionMap.first;
@@ -202,8 +202,8 @@ TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
     addSimpleApplyDataToParsedJson(parsedJson, data1);
 
     Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    simpleApplyOperator->init(parser, valueAssigner);
+    SymbolsManager symbolsManager(parser);
+    simpleApplyOperator->init(parser, symbolsManager);
 
     checkExpectations(
         simpleApplyOperator,

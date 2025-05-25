@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 
 #include <compiler/Compiler.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <parser/Parser.hpp>
 
 int main(const int argc, const char **argv)

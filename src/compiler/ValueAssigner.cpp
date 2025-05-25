@@ -79,15 +79,15 @@ std::pair<int, int> ValueAssigner::getRangeValueForTag(const std::string& tag) c
     return tagToValueIt->second;
 }
 
-void ValueAssigner::assignValuesForSymbols(const nlohmann::json& types)
+void ValueAssigner::assignValuesForSymbols(const SymbolToValueMap& integerSymbolToValue, const nlohmann::json& types)
 {
     typeToSymbolToValue_.clear();
 
     SymbolToTypesMap reservedValuesPerType;
     assignValuesForNumbers(reservedValuesPerType, types);
     assignValuesForPlayers(reservedValuesPerType, types);
-    assignValuesForSharedSymbols(reservedValuesPerType, types);
-    assignValuesForRemainingSymbols(reservedValuesPerType, types);
+    assignValuesForSharedSymbols(reservedValuesPerType, integerSymbolToValue, types);
+    assignValuesForRemainingSymbols(reservedValuesPerType, integerSymbolToValue, types);
 }
 
 void ValueAssigner::assignValuesForTags(const Parser& parser, const nlohmann::json& edges)
@@ -172,7 +172,8 @@ void ValueAssigner::assignValuesForPlayers(SymbolToTypesMap& reservedValuesPerTy
     throw std::runtime_error("[ValueAssigner] 'Player' type is not available!");
 }
 
-void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types)
+void ValueAssigner::assignValuesForSharedSymbols(
+    SymbolToTypesMap& reservedValuesPerType, const SymbolToValueMap& integerSymbolToValue, const nlohmann::json& types)
 {
     std::map<std::string, std::set<std::string>> commonSymbolToTypes;
     std::map<std::string, std::string> symbolToType;
@@ -212,6 +213,10 @@ void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValue
         {
             value = *valueAssignedToPlayer;
         }
+        else if (integerSymbolToValue.count(symbol))
+        {
+            value = integerSymbolToValue.at(symbol);
+        }
         else
         {
             while (isValueReserved(value, types, reservedValuesPerType))
@@ -228,13 +233,23 @@ void ValueAssigner::assignValuesForSharedSymbols(SymbolToTypesMap& reservedValue
 }
 
 void ValueAssigner::assignValuesForRemainingSymbols(
-    SymbolToTypesMap& reservedValuesPerType, const nlohmann::json& types)
+    SymbolToTypesMap& reservedValuesPerType, const SymbolToValueMap& integerSymbolToValue, const nlohmann::json& types)
 {
     for (const auto& el : types)
     {
         const auto typeName = el["identifier"].get<std::string>();
         if (el["type"]["kind"] == "Set" && typeName != "Player" && typeName != "PlayerOrSystem")
         {
+            for (const auto& identifier : el["type"]["identifiers"])
+            {
+                const auto symbol = identifier.get<std::string>();
+                if (integerSymbolToValue.count(symbol))
+                {
+                    const auto value = integerSymbolToValue.at(symbol);
+                    typeToSymbolToValue_[typeName].emplace(symbol, value);
+                    reservedValuesPerType[typeName].insert(value);
+                }
+            }
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const auto symbol = identifier.get<std::string>();

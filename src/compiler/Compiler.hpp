@@ -5,6 +5,7 @@
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <compiler/pragma/RepeatFlat.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
@@ -189,7 +190,7 @@ private:
     bool arePatternAndMainGraphUnique();
 
     const Parser &parser_;
-    ValueAssigner valueAssigner_;
+    SymbolsManager symbolsManager_;
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<Graph> unoptimizedGraph_;
     std::shared_ptr<Graph> mainGraph_;

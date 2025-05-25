@@ -1,0 +1,61 @@
+#pragma once
+
+#include <map>
+#include <optional>
+#include <string>
+
+#include <nlohmann/json.hpp>
+
+using SymbolToValueMap = std::map<std::string, int>;
+
+enum class ArithmeticSystem
+{
+    Overflow,
+    Modular,
+    Saturated,
+};
+
+enum class ArithmeticOperation
+{
+    Inc,
+    Dec,
+    Add,
+    Sub,
+};
+
+struct ArithmeticData
+{
+    ArithmeticSystem system;
+    ArithmeticOperation operation;
+};
+
+class IntegerOperationsDeducer
+{
+public:
+    void fillIntegerValuesInfo(const std::vector<nlohmann::json>& integerPragmas);
+    int getNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const;
+    std::optional<ArithmeticData> getUnaryOperationForMap(
+        const std::vector<std::string>& srcDomain,
+        const std::vector<std::string>& dstDomain,
+        const std::map<std::string, std::string>& constantMap) const;
+    std::optional<ArithmeticData> getBinaryOperationForMap(
+        const std::map<std::string, std::map<std::string, std::string>>& constantMap) const;
+
+    const SymbolToValueMap& getSymbolToValueMap() const;
+
+private:
+    std::optional<ArithmeticData> getIncOrDecWithOverflow(
+        const std::vector<std::string>& srcDomain,
+        const std::vector<std::string>& dstDomain,
+        const std::string& nan,
+        const std::map<std::string, std::string>& constantMap) const;
+    std::optional<ArithmeticData> getIncOrDecWithSaturationOrModulo(
+        const std::vector<std::string>& srcDomain,
+        const std::vector<std::string>& dstDomain,
+        const std::map<std::string, std::string>& constantMap) const;
+
+    std::optional<std::string> getNanSymbol(const std::vector<std::string>& symbols) const;
+    std::pair<std::string, std::string> getMinMaxSymbols(const std::vector<std::string>& srcDomain) const;
+
+    SymbolToValueMap symbolToValue_;
+};

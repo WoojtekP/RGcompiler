@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <compiler/ValueAssigner.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <graph/Action.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
@@ -10,7 +10,7 @@
 class ActionFactory
 {
 public:
-    ActionFactory(const Parser& parser, const ValueAssigner& valueAssigner);
+    ActionFactory(const Parser& parser, const SymbolsManager& symbolsManager);
     std::shared_ptr<IAction> createAction(const nlohmann::json& label);
 
 private:
@@ -22,6 +22,6 @@ private:
     std::shared_ptr<IAction> createActionTag(const nlohmann::json& label);
     std::shared_ptr<IAction> createActionTagVariable(const nlohmann::json& label);
     const Parser& parser_;
-    const ValueAssigner& valueAssigner_;
+    const SymbolsManager& symbolsManager_;
     ExpressionFactory expressionFactory_;
 };

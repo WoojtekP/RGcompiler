@@ -52,3 +52,16 @@ ExpressionTypeReference::ExpressionTypeReference(const std::string& identifier)
 ExpressionEdgeName::ExpressionEdgeName(const std::string& identifier)
 : ExpressionUnaryBase(identifier)
 {}
+
+
+ExpressionConditional::ExpressionConditional(
+    const std::string& condition, const std::string& trueValue, const std::string& falseValue)
+: condition_(condition)
+, trueValue_(trueValue)
+, falseValue_(falseValue)
+{}
+
+std::string ExpressionConditional::toString() const
+{
+    return "(" + condition_ + " ? " + trueValue_ + " : " + falseValue_ + ")";
+}

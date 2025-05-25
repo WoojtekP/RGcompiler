@@ -72,3 +72,17 @@ public:
     ExpressionEdgeName(const std::string& identifier);
     ~ExpressionEdgeName() = default;
 };
+
+class ExpressionConditional : public IExpression
+{
+public:
+    ExpressionConditional(const std::string& condition, const std::string& trueValue, const std::string& falseValue);
+    ~ExpressionConditional() = default;
+
+    virtual std::string toString() const override;
+
+private:
+    const std::string condition_;
+    const std::string trueValue_;
+    const std::string falseValue_;
+};

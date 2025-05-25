@@ -50,6 +50,21 @@ bool Parser::isVariable(const std::string& identifier) const
     return variables_.count(identifier);
 }
 
+bool Parser::isArrayType(const nlohmann::json& t) const
+{
+    if (t.is_string())
+    {
+        const auto& typeObject = findTypeByIdentifier(t);
+        return isArrayType(typeObject);
+    }
+    if (t["kind"] == "TypeReference")
+    {
+        const auto& typeObject = findTypeByIdentifier(t["identifier"]);
+        return isArrayType(typeObject);
+    }
+    return t["kind"] == "Arrow";
+}
+
 nlohmann::json Parser::getTypeDeclarations() const
 {
     return parsedJson_["types"];

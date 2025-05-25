@@ -18,6 +18,7 @@ public:
     bool isSymbol(const std::string& token) const;
     bool isConstant(const std::string& token) const;
     bool isVariable(const std::string& token) const;
+    bool isArrayType(const nlohmann::json& t) const;
     nlohmann::json getTypeDeclarations() const;
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;

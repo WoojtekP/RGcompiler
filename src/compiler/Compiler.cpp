@@ -4,6 +4,7 @@
 #include <common/Common.hpp>
 #include <compiler/Compiler.hpp>
 #include <compiler/ValueFactory.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/stateCache/StateCacheFactory.hpp>
 #include <parser/Parser.hpp>
@@ -195,6 +196,7 @@ void optimizePopPushSequences(const std::unique_ptr<Function>& function)
 
 Compiler::Compiler(const Parser& parser, const Options& options)
 : parser_(parser)
+, symbolsManager_(parser_)
 , printOriginalNames_(options.printOriginalNames_)
 , preserveOriginalNames_(options.preserveOriginalNames_)
 , pragmaDisjointEnabled_(options.pragmaDisjointEnabled_)
@@ -213,8 +215,7 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 {
     assert(options.gccInline_ >= 0);
     assert(options.gccInline_ <= 2);
-    valueAssigner_.assignValuesForSymbols(parser_.getTypeDeclarations());
-    valueAssigner_.assignValuesForTags(parser, parser_.getEdges());
+    symbolsManager_.fillIntegerOperationsData();
     initializeGraph();
     initializePragmas();
     generateStateCaches();
@@ -283,7 +284,7 @@ void Compiler::initializePragmaRepeat()
 
 void Compiler::initializePragmaSimpleApply()
 {
-    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_, valueAssigner_);
+    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)->init(parser_, symbolsManager_);
 }
 
 void Compiler::initializePragmas()
@@ -297,7 +298,7 @@ void Compiler::initializePragmas()
 
 void Compiler::generateStateCaches()
 {
-    StateCacheFactory factory(parser_, valueAssigner_);
+    StateCacheFactory factory(parser_, symbolsManager_.getValueAssigner());
     for (const auto& [nodeName, variables] : pragmaRepeatFlatData_.getStateToIdentifiersMap())
     {
         stateToCache_.emplace(nodeName, std::move(factory.createStateCache(nodeName, variables)));
@@ -306,7 +307,7 @@ void Compiler::generateStateCaches()
 
 void Compiler::initializeGraph()
 {
-    ActionFactory actionFactory(parser_, valueAssigner_);
+    ActionFactory actionFactory(parser_, symbolsManager_);
 
     graph_ = std::make_shared<Graph>();
 
@@ -318,9 +319,9 @@ void Compiler::initializeGraph()
             std::vector<std::shared_ptr<IAction>> {actionFactory.createAction(edge["label"])}));
     }
 
-    graph_->initialize(valueAssigner_);
+    graph_->initialize(symbolsManager_.getValueAssigner());
     mainGraph_ = graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forMainGraph();
-    mainGraph_->initialize(valueAssigner_);
+    mainGraph_->initialize(symbolsManager_.getValueAssigner());
 
     patternReachabilityGraphs_ =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
@@ -330,7 +331,7 @@ void Compiler::initializeGraph()
     {
         unoptimizedGraph_ =
             graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
-                valueAssigner_);
+                symbolsManager_.getValueAssigner());
         std::swap(unoptimizedGraph_, graph_);
     }
     else
@@ -347,7 +348,7 @@ void Compiler::initializePatternGraphs(
 {
     for (const auto& [from, to, graph] : patterns)
     {
-        graph->initialize(valueAssigner_);
+        graph->initialize(symbolsManager_.getValueAssigner());
     }
 
     if (isSimplePath)
@@ -360,7 +361,7 @@ void Compiler::initializePatternGraphs(
                 std::get<0>(patterns[i]),
                 std::get<1>(patterns[i]),
                 graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(
-                    valueAssigner_));
+                    symbolsManager_.getValueAssigner()));
         }
     }
 }
@@ -370,7 +371,7 @@ void Compiler::initializePatternGraphs(
 {
     for (const auto& [from, to, graph] : patterns)
     {
-        graph->initialize(valueAssigner_);
+        graph->initialize(symbolsManager_.getValueAssigner());
     }
 
     if (isSimplePath)
@@ -383,7 +384,7 @@ void Compiler::initializePatternGraphs(
                 std::get<0>(patterns[i]),
                 std::get<1>(patterns[i]),
                 graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph)->getGraphWithOptimizedPaths(
-                    valueAssigner_));
+                    symbolsManager_.getValueAssigner()));
         }
     }
 }
@@ -410,7 +411,7 @@ std::pair<std::string, int> Compiler::getMoveRepresentation()
 void Compiler::generateSourceCode(
     const std::string& outputFileName, std::ofstream& headerFile, std::ofstream& sourceFile)
 {
-    Printer printer(parser_, valueAssigner_, outputFileName, headerFile, sourceFile);
+    Printer printer(parser_, symbolsManager_.getValueAssigner(), outputFileName, headerFile, sourceFile);
     printer.initializeHeaderFile(printOriginalNames_);
     printer.initializeSourceFile();
     printer.printTypeDeclarations(program_.getTypes());
@@ -825,11 +826,11 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         std::pair<int, int> values;
         if (auto tagType = getTagType(tag))
         {
-            values = valueAssigner_.getRangeValueForTag(*tagType);
+            values = symbolsManager_.getValueAssigner().getRangeValueForTag(*tagType);
         }
         else
         {
-            values = valueAssigner_.getRangeValueForTag(tag);
+            values = symbolsManager_.getValueAssigner().getRangeValueForTag(tag);
         }
         int minValue = values.first, maxValue = values.second;
         minValues.push_back(minValue);
@@ -1750,7 +1751,7 @@ void Compiler::generateGetStateDescription()
         }
         function->addInstruction(std::make_unique<CustomInstruction>(
             "ss << \"" + var->identifier + " = \" << " +
-            formatValueForPrinting(var->identifier, var->valueType, var->value.get(), valueAssigner_, parser_) +
+            formatValueForPrinting(var->identifier, var->valueType, var->value.get(), symbolsManager_.getValueAssigner(), parser_) +
             " << std::endl"));
     }
     function->addInstruction(
@@ -2001,7 +2002,7 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     auto destinationType = generateType(functionType["rhs"]);
     const std::string sourceTypeName = sourceType->identifier;
     return std::make_shared<FunctionType>(
-        std::move(sourceType), std::move(destinationType), valueAssigner_.getTypeRange(sourceTypeName));
+        std::move(sourceType), std::move(destinationType), symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
 }
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
@@ -2036,7 +2037,7 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
             return blockInstruction;
         }
     }
-    const LoopFactory loopFactory(parser_, valueAssigner_);
+    const LoopFactory loopFactory(parser_, symbolsManager_.getValueAssigner());
     auto loopInstruction = loopFactory.createLoopInstruction(*actionAssignAny);
     if (dynamic_cast<RangeLoopInstruction*>(loopInstruction.get()))
     {
@@ -2068,11 +2069,11 @@ std::string Compiler::getTagValueString(const std::shared_ptr<IAction>& action, 
     const auto tagName = action->getLeftSide();
     if (action->getType() == ActionType::Tag)
     {
-        return std::to_string(valueAssigner_.getBaseValueForTag(tagName));
+        return std::to_string(symbolsManager_.getValueAssigner().getBaseValueForTag(tagName));
     }
     if (action->getType() == ActionType::TagVariable)
     {
-        return std::to_string(valueAssigner_.getBaseValueForTag(tagName)) + " + " + tagName;
+        return std::to_string(symbolsManager_.getValueAssigner().getBaseValueForTag(tagName)) + " + " + tagName;
     }
     throw std::invalid_argument("[Compiler] Cannot extract tag from action: " + action->toString());
 }

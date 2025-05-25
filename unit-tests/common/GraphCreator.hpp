@@ -27,10 +27,12 @@ struct NodeData
     std::string bindingTypeName_;
 };
 
+std::unique_ptr<Node> createUniqueNode(const std::string& nodeName);
 std::shared_ptr<Node> createNode(const std::string& nodeName);
 std::shared_ptr<Node> createNode(const NodeData& nodeData);
 std::shared_ptr<IAction> createTagAction(const std::string& tag);
 std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, const std::string& rightSide);
+std::unique_ptr<IAction> createUniqueAssignmentAction(const std::string& leftSide, const std::string& rightSide);
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide);
 void addEdge(
     std::shared_ptr<Graph>& graph,

@@ -1,13 +1,20 @@
 #include <common/GraphCreator.hpp>
 #include <graph/Action.hpp>
-#include <parser/Parser.hpp>
 #include <graph/ExpressionFactory.hpp>
+#include <parser/Parser.hpp>
 
 namespace GraphCreator
 {
+std::unique_ptr<Node> createUniqueNode(const std::string& nodeName)
+{
+    nlohmann::json label = {{"kind", "Literal"}, {"identifier", nodeName}};
+
+    return std::make_unique<Node>(label);
+}
+
 std::shared_ptr<Node> createNode(const std::string& nodeName)
 {
-    nlohmann::json label = {{{"kind", "Literal"}, {"identifier", nodeName}}};
+    nlohmann::json label = {{"kind", "Literal"}, {"identifier", nodeName}};
 
     return std::make_shared<Node>(label);
 }
@@ -53,6 +60,25 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
     return std::make_shared<ActionAssignment>(label, expressionFactory);
 }
 
+std::unique_ptr<IAction> createUniqueAssignmentAction(const std::string& leftSide, const std::string& rightSide)
+{
+    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
+    Parser parser(parsedJson);
+    ValueAssigner valueAssigner;
+    ExpressionFactory expressionFactory(parser, valueAssigner);
+    nlohmann::json label = {
+        {"lhs",
+         {{"kind", "Cast"},
+          {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
+          {"rhs", {{"kind", "Reference"}, {"identifier", leftSide}}}}},
+        {"rhs",
+         {{"kind", "Cast"},
+          {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
+          {"rhs", {{"kind", "Reference"}, {"identifier", rightSide}}}}}};
+
+    return std::make_unique<ActionAssignment>(label, expressionFactory);
+}
+
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide)
 {
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
@@ -61,8 +87,8 @@ std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, c
     ExpressionFactory expressionFactory(parser, valueAssigner);
     nlohmann::json label = {
         {"kind", "Reachability"},
-        {"lhs", {{"kind", "EdgeName"}, {"parts", {{{"kind", "Literal"}, {"identifier", leftSide}}}}}},
-        {"rhs", {{"kind", "EdgeName"}, {"parts", {{{"kind", "Literal"}, {"identifier", rightSide}}}}}},
+        {"lhs", {{"kind", "EdgeName"}, {"identifier", leftSide}}},
+        {"rhs", {{"kind", "EdgeName"}, {"identifier", rightSide}}},
         {"negated", false}};
 
     return std::make_shared<ActionReachability>(label, expressionFactory);

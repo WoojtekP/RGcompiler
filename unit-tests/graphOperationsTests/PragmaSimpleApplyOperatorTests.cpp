@@ -1,235 +1,211 @@
 #include <gtest/gtest.h>
 
 #include <common/GraphCreator.hpp>
+#include <parser/Parser.hpp>
 
 using namespace GraphCreator;
+
+namespace
+{
+struct NodeId
+{
+    std::string leftNodeName;
+    std::string rightNodeName;
+    int iid;
+};
+
+std::optional<std::string> getTagVar(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        return tagTmp.substr(0, pos - 1);
+    }
+    return {};
+}
+
+std::optional<std::string> getTagType(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        std::string res = tagTmp.substr(pos + 2);
+        res.pop_back();
+        return res;
+    }
+    return {};
+}
+
+nlohmann::json getTag(const std::string& tag)
+{
+    nlohmann::json res;
+    if (auto type = getTagType(tag))
+    {
+        res = {
+            {"Variable",
+             {{"identifier", *getTagVar(tag)},
+              {"type_", {{"identifier", *getTagType(tag)}, {"kind", "TypeReference"}}}}}};
+    }
+    else
+    {
+        res = {{"Symbol", {{"symbol", tag}}}};
+    }
+    return res;
+}
 
 void addSimpleApplyDataToParsedJson(
     nlohmann::json& json, const PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData& data, bool isExhaustive = true)
 {
-    nlohmann::json SimpleApplys;
-    for (const auto& nodeName : data.nodePathToTagOrPlayerChange_)
+    nlohmann::json SimpleApply;
+    for (const auto& action : data.actionsToTagOrPlayerChange_)
     {
-        nlohmann::json node = {{"kind", "EdgeName"}, {"parts", {{{"identifier", nodeName}, {"kind", "Literal"}}}}};
-        SimpleApplys["nodes"] += node;
+        nlohmann::json actionJson = {
+            {"lhs",
+             {{"kind", "Cast"},
+              {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
+              {"rhs", {{"kind", "Reference"}, {"identifier", action->getLeftSide()}}}}},
+            {"rhs",
+             {{"kind", "Cast"},
+              {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
+              {"rhs", {{"kind", "Reference"}, {"identifier", action->getRightSide()}}}}}};
+        SimpleApply["assignments"] += actionJson;
     }
 
-    SimpleApplys["tags"];
-    for (const auto& tagName : data.tagNames_)
+    SimpleApply["tags"];
+    for (const std::string& tagName : data.tagNames_)
     {
-        SimpleApplys["tags"] += tagName;
+        SimpleApply["tags"] += getTag(tagName);
     }
 
-    SimpleApplys["kind"] = isExhaustive ? "SimpleApplyExhaustive" : "SimpleApply";
-    SimpleApplys["node"] = {{"kind", "EdgeName"}, {"parts", {{{"identifier", data.nodeName_}, {"kind", "Literal"}}}}};
-
-    json["pragmas"] += SimpleApplys;
+    SimpleApply["kind"] = isExhaustive ? "SimpleApplyExhaustive" : "SimpleApply";
+    SimpleApply["lhs"] = {{"identifier", data.startNodeName_}, {"kind", "EdgeName"}};
+    SimpleApply["rhs"] = {{"identifier", data.endNode_->getName()}, {"kind", "EdgeName"}};
+    json["pragmas"] += SimpleApply;
 }
+
+void checkExpectations(
+    const std::shared_ptr<PragmaSimpleApplyOperator>& simpleApplyOperator,
+    const std::string& nodeName,
+    const std::vector<std::string>& tags,
+    const std::vector<std::string> expectedActions)
+{
+    std::shared_ptr<SimpleApplySwitchTreeNode> tree = simpleApplyOperator->getActionListToTags(createNode(nodeName));
+
+    for (int cnt = 0; cnt < tags.size(); ++cnt)
+    {
+        EXPECT_TRUE(tree->children_.count(tags[cnt]));
+        tree = tree->children_[tags[cnt]];
+    }
+
+    EXPECT_EQ(tree->listOfActions_.size(), expectedActions.size());
+    for (int cnt = 0; cnt < expectedActions.size(); ++cnt)
+    {
+        const auto& action = tree->listOfActions_[cnt];
+        EXPECT_EQ(action->toString(), expectedActions[cnt]);
+    }
+}
+
+}  // namespace
 
 TEST_F(GraphFixture, TestSimpleApplyOneTag)
 {
-    addEdge(graph_, "1", "2", createTagAction("test"));
-    addEdge(graph_, "2", "3", createAssignmentAction("val", "2"));
-    addEdge(graph_, "3", "4", createAssignmentAction("val", "3"));
-
     graph_->initialize(valueAssigner_);
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1("1", {"2", "3", "4"}, {"test"});
+
+    std::vector<std::unique_ptr<IAction>> actions;
+    actions.push_back(createUniqueAssignmentAction("val1", "1"));
+    actions.push_back(createUniqueAssignmentAction("val2", "2"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1(
+        "1", createUniqueNode("4"), std::move(actions), {"test"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
     addSimpleApplyDataToParsedJson(parsedJson, data1);
     Parser parser(parsedJson);
-    simpleApplyOperator->init(parser);
+    ValueAssigner valueAssigner;
+    simpleApplyOperator->init(parser, valueAssigner);
 
-    const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFrom1 =
-        simpleApplyOperator->getActionListToTags(createNode("1"));
-
-    EXPECT_TRUE(treeFrom1->children_.count("test"));
-    std::vector<int> edgeIds;
-    edgeIds.push_back(graph_->getEdgeId("1", "2", 0));
-    edgeIds.push_back(graph_->getEdgeId("2", "3", 0));
-    edgeIds.push_back(graph_->getEdgeId("3", "4", 0));
-    EXPECT_EQ(treeFrom1->children_["test"]->listOfEdges_, edgeIds);
+    checkExpectations(simpleApplyOperator, "1", {"test"}, {"val1 = 1", "val2 = 2"});
 }
 
 TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
 {
-    valueAssigner_.assignValuesForSymbols({
-        {{"identifier", "Position"},
-         {"kind", "TypeDeclaration"},
-         {"type", {{"identifiers", nlohmann::json("[null, v00]")}, {"kind", "Set"}}}},
-        {{"identifier", "Player"},
-         {"kind", "TypeDeclaration"},
-         {"type", {{"identifiers", nlohmann::json("[w, b]")}, {"kind", "Set"}}}},
-    });
-
-    addEdge(
-        graph_,
-        NodeData({"selectPos"}),
-        NodeData({"selectedPos", "position", "Position"}),
-        createTagAction("position"));
-    addEdge(
-        graph_,
-        NodeData({"selectedPos", "position", "Position"}),
-        NodeData({"setPos", "position", "Position"}),
-        createAssignmentAction("val", "2"));
-    addEdge(
-        graph_,
-        NodeData({"setPos", "position", "Position"}),
-        NodeData({"setFinished"}),
-        createAssignmentAction("val", "3"));
-    addEdge(graph_, "setFinished", "checkOwn", createAssignmentAction("val", "3"));
-    addEdge(graph_, "checkOwn", "forward", createAssignmentAction("val", "3"));
-    addEdge(graph_, "forward", "selectDirection", createAssignmentAction("val", "3"));
-    addEdge(graph_, "selectDirection", "directionForward", createTagAction("F"));
-    addEdge(graph_, "selectDirection", "directionLeft", createTagAction("L"));
-    addEdge(graph_, "selectDirection", "directionRight", createTagAction("R"));
-    addEdge(graph_, "directionForward", "moved", createAssignmentAction("val", "3"));
-    addEdge(graph_, "directionLeft", "directionLeftChecked", createAssignmentAction("val", "3"));
-    addEdge(graph_, "directionLeftChecked", "directionOK", createAssignmentAction("val", "3"));
-    addEdge(graph_, "directionRight", "directionRightChecked", createAssignmentAction("val", "3"));
-    addEdge(graph_, "directionRightChecked", "directionOK", createAssignmentAction("val", "3"));
-    addEdge(graph_, "directionOK", "moved", createAssignmentAction("val", "3"));
-    addEdge(graph_, "moved", "done", createAssignmentAction("val", "3"));
-    addEdge(graph_, "done", "wincheck", createAssignmentAction("val", "3"));
     graph_->initialize(valueAssigner_);
 
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d1(
-        "selectPos",
-        {"selectedPos__bind__position",
-         "setPos__bind__position",
-         "setFinished",
-         "checkOwn",
-         "forward",
-         "selectDirection"},
-        {"position"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d2("selectDirection", {"directionForward", "moved"}, {"F"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d3(
-        "selectDirection", {"directionLeft", "directionLeftChecked", "directionOK", "moved"}, {"L"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d4(
-        "selectDirection", {"directionRight", "directionRightChecked", "directionOK", "moved"}, {"R"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData d5("moved", {"done", "wincheck"});
+    std::vector<std::unique_ptr<IAction>> actions;
+
+    actions.push_back(createUniqueAssignmentAction("player", "currentPlayer"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1(
+        "begin", createUniqueNode("selectPos"), std::move(actions), {});
+
+    actions.push_back(createUniqueAssignmentAction("player", "keeper"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data2(
+        "checkOwn", createUniqueNode("forwardDirSet"), std::move(actions), {"F"});
+
+    actions.push_back(createUniqueAssignmentAction("player", "keeper"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data3(
+        "checkOwn", createUniqueNode("leftDirSet"), std::move(actions), {"L"});
+
+    actions.push_back(createUniqueAssignmentAction("player", "keeper"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data4(
+        "checkOwn", createUniqueNode("rightDirSet"), std::move(actions), {"R"});
+
+    actions.push_back(createUniqueAssignmentAction("pos", "pos_1"));
+    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data5(
+        "selectPos", createUniqueNode("checkOwn"), std::move(actions), {"(pos_1 : Position)"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
-    addSimpleApplyDataToParsedJson(parsedJson, d1);
-    addSimpleApplyDataToParsedJson(parsedJson, d2);
-    addSimpleApplyDataToParsedJson(parsedJson, d3);
-    addSimpleApplyDataToParsedJson(parsedJson, d4);
-    addSimpleApplyDataToParsedJson(parsedJson, d5);
+    addSimpleApplyDataToParsedJson(parsedJson, data1);
+    addSimpleApplyDataToParsedJson(parsedJson, data2);
+    addSimpleApplyDataToParsedJson(parsedJson, data3);
+    addSimpleApplyDataToParsedJson(parsedJson, data4);
+    addSimpleApplyDataToParsedJson(parsedJson, data5);
     Parser parser(parsedJson);
-    simpleApplyOperator->init(parser);
+    ValueAssigner valueAssigner;
+    simpleApplyOperator->init(parser, valueAssigner);
 
-    std::shared_ptr<SimpleApplySwitchTreeNode> treeFromSelectPos =
-        simpleApplyOperator->getActionListToTags(createNode("selectPos"));
-    std::vector<int> edgeIds;
-    ASSERT_TRUE(treeFromSelectPos->children_.count("(position : Position)"));
-    edgeIds.push_back(graph_->getEdgeId("selectPos", "selectedPos__bind__position", 0));
-    edgeIds.push_back(graph_->getEdgeId("selectedPos__bind__position", "setPos__bind__position", 0));
-    edgeIds.push_back(graph_->getEdgeId("setPos__bind__position", "setFinished", 0));
-    edgeIds.push_back(graph_->getEdgeId("setFinished", "checkOwn", 0));
-    edgeIds.push_back(graph_->getEdgeId("checkOwn", "forward", 0));
-    edgeIds.push_back(graph_->getEdgeId("forward", "selectDirection", 0));
-    EXPECT_EQ(treeFromSelectPos->children_["(position : Position)"]->listOfEdges_, edgeIds);
+    const auto& beginActionMap = simpleApplyOperator->getActionListToPlayerChange(createUniqueNode("begin"));
+    const auto& beginToSelectPosActions = beginActionMap.first;
+    EXPECT_EQ(beginActionMap.second->getName(), "selectPos");
+    EXPECT_EQ(beginToSelectPosActions.size(), 1);
+    EXPECT_EQ(beginToSelectPosActions.front()->toString(), "player = currentPlayer");
 
-    std::shared_ptr<SimpleApplySwitchTreeNode> treeFromSelectDirection =
-        simpleApplyOperator->getActionListToTags(createNode("selectDirection"));
-
-    edgeIds.clear();
-    ASSERT_TRUE(treeFromSelectDirection->children_.count("F"));
-    edgeIds.push_back(graph_->getEdgeId("selectDirection", "directionForward", 0));
-    edgeIds.push_back(graph_->getEdgeId("directionForward", "moved", 0));
-    EXPECT_EQ(treeFromSelectDirection->children_["F"]->listOfEdges_, edgeIds);
-
-    edgeIds.clear();
-    ASSERT_TRUE(treeFromSelectDirection->children_.count("L"));
-    edgeIds.push_back(graph_->getEdgeId("selectDirection", "directionLeft", 0));
-    edgeIds.push_back(graph_->getEdgeId("directionLeft", "directionLeftChecked", 0));
-    edgeIds.push_back(graph_->getEdgeId("directionLeftChecked", "directionOK", 0));
-    edgeIds.push_back(graph_->getEdgeId("directionOK", "moved", 0));
-    EXPECT_EQ(treeFromSelectDirection->children_["L"]->listOfEdges_, edgeIds);
-
-    auto edgesFromMoved = simpleApplyOperator->getActionListToPlayerChange(createNode("moved"));
-    EXPECT_EQ(edgesFromMoved.size(), 2);
+    checkExpectations(simpleApplyOperator, "checkOwn", {"F"}, {"player = keeper"});
+    checkExpectations(simpleApplyOperator, "checkOwn", {"R"}, {"player = keeper"});
+    checkExpectations(simpleApplyOperator, "checkOwn", {"L"}, {"player = keeper"});
+    checkExpectations(simpleApplyOperator, "selectPos", {"(pos_1 : Position)"}, {"pos = pos_1"});
 }
 
 TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
 {
-    valueAssigner_.assignValuesForSymbols({
-        {{"identifier", "Coord"},
-         {"kind", "TypeDeclaration"},
-         {"type", {{"identifiers", nlohmann::json("[0, 1, 2]")}, {"kind", "Set"}}}},
-        {{"identifier", "Player"},
-         {"kind", "TypeDeclaration"},
-         {"type", {{"identifiers", nlohmann::json("[w, b]")}, {"kind", "Set"}}}},
-    });
-
-    addEdge(graph_, NodeData({"move"}), NodeData({"chooseX"}), createAssignmentAction("val", "2"));
-    addEdge(graph_, NodeData({"chooseX"}), NodeData({"chooseX", "coordX", "Coord"}), createTagAction("coordX"));
-    addEdge(
-        graph_, NodeData({"chooseX", "coordX", "Coord"}), NodeData({"chooseY"}), createAssignmentAction("val", "2"));
-    addEdge(graph_, NodeData({"chooseY"}), NodeData({"chooseY", "coordY", "Coord"}), createTagAction("coordY"));
-    addEdge(graph_, NodeData({"chooseY", "coordY", "Coord"}), NodeData({"check"}), createAssignmentAction("val", "2"));
-
     graph_->initialize(valueAssigner_);
+
+    std::vector<std::unique_ptr<IAction>> actions;
+
+    actions.push_back(createUniqueAssignmentAction("posX", "posX_2"));
+    actions.push_back(createUniqueAssignmentAction("posY", "posY_1"));
+    actions.push_back(createUniqueAssignmentAction("board[posX][posY]", "playerTurn"));
+    actions.push_back(createUniqueAssignmentAction("player", "keeper"));
     PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1(
-        "chooseX", {"chooseX__bind__coordX", "chooseY", "chooseY__bind__coordY", "check"}, {"coordX", "coordY"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data2("move", {"chooseX"}, {});
+        "chooseX", createUniqueNode("checkwin"), std::move(actions), {"(posX_2 : Coord)", "(posX_1 : Coord)"});
 
     auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
     addSimpleApplyDataToParsedJson(parsedJson, data1);
-    addSimpleApplyDataToParsedJson(parsedJson, data2);
 
     Parser parser(parsedJson);
-    simpleApplyOperator->init(parser);
+    ValueAssigner valueAssigner;
+    simpleApplyOperator->init(parser, valueAssigner);
 
-    std::vector<int> edgeIds;
-    const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFromChooseX =
-        simpleApplyOperator->getActionListToTags(createNode("chooseX"));
-    ASSERT_TRUE(treeFromChooseX->children_["(coordX : Coord)"]);
-    ASSERT_TRUE(treeFromChooseX->children_["(coordX : Coord)"]->children_["(coordY : Coord)"]);
-
-    edgeIds.push_back(graph_->getEdgeId("chooseX", "chooseX__bind__coordX", 0));
-    edgeIds.push_back(graph_->getEdgeId("chooseX__bind__coordX", "chooseY", 0));
-    edgeIds.push_back(graph_->getEdgeId("chooseY", "chooseY__bind__coordY", 0));
-    edgeIds.push_back(graph_->getEdgeId("chooseY__bind__coordY", "check", 0));
-    EXPECT_EQ(treeFromChooseX->children_["(coordX : Coord)"]->children_["(coordY : Coord)"]->listOfEdges_, edgeIds);
-    auto edgesFromMoved = simpleApplyOperator->getActionListToPlayerChange(createNode("move"));
-    EXPECT_EQ(edgesFromMoved.size(), 1);
-}
-
-TEST_F(GraphFixture, TestSimpleMultiTag)
-{
-    addEdge(graph_, "1", "2", createTagAction("test1a"));
-    addEdge(graph_, "1", "5", createTagAction("test2a"));
-    addEdge(graph_, "2", "3", createAssignmentAction("val", "2"));
-    addEdge(graph_, "3", "4", createTagAction("test1b"));
-    addEdge(graph_, "5", "6", createAssignmentAction("val", "2"));
-    addEdge(graph_, "6", "7", createTagAction("test2b"));
-
-    graph_->initialize(valueAssigner_);
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data1("1", {"2", "3", "4"}, {"test1a", "test1b"});
-    PragmaSimpleApplyOperator::ParsedSingleSimpleApplyData data2("1", {"5", "6", "7"}, {"test2a", "test2b"});
-
-    auto simpleApplyOperator = graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(graph_);
-    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
-    addSimpleApplyDataToParsedJson(parsedJson, data1);
-    addSimpleApplyDataToParsedJson(parsedJson, data2);
-    Parser parser(parsedJson);
-    simpleApplyOperator->init(parser);
-
-    const std::shared_ptr<SimpleApplySwitchTreeNode>& treeFrom1 =
-        simpleApplyOperator->getActionListToTags(createNode("1"));
-
-    ASSERT_TRUE(treeFrom1->children_.count("test1a"));
-    ASSERT_TRUE(treeFrom1->children_.count("test2a"));
-    ASSERT_TRUE(treeFrom1->children_["test1a"]->children_.count("test1b"));
-    ASSERT_TRUE(treeFrom1->children_["test2a"]->children_.count("test2b"));
-
-    std::vector<int> edgeIds;
-    edgeIds.push_back(graph_->getEdgeId("1", "2", 0));
-    edgeIds.push_back(graph_->getEdgeId("2", "3", 0));
-    edgeIds.push_back(graph_->getEdgeId("3", "4", 0));
-    EXPECT_EQ(treeFrom1->children_["test1a"]->children_["test1b"]->listOfEdges_, edgeIds);
+    checkExpectations(
+        simpleApplyOperator,
+        "chooseX",
+        {"(posX_2 : Coord)", "(posX_1 : Coord)"},
+        {"posX = posX_2", "posY = posY_1", "board[posX][posY] = playerTurn", "player = keeper"});
 }

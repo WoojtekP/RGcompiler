@@ -8,6 +8,8 @@ namespace common
 constexpr std::string_view playerWord = "player";
 constexpr std::string_view keeperWord = "keeper";
 constexpr std::string_view keeperCastedWord = "static_cast<PlayerOrSystem>(keeper)";
+constexpr std::string_view beginWord = "begin";
+constexpr std::string_view endWord = "end";
 
 inline bool isActionAssignmentToPlayer(const std::shared_ptr<IAction>& action)
 {

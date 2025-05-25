@@ -82,7 +82,7 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
 
 std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChangeToKeeper() const
 {
-    std::set<std::string> nodes({"begin"});
+    std::set<std::string> nodes({std::string(common::beginWord)});
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         if (common::isActionAssignmentKeeperToPlayer(edge->getActions().back()))
@@ -147,9 +147,7 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
             if (visited.find(edge->toName()) == visited.end())
             {
                 visited.insert(edge->toName());
-                const auto &action = edge->getActions().back();
-                if ((action->getType() == ActionType::Assignment && action->getLeftSide() == "player") ||
-                    edge->toName() == "end")
+                if (common::isActionAssignmentToPlayer(edge->getActions().back()) || edge->toName() == common::endWord)
                 {
                     nodes.push_back(edge->toName());
                     continue;

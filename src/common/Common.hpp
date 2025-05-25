@@ -9,12 +9,12 @@ constexpr std::string_view playerWord = "player";
 constexpr std::string_view keeperWord = "keeper";
 constexpr std::string_view keeperCastedWord = "static_cast<PlayerOrSystem>(keeper";
 
-bool isActionAssigmentToPlayer(const std::shared_ptr<IAction>& action)
+bool isActionAssignmentToPlayer(const std::shared_ptr<IAction>& action)
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == playerWord;
 }
 
-bool isActionAssigmentKeeperToPlayer(const std::shared_ptr<IAction>& action)
+bool isActionAssignmentKeeperToPlayer(const std::shared_ptr<IAction>& action)
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == playerWord &&
            (action->getRightSide() == keeperCastedWord || action->getRightSide() == keeperWord);

@@ -1,5 +1,6 @@
 #include <queue>
 
+#include <common/Common.hpp>
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
 
 std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forPatterns(
@@ -38,9 +39,8 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
         const auto &[edge, iid] = v;
         const std::string &fromName = edge->fromName();
         const std::string &toName = edge->toName();
-        const auto &action = edge->getActions().back();
 
-        if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+        if (common::isActionAssignmentToPlayer(edge->getActions().back()))
         {
             int edgeId = graph_->getEdgeId(fromName, toName, iid);
             edgesWithActionChangePlayer.insert(edgeId);
@@ -85,10 +85,7 @@ std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChange
     std::set<std::string> nodes({"begin"});
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
-        const auto &action = edge->getActions().back();
-        // TODO: We need better way to check if keeper changed
-        if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player" &&
-            (action->getRightSide() == "static_cast<PlayerOrSystem>(keeper)" || action->getRightSide() == "keeper"))
+        if (common::isActionAssignmentKeeperToPlayer(edge->getActions().back()))
         {
             nodes.insert(edge->toName());
         }

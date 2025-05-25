@@ -7,14 +7,14 @@ namespace common
 {
 constexpr std::string_view playerWord = "player";
 constexpr std::string_view keeperWord = "keeper";
-constexpr std::string_view keeperCastedWord = "static_cast<PlayerOrSystem>(keeper";
+constexpr std::string_view keeperCastedWord = "static_cast<PlayerOrSystem>(keeper)";
 
-bool isActionAssignmentToPlayer(const std::shared_ptr<IAction>& action)
+inline bool isActionAssignmentToPlayer(const std::shared_ptr<IAction>& action)
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == playerWord;
 }
 
-bool isActionAssignmentKeeperToPlayer(const std::shared_ptr<IAction>& action)
+inline bool isActionAssignmentKeeperToPlayer(const std::shared_ptr<IAction>& action)
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == playerWord &&
            (action->getRightSide() == keeperCastedWord || action->getRightSide() == keeperWord);

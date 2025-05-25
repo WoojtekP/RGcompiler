@@ -6,15 +6,13 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
     ActionType actionType) const
 {
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternGraphs;
-
     std::set<std::pair<std::string, std::string>> patterns;
 
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         const auto &action = edge->getActions().front();
 
-        if (action->getType() == actionType &&
-            patterns.find(std::make_pair(action->getLeftSide(), action->getRightSide())) == patterns.end())
+        if (action->getType() == actionType)
         {
             patterns.insert(std::make_pair(action->getLeftSide(), action->getRightSide()));
         }
@@ -38,8 +36,8 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
     for (const auto &v : graph_->getAllEdges())
     {
         const auto &[edge, iid] = v;
-        const auto &fromName = edge->fromName();
-        const auto &toName = edge->toName();
+        const std::string &fromName = edge->fromName();
+        const std::string &toName = edge->toName();
         const auto &action = edge->getActions().back();
 
         if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
@@ -108,6 +106,7 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     std::set<int> nodesInPatternGraph;
 
     int lastChanged = -1;
+    // TODO: This runs in O(N^*E) we should change it to O(E)
     while (true)
     {
         visited.clear();

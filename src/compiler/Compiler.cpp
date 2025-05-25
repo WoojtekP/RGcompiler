@@ -13,6 +13,25 @@ namespace
 constexpr const int SMALL_VECTOR_MOVE_SIZE = 12;
 const std::string UNUSED_TAG_VALUE = "-1";
 
+std::unique_ptr<IInstruction> debugInstruction(std::string functionName)
+{
+    std::string information = "In function: " + functionName + "\\n";
+    return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
+}
+
+bool nodeInThisEdge(const std::shared_ptr<Edge>& edge, const std::string& nodeName)
+{
+    for (const auto& node : edge->getInnerNodes())
+    {
+        if (nodeName == node->getName())
+        {
+            return true;
+        }
+    }
+
+    return nodeName == edge->getRightNode()->getName();
+}
+
 std::optional<std::string> getTagVar(const std::string& tag)
 {
     assert(tag.size());
@@ -41,21 +60,6 @@ std::optional<std::string> getTagType(const std::string& tag)
     return {};
 }
 
-bool isAnyPairOfEdgesComplementary(const EdgesWithIID& edges)
-{
-    for (const auto& [edgeA, iid] : edges)
-    {
-        for (const auto& [edgeB, iid] : edges)
-        {
-            if (edgeA != edgeB && edgeA->isComplementaryTo(*edgeB))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, const EdgesWithIID& edges)
 {
     for (const auto& [outgoingEdge, iid] : edges)
@@ -66,13 +70,6 @@ std::shared_ptr<Edge> findComplementaryEdge(const std::shared_ptr<Edge>& edge, c
         }
     }
     return nullptr;
-}
-
-std::string getValueInRangeExpressionString(const std::string variable, const int lower, const int upper)
-{
-    const auto lowerLimitValueStr = std::to_string(lower);
-    const auto upperLimitValueStr = std::to_string(upper);
-    return variable + " >= " + lowerLimitValueStr + " && " + variable + " <= " + upperLimitValueStr;
 }
 
 std::string formatValueForPrinting(
@@ -259,7 +256,7 @@ void Compiler::initializeGraph()
         unoptimizedGraph_ =
             graphOperatorManager_->getOperator<GetOptimizedGraphOperator>(graph_)->getGraphWithOptimizedPaths(
                 valueAssigner_);
-        swap(unoptimizedGraph_, graph_);
+        std::swap(unoptimizedGraph_, graph_);
     }
     else
     {
@@ -432,19 +429,6 @@ void Compiler::restoreAssignments(
 std::string Compiler::getTemporaryVariableName(int idx, int edgeId)
 {
     return temporaryVariableNamePrefix_ + std::to_string(edgeId) + "_" + std::to_string(idx);
-}
-
-bool Compiler::nodeInThisEdge(const std::shared_ptr<Edge>& edge, const std::string& nodeName) const
-{
-    for (const auto& node : edge->getInnerNodes())
-    {
-        if (nodeName == node->getName())
-        {
-            return true;
-        }
-    }
-
-    return nodeName == edge->getRightNode()->getName();
 }
 
 void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, bool applyMode)
@@ -858,34 +842,9 @@ void Compiler::generateVoidStateOptimizedFunction(
     const std::shared_ptr<Graph>& graph,
     bool applyMode)
 {
-    std::set<std::shared_ptr<Edge>> complementaryEdges;
-    const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
-
     for (auto [outgoingEdge, iid] : outgoingEdges)
     {
-        if (complementaryEdges.count(outgoingEdge))
-        {
-            const std::string shouldCheckVarName = "should_check_" + outgoingEdge->toName();
-            std::unique_ptr<IfInstruction> ifInstruction =
-                std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(shouldCheckVarName));
-            ifInstruction->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
-            function->addInstruction(std::move(ifInstruction));
-        }
-        else if (const auto complementaryEdge = findComplementaryEdge(outgoingEdge, outgoingEdges))
-        {
-            complementaryEdges.insert(complementaryEdge);
-            const std::string sizeVarName = "size_before_" + outgoingEdge->toName();
-            const std::string shouldCheckVarName = "should_check_" + complementaryEdge->toName();
-            function->addInstruction(
-                std::make_unique<AssignmentInstruction>(sizeVarName, "moves.size()", "const auto"));
-            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
-            function->addInstruction(std::make_unique<AssignmentInstruction>(
-                shouldCheckVarName, "(" + sizeVarName + "==moves.size())", "const auto"));
-        }
-        else
-        {
-            function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
-        }
+        function->addInstruction(generateVoidEdgeInstruction(graph, outgoingEdge, iid, applyMode));
     }
 }
 
@@ -946,18 +905,7 @@ void Compiler::generateBoolStateFunctions(
                 ifInstruction->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
 
                 function->addInstruction(std::move(ifInstruction));
-                // function->addInstruction(std::move(std::make_unique<CustomInstruction>(cacheName + ".insert(mr)")));
             }
-            // std::unique_ptr<IfInstruction> checkCache =
-            //     std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-            //         cacheName + ".count(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
-            // //containerChooser_.getIsSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
-            // checkCache->addInstruction(std::make_unique<ReturnInstruction>("false"));
-            // function->addInstruction(std::move(checkCache));
-
-            // function->addInstruction(std::make_unique<CustomInstruction>(
-            //     cacheName + ".insert(std::make_pair(*this," + std::to_string(graph_->getNodeId(state)) + "))"));
-            //containerChooser_.getSetMethodDeclaration({from, to, patternId}, graph_->getNodeId(state))));
         }
 
         const auto& outgoingEdges = graph->getOutgoingEdgesFrom(state);
@@ -1007,23 +955,12 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
     std::string cacheName = "cache_" + std::to_string(graph->getEdgeId(stateFrom, stateTo, iid)) + "_" + patterType +
                             fromNode + "_" + toNode;
     std::string functionArguments;
-    auto tmpBlockInstruction = std::make_unique<BlockInstruction>();
+    std::unique_ptr<BlockInstruction> tmpBlockInstruction = std::make_unique<BlockInstruction>();
 
     bool skipStateCache = areAllNodesInPatternGraphUnique_.count({action->getLeftSide(), action->getRightSide()});
     functionArguments += mainCacheName_;
-    //     std::string cacheDecl = containerChooser_.getCustomName(typeId);
-    //     if (containerChooser_.isInCache(typeId))
-    //     {
-    //         cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." + containerChooser_.getFromCache(typeId);
-    //         // cacheDecl += ";\n" + cacheName + ".reset(" + containerChooser_.getType(typeId) + ")";
-    //     }
-    //     else
-    //     {
-    //         cacheDecl += " " + cacheName;
-    //     }
-    // tmpBlockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(cacheDecl));
 
-    const auto functionCall = functionName + "(" + functionArguments + ")";
+    const std::string functionCall = functionName + "(" + functionArguments + ")";
     functionCallCounter_[functionName]++;
     std::string comparisonExpression;
     if (!skipStateCache)
@@ -1338,16 +1275,7 @@ std::unique_ptr<BlockInstruction> Compiler::prepareBaseInstructions(
     std::string functionArguments;
     if (!optNoCycleDetection_)
     {
-        // bool bSkipStateCache = areAllNodesInPatternGraphUnique_.count({patternFrom, patternTo});
-        // if (patternId == 2)
-        // {
-        //     bSkipStateCache = areAllNodesInApplyAnyGraphUnique_.count({patternFrom, patternTo});
-        // }
         functionArguments = mainCacheName_;
-        // if (!bSkipStateCache)
-        // {
-        //     functionArguments += ", mr";
-        // }
     }
 
     const auto functionName = prefix + (preserveOriginalNames_ ? stateTo : std::to_string(graph_->getNodeId(stateTo)));
@@ -1430,30 +1358,6 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
-        // Ignore tags in patterns
-        /*else if (action->getType() == ActionType::Tag && !bSkipStateCache)
-        {
-            const auto tagValueStr = getTagValueString(action, edge);
-            std::string pushTag;
-            bool useArray = graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-            if (useArray)
-            {
-                int tagPosition =
-                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(stateFrom);
-                assert(tagPosition != -1);
-                pushTag = "mr[" + std::to_string(tagPosition) + "] = " + tagValueStr;
-            }
-            else
-            {
-                pushTag = "mr.push_back(" + tagValueStr + ")";
-            }
-            blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
-
-            if (!useArray)
-            {
-                blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
-            }
-        }*/
         else if (action->getType() == ActionType::Reachability)
         {
             blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));
@@ -1683,18 +1587,6 @@ void Compiler::generateApplyAnyMove()
             std::string functionArguments;
             if (!optNoCycleDetection_)
             {
-                // std::string cacheDecl = containerChooser_.getCustomName({nodeName, nodeTo, 2});
-                // if (containerChooser_.isInCache({nodeName, nodeTo, 2}))
-                // {
-                //     cacheDecl += "&" + cacheName + "=" + mainCacheName_ + "." +
-                //                  containerChooser_.getFromCache({nodeName, nodeTo, 2});
-                //     cacheDecl += ";\n";
-                //     //+ cacheName + ".reset(" + containerChooser_.getType({nodeName, nodeTo, 2}) + ")";
-                // }
-                // else
-                // {
-                //     cacheDecl += " " + cacheName;
-                // }
                 bool skipStateCache = areAllNodesInApplyAnyGraphUnique_.count({nodeName, nodeTo});
                 functionArguments += mainCacheName_;
                 cacheNeeded |= !skipStateCache;
@@ -1889,12 +1781,6 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
     result->pushInstructionBack(std::move(loopInstruction));
     result->pushInstructionBack(std::make_unique<AssignmentInstruction>(variableName, tmpVariableName));
     return result;
-}
-
-std::unique_ptr<IInstruction> Compiler::debugInstruction(std::string functionName)
-{
-    std::string information = "In function: " + functionName + "\\n";
-    return std::make_unique<CustomInstruction>("std::cout << \"" + information + "\"");
 }
 
 int Compiler::getNumberOfPlayers()

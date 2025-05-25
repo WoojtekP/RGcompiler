@@ -134,7 +134,6 @@ private:
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
-    std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
         const std::shared_ptr<IAction> &actionAssignAny,
         std::unique_ptr<BlockInstruction> blockInstruction,
@@ -152,7 +151,6 @@ private:
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;
     const std::shared_ptr<IStateCache> &getStateCacheSafe(const std::string &state) const;
-    bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;

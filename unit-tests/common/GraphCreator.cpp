@@ -60,25 +60,6 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
     return std::make_shared<ActionAssignment>(label, expressionFactory);
 }
 
-std::unique_ptr<IAction> createUniqueAssignmentAction(const std::string& leftSide, const std::string& rightSide)
-{
-    nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");
-    Parser parser(parsedJson);
-    ValueAssigner valueAssigner;
-    ExpressionFactory expressionFactory(parser, valueAssigner);
-    nlohmann::json label = {
-        {"lhs",
-         {{"kind", "Cast"},
-          {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
-          {"rhs", {{"kind", "Reference"}, {"identifier", leftSide}}}}},
-        {"rhs",
-         {{"kind", "Cast"},
-          {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
-          {"rhs", {{"kind", "Reference"}, {"identifier", rightSide}}}}}};
-
-    return std::make_unique<ActionAssignment>(label, expressionFactory);
-}
-
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide)
 {
     nlohmann::json parsedJson = nlohmann::json::parse(R"({"types": {}, "variables": {}, "constants": {}})");

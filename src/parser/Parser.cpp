@@ -70,7 +70,7 @@ nlohmann::json Parser::getEdges() const
     return parsedJson_["edges"];
 }
 
-std::vector<nlohmann::json> Parser::getPragmas(const std::string& type) const
+std::vector<nlohmann::json> Parser::getPragmas(std::string_view type) const
 {
     std::vector<nlohmann::json> res;
     for (const auto& pragma : parsedJson_["pragmas"])

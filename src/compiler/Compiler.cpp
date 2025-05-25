@@ -626,7 +626,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 }
 
 std::unique_ptr<BlockInstruction> Compiler::getAssignments(
-    const std::vector<std::unique_ptr<IAction>>& actions,
+    const std::vector<std::shared_ptr<IAction>>& actions,
     const std::vector<std::string>& tags,
     std::vector<int>& minValues) const
 {
@@ -752,7 +752,8 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     const std::shared_ptr<Node>& node,
     const std::shared_ptr<SimpleApplySwitchTreeNode>& listOfActionsToTags,
-    std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>& listOfActionsToPlayerChangeAndEndNode,
+    const std::pair<std::vector<std::shared_ptr<IAction>>, std::unique_ptr<Node>>&
+        listOfActionsToPlayerChangeAndEndNode,
     const bool isExhaustive,
     const bool hasAnyEmptyTagSequence)
 {
@@ -813,15 +814,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
     if (!listOfActionsToPlayerChangeAndEndNode.first.empty())
     {
+        std::vector<std::shared_ptr<IAction>> actonsToPlayerChangeAndEndNode =
+            listOfActionsToPlayerChangeAndEndNode.first;
         std::vector<int> minValuesEmpty;
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
-            getAssignments(listOfActionsToPlayerChangeAndEndNode.first, {}, minValuesEmpty);
+            getAssignments(actonsToPlayerChangeAndEndNode, {}, minValuesEmpty);
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
-            unoptimizedGraph_,
-            listOfActionsToPlayerChangeAndEndNode.first,
-            listOfActionsToPlayerChangeAndEndNode.second,
-            true));
+            unoptimizedGraph_, actonsToPlayerChangeAndEndNode, listOfActionsToPlayerChangeAndEndNode.second, true));
 
         bool useArray =
             !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();

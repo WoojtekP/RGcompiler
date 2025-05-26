@@ -72,6 +72,7 @@ tests['reversi'] = (1000,60.41,[47.51,52.49], [1,4,12,56,244,1396,8200,55092,390
 tests['ticTacDie'] = (100000,7.63,[64.87,35.13], [1,1,9,9,72,72,504,504,3024,3024,15120,13680,54720,49392,148176,100224,200448,127872,127872,0])
 tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#,148176,200448,127872
 tests['twentyOne'] = (1000000,1.88,[0.37], [1,2,52,104,2464,5304,114128,141848,2309136])#,2622336,22543488
+tests['ultimateTicTacToe'] = (100000,58.92,[52.42,47.58], [1,81,720,6336,55080,473256,4020960,33782544])
 
 if "all" in games:
   games = []
@@ -150,6 +151,8 @@ if "all" in games:
   games.append('pentago.rbg')
   games.append('pentago_split.hrg')
   games.append('pentago_split.rbg')
+  
+  games.append('ultimateTicTacToe.hrg')
 
 
 print(f'Testing #{len(games)}: {" ".join(games)}')

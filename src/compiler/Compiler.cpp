@@ -393,11 +393,6 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     program_.addVariableDeclaration(
         std::make_unique<Variable>("currentState", std::move(currentStateType), std::move(currentStateValue)));
 
-    auto currentMrIdType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
-    auto currentMrIdValue = std::make_unique<SingleValue>("0");
-    program_.addVariableDeclaration(std::make_unique<Variable>(
-        std::string(CURRENT_MR_ID_WORD), std::move(currentMrIdType), std::move(currentMrIdValue)));
-
     if (verification_)
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
@@ -616,7 +611,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
         auto tagVar = getTagVar(tag);
         if (tagVar)
         {
-            tagToValue[*tagVar] = "mr[" + std::string(CURRENT_MR_ID_WORD) + " - " +
+            tagToValue[*tagVar] = "mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " - " +
                                   std::to_string(minValues.size() - curentPos + 1) + "] - " +
                                   std::to_string(minValues[curentPos - 1]);
             std::string staticCast = "static_cast<" + *getTagType(tag) + ">(" + *tagVar + ")";
@@ -659,7 +654,8 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         return std::move(blockInstructionTmp);
     }
 
-    auto sw = std::make_unique<SwitchInstruction>("mr[" + std::string(CURRENT_MR_ID_WORD) + "++]");
+    auto sw =
+        std::make_unique<SwitchInstruction>("mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++]");
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
@@ -697,15 +693,15 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                 if (useArray)
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
-                            std::string(CURRENT_MR_ID_WORD) + "]",
+                        "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
+                            " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
                         "-1",
                         ComparisonType::Neq));
                 }
                 else
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) >" + std::string(CURRENT_MR_ID_WORD)));
+                        "static_cast<int>(mr.size()) >" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
                 }
 
                 ifInstruction->addInstruction(std::move(innerInstructions));
@@ -776,15 +772,17 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (useArray)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
-                        std::string(CURRENT_MR_ID_WORD) + "]",
+                    "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
+                        " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
                     "-1",
                     ComparisonType::Neq));
             }
             else
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size())", std::string(CURRENT_MR_ID_WORD), ComparisonType::Gr));
+                    "static_cast<int>(mr.size())",
+                    mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
+                    ComparisonType::Gr));
             }
             ifInstruction->addInstruction(std::move(switchBody));
             blockAction = std::move(ifInstruction);
@@ -811,15 +809,17 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         if (useArray)
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
-                    std::string(CURRENT_MR_ID_WORD) + "]",
+                "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                    mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
                 "-1",
                 ComparisonType::Neq));
         }
         else
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size())", std::string(CURRENT_MR_ID_WORD), ComparisonType::Neq));
+                "static_cast<int>(mr.size())",
+                mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
+                ComparisonType::Neq));
         }
 
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
@@ -830,9 +830,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     if (!isExhaustive || hasAnyEmptyTagSequence)
     {
         blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-            "const int tmp" + std::string(CURRENT_MR_ID_WORD), std::string(CURRENT_MR_ID_WORD)));
+            "const int tmp" + std::string(CURRENT_MR_ID_WORD), mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
         blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
-            std::string(CURRENT_MR_ID_WORD), "tmp" + std::string(CURRENT_MR_ID_WORD)));
+            mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD), "tmp" + std::string(CURRENT_MR_ID_WORD)));
     }
 
     function->addInstruction(std::move(blockInstruction));
@@ -1202,15 +1202,15 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (applyEdgeMode)
             {
                 blockInstruction->pushInstructionFront(
-                    std::make_unique<CustomInstruction>(std::string(CURRENT_MR_ID_WORD) + "++"));
+                    std::make_unique<CustomInstruction>(mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++"));
                 std::unique_ptr<IfInstruction> ifInstruction;
 
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > " + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
-                    std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
+                    "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
+                    " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
 
                 blockInstruction->pushInstructionBack(
-                    std::make_unique<CustomInstruction>(std::string(CURRENT_MR_ID_WORD) + "--"));
+                    std::make_unique<CustomInstruction>(mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "--"));
                 ifInstruction->addInstruction(std::move(blockInstruction));
                 blockInstruction = std::make_unique<BlockInstruction>();
                 blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1465,9 +1465,6 @@ void Compiler::generateGetStateDescription()
     }
     function->addInstruction(
         std::make_unique<CustomInstruction>("ss << \"currentState = \" << currentState << std::endl"));
-    function->addInstruction(std::make_unique<CustomInstruction>(
-        "ss << \"" + std::string(CURRENT_MR_ID_WORD) + " = \" << " + std::string(CURRENT_MR_ID_WORD) +
-        " << std::endl"));
     function->addInstruction(std::make_unique<ReturnInstruction>("ss.str()"));
     program_.addFunction(std::move(function));
 }
@@ -1575,7 +1572,6 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
     applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(mainCacheName_ + ".reset()"));
-    applyMoveFunction->addInstruction(std::make_unique<AssignmentInstruction>(std::string(CURRENT_MR_ID_WORD), "0"));
     applyMoveFunction->addInstruction(
         std::make_unique<CustomInstruction>("runApplyState(currentState, m.mr, rgCache)"));
 

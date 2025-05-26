@@ -601,19 +601,27 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     const std::vector<std::shared_ptr<IAction>>& actions,
     const std::vector<std::string>& tags,
-    std::vector<int>& minValues) const
+    std::vector<int>& minValues,
+    const std::vector<int>& positions) const
 {
     int curentPos = 1;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
     std::map<std::string, std::string> tagToValue;
+    bool skipCurrentMrId =
+        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+
     for (auto tag : tags)
     {
         auto tagVar = getTagVar(tag);
         if (tagVar)
         {
-            tagToValue[*tagVar] = "mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " - " +
-                                  std::to_string(minValues.size() - curentPos + 1) + "] - " +
-                                  std::to_string(minValues[curentPos - 1]);
+            std::string pos = mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " - " +
+                              std::to_string(minValues.size() - curentPos + 1);
+            if (skipCurrentMrId)
+            {
+                pos = std::to_string(positions[curentPos - 1]);
+            }
+            tagToValue[*tagVar] = "mr[" + pos + "] - " + std::to_string(minValues[curentPos - 1]);
             std::string staticCast = "static_cast<" + *getTagType(tag) + ">(" + *tagVar + ")";
             tagToValue[staticCast] = tagToValue[*tagVar];
         }
@@ -641,12 +649,14 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     int depth,
     const bool isExhaustive,
     const bool hasAnyEmptyTagSequence,
-    std::vector<int>& minValues)
+    std::vector<int>& minValues,
+    std::vector<int>& positions,
+    std::shared_ptr<Node> node)
 {
     if (listOfActionsToTags->children_.empty())
     {
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
-            getAssignments(listOfActionsToTags->listOfActions_, tags, minValues);
+            getAssignments(listOfActionsToTags->listOfActions_, tags, minValues, positions);
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
             unoptimizedGraph_, listOfActionsToTags->listOfActions_, listOfActionsToTags->endNode_, true, true));
@@ -654,8 +664,24 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         return std::move(blockInstructionTmp);
     }
 
-    auto sw =
-        std::make_unique<SwitchInstruction>("mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++]");
+    bool useArray =
+        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+    std::string pos = mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++";
+    if (useArray)
+    {
+        if (positions.size() == depth - 1)
+        {
+            const std::string& tag = listOfActionsToTags->children_.begin()->first;
+            const auto [lastNode, pos] =
+                graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getPositions(node, tag);
+            assert(lastNode);
+            positions.push_back(pos);
+            node = lastNode;
+        }
+        pos = std::to_string(positions[depth - 1]);
+    }
+
+    auto sw = std::make_unique<SwitchInstruction>("mr[" + pos + "]");
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
@@ -673,7 +699,14 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         minValues.push_back(minValue);
         tags.push_back(pairFullTagAndChild.first);
         auto innerInstructions = std::move(makeSwitchForTags(
-            pairFullTagAndChild.second, tags, depth + 1, isExhaustive, hasAnyEmptyTagSequence, minValues));
+            pairFullTagAndChild.second,
+            tags,
+            depth + 1,
+            isExhaustive,
+            hasAnyEmptyTagSequence,
+            minValues,
+            positions,
+            node));
         minValues.pop_back();
         tags.pop_back();
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
@@ -685,18 +718,11 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
             }
             else
             {
-                bool useArray =
-                    !maxMoveLen_ &&
-                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-
                 std::unique_ptr<IfInstruction> ifInstruction;
                 if (useArray)
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
-                            " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
-                        "-1",
-                        ComparisonType::Neq));
+                        "mr[" + std::to_string(positions[depth]) + "]", "-1", ComparisonType::Neq));
                 }
                 else
                 {
@@ -750,14 +776,16 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     }
 
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
-
     if (!listOfActionsToTags->empty())
     {
         std::vector<int> minValues;
         std::unique_ptr<IInstruction> blockAction;
         std::vector<std::string> tags;
-        auto switchBody =
-            makeSwitchForTags(listOfActionsToTags, tags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues);
+        std::vector<int> positions;
+
+        auto switchBody = makeSwitchForTags(
+            listOfActionsToTags, tags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues, positions, node);
+
         if (isExhaustive && !hasAnyEmptyTagSequence)
         {
             blockAction = std::move(switchBody);
@@ -772,10 +800,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             if (useArray)
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
-                        " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
-                    "-1",
-                    ComparisonType::Neq));
+                    " mr[" + std::to_string(positions[0]) + "]", "-1", ComparisonType::Neq));
             }
             else
             {
@@ -791,43 +816,34 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         blockInstruction->pushInstructionFront(std::move(blockAction));
     }
 
+    bool useArray =
+        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
     if (!listOfActionsToPlayerChangeAndEndNode.first.empty())
     {
         std::vector<std::shared_ptr<IAction>> actonsToPlayerChangeAndEndNode =
             listOfActionsToPlayerChangeAndEndNode.first;
         std::vector<int> minValuesEmpty;
         std::unique_ptr<BlockInstruction> blockInstructionTmp =
-            getAssignments(actonsToPlayerChangeAndEndNode, {}, minValuesEmpty);
+            getAssignments(actonsToPlayerChangeAndEndNode, {}, minValuesEmpty, {});
 
         blockInstructionTmp->pushInstructionBack(prepareBaseInstructions(
             unoptimizedGraph_, actonsToPlayerChangeAndEndNode, listOfActionsToPlayerChangeAndEndNode.second, true));
 
-        bool useArray =
-            !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-
         std::unique_ptr<IfInstruction> ifInstruction;
-        if (useArray)
-        {
-            ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
-                    mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
-                "-1",
-                ComparisonType::Neq));
-        }
-        else
+        if (!useArray)
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                 "static_cast<int>(mr.size())",
                 mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
                 ComparisonType::Neq));
+            ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+            blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
 
-        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
-        blockInstruction->pushInstructionBack(std::move(ifInstruction));
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
 
-    if (!isExhaustive || hasAnyEmptyTagSequence)
+    if ((!isExhaustive || hasAnyEmptyTagSequence) && !useArray)
     {
         blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
             "const int tmp" + std::string(CURRENT_MR_ID_WORD), mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
@@ -1199,27 +1215,44 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             }
 
             const auto tagValueStr = getTagValueString(action, edge);
+            bool useArray = !maxMoveLen_ &&
+                            graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
             if (applyEdgeMode)
             {
-                blockInstruction->pushInstructionFront(
-                    std::make_unique<CustomInstruction>(mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++"));
-                std::unique_ptr<IfInstruction> ifInstruction;
+                if (useArray)
+                {
+                    std::string pos = std::to_string(
+                        graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getTagPositionForNode(
+                            edge->getLeftNode()->getName()));
 
-                ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
-                    " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
+                    std::unique_ptr<IfInstruction> ifInstruction;
 
-                blockInstruction->pushInstructionBack(
-                    std::make_unique<CustomInstruction>(mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "--"));
-                ifInstruction->addInstruction(std::move(blockInstruction));
-                blockInstruction = std::make_unique<BlockInstruction>();
-                blockInstruction->pushInstructionBack(std::move(ifInstruction));
+                    ifInstruction = std::make_unique<IfInstruction>(
+                        std::make_unique<ComparisonInstruction>("mr[" + pos + "] == " + tagValueStr));
+
+                    ifInstruction->addInstruction(std::move(blockInstruction));
+                    blockInstruction = std::make_unique<BlockInstruction>();
+                    blockInstruction->pushInstructionBack(std::move(ifInstruction));
+                }
+                else
+                {
+                    blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(
+                        mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++"));
+                    std::unique_ptr<IfInstruction> ifInstruction;
+
+                    ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                        "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
+                        " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
+
+                    blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
+                        mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "--"));
+                    ifInstruction->addInstruction(std::move(blockInstruction));
+                    blockInstruction = std::make_unique<BlockInstruction>();
+                    blockInstruction->pushInstructionBack(std::move(ifInstruction));
+                }
             }
             else
             {
-                bool useArray =
-                    !maxMoveLen_ &&
-                    graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
                 if (useArray)
                 {
                     int tagPosition =
@@ -1332,7 +1365,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
 {
     const std::string& stateFrom = edge->fromName();
     const std::string& stateTo = edge->toName();
-    std::string prefix = "is_legal_" + functionType;
+    std::string prefix = std::string(IS_LEGAL_WORD) + functionType;
 
     if (preserveOriginalNames_)
     {

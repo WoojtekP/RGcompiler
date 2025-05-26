@@ -1,7 +1,75 @@
 #include "GetTagIndexOperator.hpp"
 
+#include <optional>
+#include <set>
+
 #include <parser/Parser.hpp>
 
+namespace
+{
+std::optional<std::string> getTagType(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        std::string res = tagTmp.substr(pos + 2);
+        res.pop_back();
+        return res;
+    }
+    return {};
+}
+
+}  // namespace
+
+std::shared_ptr<Node> GetTagIndexOperator::fillPositions(
+    std::shared_ptr<Node> node,
+    const std::vector<std::string> tags,
+    std::vector<int>& positions,
+    std::set<int>& visited)
+{
+    if (tags.size() == positions.size())
+    {
+        return node;
+    }
+    if (!visited.insert(graph_->getNodeId(node->getName())).second)
+    {
+        return nullptr;
+    }
+
+    std::shared_ptr<Node> lastNode = nullptr;
+    for (const auto& [edge, iid] : graph_->getOutgoingEdgesFrom(node->getName()))
+    {
+        if (lastNode)
+        {
+            break;
+        }
+        for (const auto& action : edge->getActions())
+        {
+            if (action->getType() == ActionType::Tag)
+            {
+                if (action->getLeftSide() == tags[positions.size()])
+                {
+                    positions.push_back(getTagPositionForNode(node->getName()));
+                    lastNode = edge->getRightNode();
+                }
+            }
+            else if (action->getType() == ActionType::TagVariable)
+            {
+                auto tagType = getTagType(tags[positions.size()]);
+                if (tagType && tagType == action->getRightSide())
+                {
+                    positions.push_back(getTagPositionForNode(node->getName()));
+                    lastNode = edge->getRightNode();
+                }
+            }
+        }
+        lastNode = fillPositions(edge->getRightNode(), tags, positions, visited);
+    }
+    return lastNode;
+}
 
 void GetTagIndexOperator::init(const Parser& parser)
 {
@@ -86,6 +154,15 @@ int GetTagIndexOperator::getTagPositionForNode(const std::string& nodeName) cons
         return -1;
     }
     return nodeNameToTagPosition_.at(nodeName);
+}
+
+std::pair<std::shared_ptr<Node>, int> GetTagIndexOperator::getPositions(
+    std::shared_ptr<Node> node, const std::string& tag)
+{
+    std::vector<int> positions;
+    std::set<int> visited;
+    std::shared_ptr<Node> lastNode = fillPositions(node, {tag}, positions, visited);
+    return {lastNode, positions[0]};
 }
 
 GetTagIndexOperator::GetTagIndexOperator(const std::shared_ptr<Graph>& graph)

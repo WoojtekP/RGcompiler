@@ -20,7 +20,7 @@ std::vector<reasoner::Move> moves;
 ulong numSims;
 ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
-ulong sumScores[1+reasoner::PLAYERS_COUNT];
+ulong sumScores[1+reasoner::PLAYERS_COUNT], minScores[1+reasoner::PLAYERS_COUNT], maxScores[1+reasoner::PLAYERS_COUNT];
 
 void exitWithError(const reasoner::GameState &state, const std::string msg)
 {
@@ -33,7 +33,6 @@ reasoner::Move EMPTY_MOVE;
 bool keeperCompletion(reasoner::GameState &state) {
   while (state.getCurrentPlayer() <= 0) {
     if (state.getCurrentPlayer() == reasoner::keeper) {
-      //std::cerr << "keeper" << std::endl;
       if (state.isTerminal()) return false;
       if constexpr(KEEPER_APPLY_ANY_MOVE) {
         state.applyAnyMove(cache);
@@ -45,7 +44,6 @@ bool keeperCompletion(reasoner::GameState &state) {
         state.applyMove(moves[0], cache);
       }
     } else {// random
-      //std::cerr << "random" << std::endl;
       state.getAllMoves(moves, cache);
       #ifndef NDEBUG
         if (moves.size() == 0) exitWithError(state, "Random has no move in keeperCompletion");
@@ -80,7 +78,12 @@ void doSimulation() {
   numStates += depth;
   if (depth < minDepth) minDepth = depth; else
   if (depth > maxDepth) maxDepth = depth;
-  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) sumScores[player] += state.getPlayerScore(player);
+  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
+    uint score = state.getPlayerScore(player);
+    sumScores[player] += score;
+    if (score < minScores[player]) minScores[player] = score; else
+    if (score > maxScores[player]) maxScores[player] = score;    
+  }
 }
 
 int main(int argc, char** argv) {
@@ -119,7 +122,9 @@ int main(int argc, char** argv) {
   std::cout << std::fixed; std::cout.precision(2);
   std::cout << numSims << " " << numStates << " " << minDepth << " " << maxDepth;
   std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
-  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) std::cout << " " << sumScores[player];
+  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
+    std::cout << " " << sumScores[player] << " " << minScores[player] << " " << maxScores[player];
+  }
   std::cout << std::endl;
   return 0;
 }

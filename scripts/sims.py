@@ -125,12 +125,19 @@ resMinMoves = int(stats[5])
 resMaxMoves = int(stats[6])
 stats = stats[7:]
 resAvgScores = []
-for p in range(len(stats)): resAvgScores.append(int(stats[p]) / resSims)
+resMinScores = []
+resMaxScores = []
+for p in range(len(stats)//3):
+  resAvgScores.append(int(stats[p*3]) / resSims)
+  resMinScores.append(int(stats[p*3+1]))
+  resMaxScores.append(int(stats[p*3+2]))
 print(f'sims: {resSims}')
 print(f'states: {resStates}')
 print(f'depth: min {resMinDepth} avg {resAvgDepth:1.2f} max {resMaxDepth}')
 print(f'moves: min {resMinMoves} avg {resMoves/resStates:1.2f} max {resMaxMoves}')
-print(f'scores: avg {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}')
+print(f'avg scores: {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}')
+print(f'min scores: {" ".join(f"{minScore}" for minScore in resMinScores)}')
+print(f'max scores: {" ".join(f"{maxScore}" for maxScore in resMaxScores)}')
 
 if args.profile:
   run(f'gprof {cfg.BUILD_TEST_DIR}/sims gmon.out > gmon.txt')

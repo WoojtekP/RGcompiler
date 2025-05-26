@@ -130,7 +130,8 @@ private:
         BoolFunctionType patternId = BoolFunctionType::Default);
     void generatePatternReachabilityFunctions();
     void generateApplyAnyMove();
-    void initializePatternGraphs(std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns);
+    void initializePatternGraphs(
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, bool isSimplePath = false);
     template<typename T>
     void restoreAssignments(
         const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);

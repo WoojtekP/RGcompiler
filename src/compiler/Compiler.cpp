@@ -271,19 +271,19 @@ void Compiler::initializeGraph()
         unoptimizedGraph_ = graph_;
     }
 
-    initializePatternGraphs(patternReachabilityGraphs_);
+    initializePatternGraphs(patternReachabilityGraphs_, optConditionsSimplePathCompression_);
     initializePatternGraphs(applyAnyMoveGraphs_);
 }
 
 void Compiler::initializePatternGraphs(
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& patterns)
+    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>>& patterns, bool isSimplePath)
 {
     for (const auto& [from, to, graph] : patterns)
     {
         graph->initialize(valueAssigner_);
     }
 
-    if (optConditionsSimplePathCompression_)
+    if (isSimplePath)
     {
         for (size_t i = 0; i < patterns.size(); i++)
         {

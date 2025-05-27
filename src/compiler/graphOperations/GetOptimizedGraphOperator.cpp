@@ -20,15 +20,9 @@ void GetOptimizedGraphOperator::traverse(
         return;
     }
 
-    // TODO we don't have bidnigs anymore, we should break for assigmentany
-    // Break in case of bindings
-    if (edge->getLeftNode()->getBinding() || edge->getRightNode()->getBinding())
+    // AssignmentAny is not on simple path
+    if (action->getType() == ActionType::AssignmentAny)
     {
-        // Limit creating simple path - problem with simple apply when node don't exist in optimized graph
-        if (path.size() > 2)
-        {
-            path.pop_back();
-        }
         return;
     }
 

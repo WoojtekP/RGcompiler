@@ -31,6 +31,12 @@ enum class InlineMode
     UniqueOnly = 2,
 };
 
+enum class BoolFunctionType
+{
+    Default = 0,
+    ApplyAny = 1,
+};
+
 class Compiler
 {
 public:
@@ -49,7 +55,7 @@ private:
         const std::string &from,
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
-        int patternId = 0,
+        BoolFunctionType patternId = BoolFunctionType::Default,
         bool skipStateCache = false);
     std::unique_ptr<BlockInstruction> addActionPattern(
         const std::shared_ptr<IAction> &action,
@@ -60,16 +66,19 @@ private:
         std::unique_ptr<BlockInstruction> blockInstruction,
         std::unique_ptr<CustomInstruction> returnInstruction = nullptr);
     std::unique_ptr<BlockInstruction> getAssignments(
-        const std::vector<std::unique_ptr<IAction>> &actions,
+        const std::vector<std::shared_ptr<IAction>> &actions,
         const std::vector<std::string> &tags,
-        std::vector<int> &minValues) const;
+        std::vector<int> &minValues,
+        const std::vector<int> &positions) const;
     std::unique_ptr<BlockInstruction> makeSwitchForTags(
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         std::vector<std::string> &tags,
         int depth,
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence,
-        std::vector<int> &minValues);
+        std::vector<int> &minValues,
+        std::vector<int> &positions,
+        std::shared_ptr<Node> node);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
@@ -80,7 +89,8 @@ private:
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Node> &node,
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
-        std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>> &listOfActionsToPlayerChangeAndEndNode,
+        const std::pair<std::vector<std::shared_ptr<IAction>>, std::unique_ptr<Node>>
+            &listOfActionsToPlayerChangeAndEndNode,
         const bool isExhaustive,
         const bool hasAnyEmptyTagSequence);
 
@@ -108,7 +118,7 @@ private:
         const std::shared_ptr<Edge> &edge,
         int iid,
         const std::string &prefix,
-        int patternId = 0);
+        BoolFunctionType patternId = BoolFunctionType::Default);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
@@ -119,11 +129,12 @@ private:
         const std::shared_ptr<Graph> &graph,
         bool applyMode = false);
     void generatePatternFunctions(
-        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns, int patternId = 0);
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns,
+        BoolFunctionType patternId = BoolFunctionType::Default);
     void generatePatternReachabilityFunctions();
     void generateApplyAnyMove();
     void initializePatternGraphs(
-        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, int patternId = 0);
+        std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, bool isSimplePath = false);
     template<typename T>
     void restoreAssignments(
         const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
@@ -133,7 +144,6 @@ private:
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
     std::unique_ptr<IValue> generateValue(const nlohmann::json &value);
     std::unique_ptr<IValue> generateMapValue(const nlohmann::json &value);
-    std::unique_ptr<IInstruction> debugInstruction(std::string functionName);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
         const std::shared_ptr<IAction> &actionAssignAny,
         std::unique_ptr<BlockInstruction> blockInstruction,
@@ -151,7 +161,6 @@ private:
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;
     const std::shared_ptr<IStateCache> &getStateCacheSafe(const std::string &state) const;
-    bool nodeInThisEdge(const std::shared_ptr<Edge> &edge, const std::string &nodeName) const;
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;
@@ -170,8 +179,8 @@ private:
     const bool allUnique_;
     const InlineMode optGccInline_;
     const std::optional<int> maxMoveLen_;
-    // TODO change to enum and remove any_ as PatternAny no longer exist
-    const std::string patternIdToPrefixName[3] = {"", "any_", "apply_any_"};
+    const std::map<BoolFunctionType, std::string_view> patternIdToPrefixName = {
+        {BoolFunctionType::Default, ""}, {BoolFunctionType::ApplyAny, "apply_any_"}};
     const std::string mainCacheName_;
     const std::string mainCacheType_;
     ContainerChooser containerChooser_;

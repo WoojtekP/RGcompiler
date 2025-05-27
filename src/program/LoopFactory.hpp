@@ -6,7 +6,6 @@
 
 class ILoopInstruction;
 class Node;
-class Binding;
 class Parser;
 class ValueAssigner;
 class IAction;

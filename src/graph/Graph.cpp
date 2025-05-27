@@ -97,15 +97,7 @@ void Graph::initializeNodeIdToNode(const ValueAssigner &valueAssigner)
     for (auto &&node : allNodes_)
     {
         assignNodeId(node, nextNodeId);
-        if (const auto binding = node->getBinding())
-        {
-            const auto generatorSize = valueAssigner.getTypeRange(binding->getTypeName());
-            nextNodeId += generatorSize;
-        }
-        else
-        {
-            ++nextNodeId;
-        }
+        ++nextNodeId;
     }
     maxNodeId_ = nextNodeId - 1;
 }
@@ -177,9 +169,9 @@ void Graph::initialize(const ValueAssigner &valueAssigner)
     initializeEdgeIdToEdgeAndOutgoingEdgesFromNode();
 }
 
-int Graph::getNodeId(const std::string &name) const
+int Graph::getNodeId(std::string_view name) const
 {
-    return nodeNameToId_.at(name);
+    return nodeNameToId_.at(std::string(name));
 }
 
 int Graph::getEdgeId(const std::string &from, const std::string &to, int iid) const

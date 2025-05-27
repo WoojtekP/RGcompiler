@@ -1,24 +1,26 @@
 #include "PragmaRepeatOperator.hpp"
 
 #include <memory>
-#include <vector>
+#include <ranges>
 #include <set>
 #include <string>
-#include <ranges>
+#include <vector>
 
+#include <common/Common.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
+
 
 namespace
 {
 bool isTagOrPlayerAssignment(const std::shared_ptr<IAction>& action)
 {
     return (action->getType() != ActionType::Tag && action->getType() != ActionType::TagVariable) ||
-           (action->getType() == ActionType::Assignment && action->getLeftSide() == "player");
+           common::isActionAssignmentToPlayer(action);
 }
-}
+}  // namespace
 
-PragmaRepeatOperator::PragmaRepeatOperator(const std::shared_ptr<Graph> &graph)
+PragmaRepeatOperator::PragmaRepeatOperator(const std::shared_ptr<Graph>& graph)
 : BaseOperator(graph)
 {}
 
@@ -39,8 +41,7 @@ void PragmaRepeatOperator::dfs(std::set<int>& visited, const int node)
 }
 
 std::map<std::shared_ptr<Edge>, std::set<int>> PragmaRepeatOperator::getEdgeToStatesForWhichCacheShouldBeCleared(
-    const std::set<std::string>& repeatNodes,
-    const std::set<std::pair<std::shared_ptr<Edge>, int>>& edgesWithActionTag)
+    const std::set<std::string>& repeatNodes, const std::set<std::pair<std::shared_ptr<Edge>, int>>& edgesWithActionTag)
 {
     std::set<int> repeatNodesIds;
     for (const auto& repeatNode : repeatNodes)

@@ -5,7 +5,6 @@
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <graph/Graph.hpp>
 
-// TODO Improve base fixture and common function
 namespace GraphCreator
 {
 class GraphFixture : public ::testing::Test
@@ -23,26 +22,16 @@ public:
 struct NodeData
 {
     std::string nodeName_;
-    std::string bindingVarName_;
-    std::string bindingTypeName_;
 };
 
 std::unique_ptr<Node> createUniqueNode(const std::string& nodeName);
 std::shared_ptr<Node> createNode(const std::string& nodeName);
-std::shared_ptr<Node> createNode(const NodeData& nodeData);
 std::shared_ptr<IAction> createTagAction(const std::string& tag);
 std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, const std::string& rightSide);
-std::unique_ptr<IAction> createUniqueAssignmentAction(const std::string& leftSide, const std::string& rightSide);
 std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, const std::string& rightSide);
 void addEdge(
     std::shared_ptr<Graph>& graph,
     const std::string& fromNodeName,
     const std::string& toNodeName,
     const std::shared_ptr<IAction>& action);
-void addEdge(
-    std::shared_ptr<Graph>& graph,
-    const NodeData& fromNode,
-    const NodeData& toNode,
-    const std::shared_ptr<IAction>& action);
-
 }  // namespace GraphCreator

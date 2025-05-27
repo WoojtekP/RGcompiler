@@ -4,6 +4,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <nlohmann/json.hpp>
@@ -70,7 +71,7 @@ public:
     const EdgesWithIID &getOutgoingEdgesFrom(int from) const;
     const EdgesWithIID &getAllEdges() const;
     int getEdgeId(const std::string &from, const std::string &to, int iid) const;
-    int getNodeId(const std::string &name) const;
+    int getNodeId(std::string_view name) const;
     std::shared_ptr<Edge> getEdge(const std::string &from, const std::string &to, int iid) const;
     std::shared_ptr<Edge> getEdge(int edgeId) const;
     int getEdgeIID(int edgeId) const;

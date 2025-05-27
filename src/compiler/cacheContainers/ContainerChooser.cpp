@@ -14,6 +14,7 @@ const auto RESET_MAIN_PART = R"(inline void reset()
     depth = 0;
     pattern_cache[0].clear();
     state_cache.clear();
+    currentMrId = 0;
 )";
 
 const auto CLEAR_CURRENT = R"(inline void clearCurrent() { pattern_cache[depth].clear(); }
@@ -83,6 +84,7 @@ std::string ContainerChooser::createCache(const std::map<std::string, std::share
     rgCache += "unsigned depth = 0;\n";
     rgCache += "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
     rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
+    rgCache += "int currentMrId = 0;\n";
     for (const auto& [_, cache] : stateToCache)
     {
         rgCache += cache->getCacheType() + " " + cache->getCacheName() + ";\n";

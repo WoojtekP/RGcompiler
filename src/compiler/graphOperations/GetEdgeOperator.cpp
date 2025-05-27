@@ -1,3 +1,4 @@
+#include <common/Common.hpp>
 #include <compiler/graphOperations/GetEdgeOperator.hpp>
 
 GetEdgeOperator::ReturnType GetEdgeOperator::getEdges(
@@ -29,9 +30,7 @@ GetEdgeOperator::ReturnType GetEdgeOperator::getEdges(
 
 GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionChangePlayer() const
 {
-    return getEdges([](const std::shared_ptr<IAction> &action) {
-        return action->getType() == ActionType::Assignment && action->getLeftSide() == "player";
-    });
+    return getEdges([](const std::shared_ptr<IAction> &action) { return common::isActionAssignmentToPlayer(action); });
 }
 
 GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionTag() const
@@ -41,7 +40,7 @@ GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionTag() const
     });
 }
 
-std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getEdgeNames()
+const std::vector<std::tuple<std::string, std::string, int>> &GetEdgeOperator::getEdgeNames()
 {
     if (!edgeNames_.empty())
     {
@@ -74,7 +73,7 @@ std::vector<std::tuple<std::string, std::string, int>> GetEdgeOperator::getUnamb
         {
             for (const auto &action : edge->getActions())
             {
-                if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+                if (common::isActionAssignmentToPlayer(action))
                 {
                     return path;
                 }

@@ -22,7 +22,7 @@ public:
     nlohmann::json getVariables() const;
     nlohmann::json getConstants() const;
     nlohmann::json getEdges() const;
-    std::vector<nlohmann::json> getPragmas(const std::string& type) const;
+    std::vector<nlohmann::json> getPragmas(std::string_view type) const;
     std::vector<std::string> getDomain(const std::string& typeIdentifier) const;
     std::string getSourceType(const nlohmann::json& t) const;
     nlohmann::json getDestinationType(const nlohmann::json& t) const;

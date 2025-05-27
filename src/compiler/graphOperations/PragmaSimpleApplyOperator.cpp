@@ -2,10 +2,15 @@
 
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
+namespace
+{
+constexpr std::string_view pragmaSimpleApply = "SimpleApply";
+constexpr std::string_view pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
+}  // namespace
 
 void SimpleApplySwitchTreeNode::insert(
     const std::vector<std::string>& tags,
-    std::vector<std::unique_ptr<IAction>> actions,
+    std::vector<std::shared_ptr<IAction>> actions,
     std::unique_ptr<Node> endNode,
     int currTagPos)
 {
@@ -29,8 +34,8 @@ const std::shared_ptr<SimpleApplySwitchTreeNode>& PragmaSimpleApplyOperator::get
     return mapOfSimpleApplySwitchTreeNodeFromNode_.at(node->getName());
 }
 
-std::pair<std::vector<std::unique_ptr<IAction>>, std::unique_ptr<Node>>&
-PragmaSimpleApplyOperator::getActionListToPlayerChange(const std::shared_ptr<Node>& node)
+const std::pair<std::vector<std::shared_ptr<IAction>>, std::unique_ptr<Node>>&
+PragmaSimpleApplyOperator::getActionListToPlayerChange(const std::shared_ptr<Node>& node) const
 {
     return mapOfListOfActionsToPlayerChangeFromNodeAndEndNode_.at(node->getName());
 }
@@ -73,7 +78,7 @@ void PragmaSimpleApplyOperator::parseItem(
 
     for (const auto& action : item["assignments"])
     {
-        data.actionsToTagOrPlayerChange_.push_back(std::make_unique<ActionAssignment>(action, expressionFactory));
+        data.actionsToTagOrPlayerChange_.push_back(std::make_shared<ActionAssignment>(action, expressionFactory));
     }
 
     updateStateForData(data);
@@ -85,7 +90,7 @@ void PragmaSimpleApplyOperator::parseItem(
 }
 
 void PragmaSimpleApplyOperator::parsePragma(
-    const Parser& parser, const ExpressionFactory& expressionFactory, const std::string& pragmaName)
+    const Parser& parser, const ExpressionFactory& expressionFactory, std::string_view pragmaName)
 {
     for (const auto& pragma : parser.getPragmas(pragmaName))
     {
@@ -106,7 +111,7 @@ void PragmaSimpleApplyOperator::updateStateForData(ParsedSingleSimpleApplyData& 
     mapOfSimpleApplySwitchTreeNodeFromNode_.insert(
         {parsedSingleSimpleApplyData.startNodeName_, std::make_shared<SimpleApplySwitchTreeNode>()});
     mapOfListOfActionsToPlayerChangeFromNodeAndEndNode_.insert(
-        {parsedSingleSimpleApplyData.startNodeName_, std::make_pair(std::vector<std::unique_ptr<IAction>>(), nullptr)});
+        {parsedSingleSimpleApplyData.startNodeName_, std::make_pair(std::vector<std::shared_ptr<IAction>>(), nullptr)});
 
     if (parsedSingleSimpleApplyData.hasTag())
     {

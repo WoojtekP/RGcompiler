@@ -1,3 +1,4 @@
+#include <common/Common.hpp>
 #include <compiler/graphOperations/GetOptimizedGraphOperator.hpp>
 
 void GetOptimizedGraphOperator::traverse(
@@ -15,7 +16,7 @@ void GetOptimizedGraphOperator::traverse(
 
     // According to rules of rg language assignment to player end move therfore end path
     const auto &action = edge->getActions().back();
-    if (action->getType() == ActionType::Assignment && action->getLeftSide() == "player")
+    if (common::isActionAssignmentToPlayer(action))
     {
         return;
     }

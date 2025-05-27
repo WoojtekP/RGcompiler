@@ -66,10 +66,7 @@ void addSimpleApplyDataToParsedJson(
     for (const auto& action : data.actionsToTagOrPlayerChange_)
     {
         nlohmann::json actionJson = {
-            {"lhs",
-             {{"kind", "Cast"},
-              {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
-              {"rhs", {{"kind", "Reference"}, {"identifier", action->getLeftSide()}}}}},
+            {"lhs", {{"identifier", action->getLeftSide()}, {"kind", "Reference"}}},
             {"rhs",
              {{"kind", "Cast"},
               {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
@@ -130,7 +127,11 @@ TEST_F(GraphFixture, TestSimpleApplyOneTag)
     ValueAssigner valueAssigner;
     simpleApplyOperator->init(parser, valueAssigner);
 
-    checkExpectations(simpleApplyOperator, "1", {"test"}, {"val1 = 1", "val2 = 2"});
+    checkExpectations(
+        simpleApplyOperator,
+        "1",
+        {"test"},
+        {"val1 = static_cast<>(static_cast<>(1))", "val2 = static_cast<>(static_cast<>(2))"});
 }
 
 TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
@@ -174,12 +175,13 @@ TEST_F(GraphFixture, TestSimpleApplyBreakthrough)
     const auto& beginToSelectPosActions = beginActionMap.first;
     EXPECT_EQ(beginActionMap.second->getName(), "selectPos");
     EXPECT_EQ(beginToSelectPosActions.size(), 1);
-    EXPECT_EQ(beginToSelectPosActions.front()->toString(), "player = currentPlayer");
+    EXPECT_EQ(beginToSelectPosActions.front()->toString(), "player = static_cast<>(static_cast<>(currentPlayer))");
 
-    checkExpectations(simpleApplyOperator, "checkOwn", {"F"}, {"player = keeper"});
-    checkExpectations(simpleApplyOperator, "checkOwn", {"R"}, {"player = keeper"});
-    checkExpectations(simpleApplyOperator, "checkOwn", {"L"}, {"player = keeper"});
-    checkExpectations(simpleApplyOperator, "selectPos", {"(pos_1 : Position)"}, {"pos = pos_1"});
+    checkExpectations(simpleApplyOperator, "checkOwn", {"F"}, {"player = static_cast<>(static_cast<>(keeper))"});
+    checkExpectations(simpleApplyOperator, "checkOwn", {"R"}, {"player = static_cast<>(static_cast<>(keeper))"});
+    checkExpectations(simpleApplyOperator, "checkOwn", {"L"}, {"player = static_cast<>(static_cast<>(keeper))"});
+    checkExpectations(
+        simpleApplyOperator, "selectPos", {"(pos_1 : Position)"}, {"pos = static_cast<>(static_cast<>(pos_1))"});
 }
 
 TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
@@ -207,5 +209,8 @@ TEST_F(GraphFixture, TestSimpleApplyTicTacToe)
         simpleApplyOperator,
         "chooseX",
         {"(posX_2 : Coord)", "(posX_1 : Coord)"},
-        {"posX = posX_2", "posY = posY_1", "board[posX][posY] = playerTurn", "player = keeper"});
+        {"posX = static_cast<>(static_cast<>(posX_2))",
+         "posY = static_cast<>(static_cast<>(posY_1))",
+         "board[posX][posY] = static_cast<>(static_cast<>(playerTurn))",
+         "player = static_cast<>(static_cast<>(keeper))"});
 }

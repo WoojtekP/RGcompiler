@@ -33,10 +33,7 @@ std::shared_ptr<IAction> createAssignmentAction(const std::string& leftSide, con
     ValueAssigner valueAssigner;
     ExpressionFactory expressionFactory(parser, valueAssigner);
     nlohmann::json label = {
-        {"lhs",
-         {{"kind", "Cast"},
-          {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},
-          {"rhs", {{"kind", "Reference"}, {"identifier", leftSide}}}}},
+        {"lhs", {{"identifier", leftSide}, {"kind", "Reference"}}},
         {"rhs",
          {{"kind", "Cast"},
           {"lhs", {{"kind", "TypeReference"}, {"identifier", ""}}},

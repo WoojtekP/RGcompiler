@@ -211,11 +211,17 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , mainCacheType_("RgCache")
 , containerChooser_(mainCacheType_)
 , graphOperatorManager_(std::make_shared<GraphOperatorManager>())
-
 {
     assert(options.gccInline_ >= 0);
     assert(options.gccInline_ <= 2);
-    symbolsManager_.fillIntegerOperationsData();
+    if (options.arithmeticOpt_)
+    {
+        symbolsManager_.fillIntegerOperationsData();
+    }
+    else
+    {
+        symbolsManager_.assignValuesForSymbolsAndTags();
+    }
     initializeGraph();
     initializePragmas();
     generateStateCaches();

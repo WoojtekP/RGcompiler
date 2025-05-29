@@ -21,6 +21,7 @@ struct Options
     bool verification_;
     bool pragmaDisjointEnabled_;
     bool allUnique_;
+    bool arithmeticOpt_;
     int gccInline_;
     int maxMoveLen_;
 };

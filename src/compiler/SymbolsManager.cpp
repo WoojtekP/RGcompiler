@@ -18,12 +18,16 @@ const ConstantToOperation& SymbolsManager::constantToArithmeticOperationMap() co
     return constantToArithmeticOperation_;
 }
 
+void SymbolsManager::assignValuesForSymbolsAndTags()
+{
+    valueAssigner_.assignValuesForSymbols(operationsDeducer_.getSymbolToValueMap(), parser_.getTypeDeclarations());
+    valueAssigner_.assignValuesForTags(parser_, parser_.getEdges());
+}
+
 void SymbolsManager::fillIntegerOperationsData()
 {
     operationsDeducer_.fillIntegerValuesInfo(parser_.getPragmas("Integer"));
-
-    valueAssigner_.assignValuesForSymbols(operationsDeducer_.getSymbolToValueMap(), parser_.getTypeDeclarations());
-    valueAssigner_.assignValuesForTags(parser_, parser_.getEdges());
+    assignValuesForSymbolsAndTags();
 
     integerTypes_.withNan.clear();
     integerTypes_.withoutNan.clear();

@@ -16,6 +16,7 @@ public:
     const ConstantToOperation& constantToArithmeticOperationMap() const;
 
     void fillIntegerOperationsData();
+    void assignValuesForSymbolsAndTags();
 
 private:
     std::map<std::string, std::string> getUnaryMapFromConstant(

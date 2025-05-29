@@ -41,6 +41,9 @@ int main(const int argc, const char **argv)
             "disjoint",
             po::value<bool>(&options.pragmaDisjointEnabled_)->default_value(true),
             "Enable pragma 'disjoint'")(
+            "arithmetic",
+            po::value<bool>(&options.arithmeticOpt_)->default_value(true),
+            "Optimize arithmetic constants (when pragma 'integer' is available)")(
             "gccinline",
             po::value<int>(&options.gccInline_)->default_value(0),
             "Inlining mode:\n"

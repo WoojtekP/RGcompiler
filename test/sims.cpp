@@ -65,7 +65,9 @@ void doSimulation() {
     
     state.getAllMoves(moves, cache);
     #ifndef NDEBUG
-      if (moves.size() == 0) exitWithError(state, "Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+      if (moves.size() == 0) {
+        exitWithError(state, "Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+      }
     #endif
     depth++;
     numMoves += moves.size();

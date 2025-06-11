@@ -46,6 +46,8 @@ tests['simpleApplyTest5'] = (1000,1.0,[50.0], [1,2,0])
 tests['simpleApplyTest6'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
 tests['chessTest1'] = (1000,4.0,[50.0,50.0], [1,7,28,256,1664])
 
+tests['alquerque'] = (100000,35.91,[54.88,45.12], [1,4,5,6,12,29,109,541,2730,14375,83003])
+tests['alquerque_noCapturingSequences'] = (100000,197.12,[52.77,47.23], [1,4,8,33,210,1430,10262,81306,717196,6784234,69173829])
 tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])#,4307152
 tests['amazons_split2'] = (1000,136.33,[50.11,49.89], [1,80,2176,168420,4307152])#,4307152
 tests['ataxx'] = (10000,115.43,[50.00,50.00], [1,16,256,6424,156520])#,4975152
@@ -57,9 +59,11 @@ tests['chess'] = (1000,408.73,[50.02,49.98], [1,20,400,8902,197281,4865609,11906
 tests['chess_kingCapture'] = (1000,117.95,[50.02,49.98], [1,20,400,8902,197742,4897256,120909363])#,3283514875
 tests['clobber'] = (10000,64.63,[48.88,51.12], [1,180,31252,5231000])
 tests['connect4'] = (20000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])#,117649,823536,5673234
+tests['dashGuti'] = (100000,55.84,[61.33,38.66], [1,4,4,6,13,43,100,312,943,3564,14041,57217,254649])
 tests['dotsAndBoxes'] = (10000,137.13,[50.00,50.00], [1,144,20592,2924064])
 tests['englishDraughts'] = (10000,66.79,[49.29,50.71], [1,7,49,302,1469,7361,36768,179740,845931,3963680,18391564,85242128])#,388623673,1766623630
 tests['foxAndGeese'] = (20000,100.86,[49.87,50.13], [1,27,338,1146,18839,79868,1470459])#,6361465
+tests['golSkuish'] = (100000,62.44,[51.46,48.54], [1,3,5,7,18,56,146,448,1522,5256,19908,75088,320414])
 tests['gomoku_standard'] = (10000,112.59,[50.97,49.03], [1,225,50400,11239200])#,2495102400
 tests['gomoku_freeStyle'] = (10000,109.0,[51.03,48.97], [1,225,50400,11239200])#,2495102400
 tests['hex'] = (1000,107.52,[52.27,47.73], [1,121,14520,1727880])
@@ -78,6 +82,7 @@ if "all" in games:
   games = []
   
   # Tests
+  
   games.append('repeatTest.rg')
   games.append('repeatTestBig.rg')
   games.append('repeatTestHard.rg')
@@ -92,6 +97,9 @@ if "all" in games:
   games.append('chessTest1.hrg')
   
   # Simple games
+  games.append('alquerque.rbg')
+  games.append('alquerque_noCapturingSequences.rbg')
+
   games.append('bombardment.hrg')
 
   games.append('breakthrough.rg')
@@ -104,6 +112,8 @@ if "all" in games:
   games.append('connect4.hrg')
   games.append('connect4.rbg')
 
+  games.append('dashGuti.rbg')
+
   games.append('foxAndGeese.hrg')
 
   games.append('gomoku_standard.hrg')
@@ -115,6 +125,10 @@ if "all" in games:
   games.append('knightthrough.hrg')
   games.append('knightthrough.rbg')
 
+  games.append('lauKataKati.rbg')
+  
+  games.append('pretwa.rbg')
+  
   games.append('ticTacDie.hrg')
 
   games.append('ticTacToe.rg')
@@ -122,7 +136,7 @@ if "all" in games:
   games.append('ticTacToe.rbg')
   
   # Complex and large games
-  
+
   games.append('amazons.hrg')
   games.append('amazons.rbg')
   
@@ -136,6 +150,13 @@ if "all" in games:
   games.append('battleships.hrg')
 
   games.append('chess.hrg')
+  games.append('chess.rbg')
+
+  games.append('chess_kingCapture.hrg')
+
+  games.append('chessCylinder.rbg')
+
+  games.append('chessCylinder_kingCapture.rbg')
   
   games.append('dotsAndBoxes.hrg')
 
@@ -144,13 +165,17 @@ if "all" in games:
   
   games.append('hex.rbg')
   games.append('hex_9x9.rbg')
-  
+
+  games.append('golSkuish.rbg')
+    
   games.append('oware.hrg')
 
   games.append('pentago.hrg')
   games.append('pentago.rbg')
   games.append('pentago_split.hrg')
   games.append('pentago_split.rbg')
+  
+  games.append('surakarta.rbg')
   
   games.append('ultimateTicTacToe.hrg')
 

@@ -378,6 +378,11 @@ const std::unique_ptr<IInstruction> &BlockInstruction::frontInstruction() const
     return instructions_.front();
 }
 
+const std::unique_ptr<IInstruction> &BlockInstruction::backInstruction() const
+{
+    return instructions_.back();
+}
+
 void BlockInstruction::pushInstructionBack(std::unique_ptr<IInstruction> &&instruction)
 {
     instructions_.push_back(std::move(instruction));
@@ -391,6 +396,11 @@ void BlockInstruction::pushInstructionFront(std::unique_ptr<IInstruction> &&inst
 void BlockInstruction::popInstructionFront()
 {
     instructions_.pop_front();
+}
+
+void BlockInstruction::popInstructionBack()
+{
+    instructions_.pop_back();
 }
 
 std::string BlockInstruction::toString(int delimiter, int shift, bool semicolon)
@@ -473,6 +483,11 @@ std::string Function::getName()
 std::string Function::getReturnType()
 {
     return returnType_;
+}
+
+const std::vector<std::unique_ptr<IInstruction>>& Function::getInstructions() const
+{
+    return instructions_;
 }
 
 std::string Function::toString(int delimiter, int shift, bool semicolon)

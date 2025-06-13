@@ -125,6 +125,35 @@ void addReturnInstruction(const std::unique_ptr<IfInstruction>& ifInstruction, c
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>());
     }
 }
+
+void optimizePopPushSequences(const std::unique_ptr<Function>& function)
+{
+    const auto& instructions = function->getInstructions();
+    if (instructions.size() < 2)
+    {
+        return;
+    }
+    auto prevBlockInstr = dynamic_cast<BlockInstruction*>(instructions.front().get());
+    for (auto instr = instructions.begin() + 1; instr != instructions.end(); ++instr)
+    {
+        auto currBlockInstr = dynamic_cast<BlockInstruction*>(instr->get());
+        if (prevBlockInstr == nullptr || currBlockInstr == nullptr)
+        {
+            continue;
+        }
+        const auto& lastInstrStr = prevBlockInstr->backInstruction()->toString(0, 0, false);
+        const auto& firstInstrStr = currBlockInstr->frontInstruction()->toString(0, 0, false);
+        if (lastInstrStr == "mr.pop_back()" && firstInstrStr.starts_with("mr.push_back"))
+        {
+            prevBlockInstr->popInstructionBack();
+            currBlockInstr->popInstructionFront();
+            const auto prefixLen = std::strlen("mr.push_back(");
+            const auto pushedValue = firstInstrStr.substr(prefixLen, firstInstrStr.size() - 1 - prefixLen);
+            currBlockInstr->pushInstructionFront(std::make_unique<AssignmentInstruction>("mr.back()", pushedValue));
+        }
+        prevBlockInstr = currBlockInstr;
+    }
+}
 }  // namespace
 
 Compiler::Compiler(const Parser& parser, const Options& options)
@@ -594,6 +623,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
             function->addInstruction(std::move(std::make_unique<ReturnInstruction>("false")));
         }
 
+        optimizePopPushSequences(function);
         program_.addFunction(std::move(function));
     }
 }

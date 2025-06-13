@@ -237,9 +237,11 @@ public:
     BlockInstruction();
 
     const std::unique_ptr<IInstruction>& frontInstruction() const;
+    const std::unique_ptr<IInstruction>& backInstruction() const;
     void pushInstructionBack(std::unique_ptr<IInstruction> &&instruction);
     void pushInstructionFront(std::unique_ptr<IInstruction> &&instruction);
     void popInstructionFront();
+    void popInstructionBack();
 
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
@@ -355,6 +357,7 @@ public:
     std::string toString(int delimiter, int shift, bool semicolon) override;
     std::string getName();
     std::string getReturnType();
+    const std::vector<std::unique_ptr<IInstruction>>& getInstructions() const;
 
 private:
     std::string getArgumentsList();

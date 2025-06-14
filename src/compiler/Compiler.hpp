@@ -177,7 +177,7 @@ private:
         std::unique_ptr<Function> &function,
         std::shared_ptr<Graph> graph,
         const std::string &state,
-        const std::string &functionName);
+        bool isApplyAnyMove = false);
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;

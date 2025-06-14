@@ -1017,19 +1017,19 @@ void Compiler::generateBoolStateFunctions(
         }
         else
         {
-            // if (isStateDisjoint(state))
-            // {
-            //     handleBoolDisjoint(from, to, function, graph, state, name);
-            // }
-            // else
-            // {
-            int edgeIdx = 0;
-            for (auto& [outgoingEdge, iid] : outgoingEdges)
+            if (isStateDisjoint(state))
             {
-                function->addInstruction(
-                    generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++, isApplyAnyMove));
+                handleBoolDisjoint(from, to, function, graph, state, isApplyAnyMove);
             }
-            // }
+            else
+            {
+                int edgeIdx = 0;
+                for (auto& [outgoingEdge, iid] : outgoingEdges)
+                {
+                    function->addInstruction(
+                        generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++, isApplyAnyMove));
+                }
+            }
 
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
         }
@@ -1977,7 +1977,7 @@ void Compiler::handleBoolDisjoint(
     std::unique_ptr<Function>& function,
     std::shared_ptr<Graph> graph,
     const std::string& state,
-    const std::string& functionName)
+    bool isApplyAnyMove)
 {
     auto vectorOfNodeNames = graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->getNodeNames(state);
     bool disjointExhaustive = graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->isExhaustive(state);
@@ -1992,8 +1992,8 @@ void Compiler::handleBoolDisjoint(
     {
         if (!visited.count(outgoingEdge->getRightNode()->getName()))
         {
-            function->addInstruction(
-                generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++, /*isApplyAnyMove*/ false));
+            function->addInstruction(generateBoolEdgeInstruction(
+                from, to, graph, outgoingEdge, iid, edgeIdx++, /*isApplyAnyMove*/ isApplyAnyMove));
         }
         else
         {
@@ -2022,7 +2022,7 @@ void Compiler::handleBoolDisjoint(
                     outgoingEdge,
                     iid,
                     edgeIdx++,
-                    /*isApplyAnyMove=*/false,
+                    /*isApplyAnyMove=*/isApplyAnyMove,
                     /*addReturn=*/true,
                     disjointExhaustive && ++cnt == numberOfDisjointEdgesInPatternGraph));
             }

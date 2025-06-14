@@ -983,12 +983,19 @@ void Compiler::generateBoolStateFunctions(
         }
         else
         {
+            // if (isStateDisjoint(state))
+            // {
+            //     handleBoolDisjoint(from, to, function, graph, state, name);
+            // }
+            // else
+            // {
             int edgeIdx = 0;
             for (auto& [outgoingEdge, iid] : outgoingEdges)
             {
                 function->addInstruction(
                     generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++, name));
             }
+            // }
 
             function->addInstruction(std::make_unique<ReturnInstruction>("false"));
         }
@@ -1391,7 +1398,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     const std::shared_ptr<Edge>& edge,
     int iid,
     int edgeIdx,
-    const std::string& functionType)
+    const std::string& functionType,
+    bool addReturn,
+    bool skipFirstInstruction)
 {
     const std::string& stateFrom = edge->fromName();
     const std::string& stateTo = edge->toName();
@@ -1422,10 +1431,19 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
     std::shared_ptr<IAction> assignAnyAction = nullptr;
+    auto skipFirstInstructionIter = actions.rend();
+    if (skipFirstInstruction)
+    {
+        skipFirstInstructionIter--;
+    }
+
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
-
+        if (action_iterator == skipFirstInstructionIter)
+        {
+            break;
+        }
         if (action->getType() == ActionType::Assignment)
         {
             std::string lvalue = action->getLeftSide();
@@ -1444,11 +1462,20 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
                 std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
 
             ifInstruction->addInstruction(std::move(blockInstruction));
+            if (addReturn)
+            {
+                ifInstruction->addInstruction(std::make_unique<CustomInstruction>("return false"));
+            }
             blockInstruction = std::make_unique<BlockInstruction>();
             blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
         else if (action->getType() == ActionType::Reachability)
         {
+            std::unique_ptr<CustomInstruction> returnInstruction = nullptr;
+            if (addReturn)
+            {
+                returnInstruction = std::make_unique<CustomInstruction>("return false");
+            }
             blockInstruction = addActionPattern(action, graph, stateFrom, stateTo, iid, std::move(blockInstruction));
         }
         else if (action->getType() == ActionType::AssignmentAny)
@@ -1908,4 +1935,69 @@ const std::shared_ptr<IStateCache>& Compiler::getStateCacheSafe(const std::strin
         throw std::invalid_argument("[Compiler] Unknown cache for state " + state);
     }
     return it->second;
+}
+
+bool Compiler::isStateDisjoint(const std::string& state)
+{
+    return pragmaDisjointEnabled_ &&
+           graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->isDisjoint(state);
+}
+
+void Compiler::handleBoolDisjoint(
+    const std::string& from,
+    const std::string& to,
+    std::unique_ptr<Function>& function,
+    std::shared_ptr<Graph> graph,
+    const std::string& state,
+    const std::string& functionName)
+{
+    auto vectorOfNodeNames = graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->getNodeNames(state);
+    bool disjointExhaustive = graphOperatorManager_->getOperator<PragmaDisjointOperator>(graph_)->isExhaustive(state);
+    int cnt = 0;
+    std::set<std::string> visited;
+
+    visited.insert(vectorOfNodeNames.begin(), vectorOfNodeNames.end());
+    int numberOfDisjointEdgesInPatternGraph = 0;
+    int edgeIdx = 0;
+
+    for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+    {
+        if (!visited.count(outgoingEdge->getRightNode()->getName()))
+        {
+            function->addInstruction(
+                generateBoolEdgeInstruction(from, to, graph, outgoingEdge, iid, edgeIdx++, functionName));
+        }
+        else
+        {
+            numberOfDisjointEdgesInPatternGraph++;
+        }
+    }
+    if (numberOfDisjointEdgesInPatternGraph != vectorOfNodeNames.size())
+    {
+        disjointExhaustive = false;
+    }
+    visited.clear();
+    for (const auto& nodeName : vectorOfNodeNames)
+    {
+        if (!visited.insert(nodeName).second)
+        {
+            continue;
+        }
+        for (auto [outgoingEdge, iid] : graph->getOutgoingEdgesFrom(state))
+        {
+            if (nodeInThisEdge(outgoingEdge, nodeName))
+            {
+                function->addInstruction(generateBoolEdgeInstruction(
+                    from,
+                    to,
+                    graph,
+                    outgoingEdge,
+                    iid,
+                    edgeIdx++,
+                    functionName,
+                    /*addReturn=*/true,
+                    disjointExhaustive && ++cnt == numberOfDisjointEdgesInPatternGraph));
+            }
+        }
+    }
 }

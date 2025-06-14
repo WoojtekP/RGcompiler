@@ -108,7 +108,9 @@ private:
         const std::shared_ptr<Edge> &edge,
         int iid,
         int edgeIdx,
-        const std::string &functionType);
+        const std::string &functionType,
+        bool addReturn = false,
+        bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,
@@ -161,6 +163,14 @@ private:
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;
     const std::shared_ptr<IStateCache> &getStateCacheSafe(const std::string &state) const;
+    bool isStateDisjoint(const std::string &state);
+    void handleBoolDisjoint(
+        const std::string &from,
+        const std::string &to,
+        std::unique_ptr<Function> &function,
+        std::shared_ptr<Graph> graph,
+        const std::string &state,
+        const std::string &functionName);
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;

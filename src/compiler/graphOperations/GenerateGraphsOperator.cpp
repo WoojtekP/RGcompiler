@@ -21,16 +21,16 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
 
     for (const auto &[from, to] : patterns)
     {
-        patternGraphs.push_back(std::make_tuple(from, to, generateGraphForPattern(from, to)));
+        patternGraphs.push_back(std::make_tuple(from, to, generateGraphForPattern(from, {graph_->getNodeId(to)})));
     }
 
     return patternGraphs;
 }
 
-std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forApplyAnyMove()
+std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> GenerateGraphsOperator::forApplyAnyMove()
     const
 {
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> graphs;
+    std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> graphs;
     std::map<std::string, std::set<int>> edgesWithActionChangePlayerForToNode;
     std::set<int> edgesWithActionChangePlayer;
 
@@ -65,15 +65,20 @@ std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> Genera
 
     for (const auto &fromName : getNodesBeforeWhichPlayerChangeToKeeper())
     {
+        std::set<int> bannedEdges;
+        std::set<int> toNames;
         for (const auto &toName : nodesToPlayerChangeOrEnd(fromName))
         {
-            std::set<int> bannedEdges = getBannedEdges(edgesWithActionChangePlayerForToNode[toName]);
-            std::shared_ptr<Graph> graph = generateGraphForPattern(fromName, toName, bannedEdges);
+            bannedEdges.insert(
+                edgesWithActionChangePlayerForToNode[toName].begin(),
+                edgesWithActionChangePlayerForToNode[toName].end());
+            toNames.insert(graph_->getNodeId(toName));
+        }
+        std::shared_ptr<Graph> graph = generateGraphForPattern(fromName, toNames, getBannedEdges(bannedEdges));
 
-            if (!graph->empty())
-            {
-                graphs.push_back({fromName, toName, graph});
-            }
+        if (!graph->empty())
+        {
+            graphs.push_back({fromName, toNames, graph});
         }
     }
 
@@ -95,7 +100,7 @@ std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChange
 }
 
 std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
-    std::string from, std::string to, const std::set<int> &bannedEdges) const
+    std::string from, const std::set<int> &to, const std::set<int> &bannedEdges) const
 {
     std::shared_ptr<Graph> graph = std::make_shared<Graph>();
 
@@ -107,8 +112,7 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     while (true)
     {
         visited.clear();
-        generatePathFromNodeToNode(
-            graph_->getNodeId(from), graph_->getNodeId(to), visited, nodesInPatternGraph, bannedEdges);
+        generatePathFromNodeToNode(graph_->getNodeId(from), to, visited, nodesInPatternGraph, bannedEdges);
         if (nodesInPatternGraph.size() == lastChanged)
         {
             break;
@@ -121,7 +125,8 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
         // We should work on not optimized graph
         assert(edge->getActions().size() == 1);
 
-        if (edge->fromName() != to && nodesInPatternGraph.count(graph_->getNodeId(edge->fromName())) &&
+        if (!to.count(graph_->getNodeId(edge->fromName())) &&
+            nodesInPatternGraph.count(graph_->getNodeId(edge->fromName())) &&
             nodesInPatternGraph.count(graph_->getNodeId(edge->toName())) &&
             bannedEdges.find(graph_->getEdgeId(edge->fromName(), edge->toName(), iid)) == bannedEdges.end())
         {
@@ -162,12 +167,12 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
 
 bool GenerateGraphsOperator::generatePathFromNodeToNode(
     int node,
-    int finalNode,
+    const std::set<int> &finalNodes,
     std::set<int> &visited,
     std::set<int> &nodesInPatternGraph,
     const std::set<int> &bannedEdges) const
 {
-    if (node == finalNode)
+    if (finalNodes.count(node))
     {
         nodesInPatternGraph.insert(node);
         return true;
@@ -189,7 +194,7 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
         }
 
         if (generatePathFromNodeToNode(
-                graph_->getNodeId(edge->toName()), finalNode, visited, nodesInPatternGraph, bannedEdges))
+                graph_->getNodeId(edge->toName()), finalNodes, visited, nodesInPatternGraph, bannedEdges))
         {
             havePathToFinalNode = true;
         }

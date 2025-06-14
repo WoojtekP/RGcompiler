@@ -56,7 +56,8 @@ private:
         const std::string &to,
         const std::shared_ptr<Graph> &graph,
         BoolFunctionType patternId = BoolFunctionType::Default,
-        bool skipStateCache = false);
+        bool skipStateCache = false,
+        const std::set<int> &finalNodes = {});
     std::unique_ptr<BlockInstruction> addActionPattern(
         const std::shared_ptr<IAction> &action,
         const std::shared_ptr<Graph> &graph,
@@ -108,7 +109,9 @@ private:
         const std::shared_ptr<Edge> &edge,
         int iid,
         int edgeIdx,
-        const std::string &functionType);
+        bool isApplyAnyMove = false,
+        bool addReturn = false,
+        bool skipFirstInstruction = false);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,
@@ -131,10 +134,16 @@ private:
     void generatePatternFunctions(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patterns,
         BoolFunctionType patternId = BoolFunctionType::Default);
+    void generatePatternFunctions(
+        std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> patterns,
+        BoolFunctionType patternId = BoolFunctionType::ApplyAny);
     void generatePatternReachabilityFunctions();
     void generateApplyAnyMove();
     void initializePatternGraphs(
         std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> &patterns, bool isSimplePath = false);
+    void initializePatternGraphs(
+        std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> &patterns,
+        bool isSimplePath = false);
     template<typename T>
     void restoreAssignments(
         const std::unique_ptr<T> &function, std::vector<std::shared_ptr<IAction>> assignments, int edgeId);
@@ -161,13 +170,21 @@ private:
     template<typename TPtrNode>
     std::string getVariableValueFromTagString(const TPtrNode &node) const;
     const std::shared_ptr<IStateCache> &getStateCacheSafe(const std::string &state) const;
+    bool isStateDisjoint(const std::string &state);
+    void handleBoolDisjoint(
+        const std::string &from,
+        const std::string &to,
+        std::unique_ptr<Function> &function,
+        std::shared_ptr<Graph> graph,
+        const std::string &state,
+        bool isApplyAnyMove = false);
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<Graph> unoptimizedGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
-    std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
+    std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     Program program_;
     const std::string temporaryVariableNamePrefix_;
     const bool printOriginalNames_;
@@ -190,6 +207,6 @@ private:
     std::set<std::string> pragmaSimpleApplyData_;
     RepeatFlatData pragmaRepeatFlatData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
-    std::set<std::pair<std::string, std::string>> areAllNodesInApplyAnyGraphUnique_;
+    std::set<std::string> areAllNodesInApplyAnyGraphUnique_;
     std::map<std::string, int> functionCallCounter_;
 };

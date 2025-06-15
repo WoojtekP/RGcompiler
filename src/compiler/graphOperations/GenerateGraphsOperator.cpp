@@ -104,20 +104,26 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 {
     std::shared_ptr<Graph> graph = std::make_shared<Graph>();
 
-    std::set<int> visited;
+    std::map<int, int> nodeIdToVisitTimestampId;
     std::set<int> nodesInPatternGraph;
 
-    int lastChanged = -1;
-    // TODO: This runs in O(N^*E) we should change it to O(E)
-    while (true)
+    int visitedTimestampId = 0;
+    generatePathFromNodeToNode(
+        graph_->getNodeId(from), to, nodeIdToVisitTimestampId, nodesInPatternGraph, bannedEdges, visitedTimestampId);
+    std::set<int> timestampsInGraph;
+    for (auto [nodeId, timestampId] : nodeIdToVisitTimestampId)
     {
-        visited.clear();
-        generatePathFromNodeToNode(graph_->getNodeId(from), to, visited, nodesInPatternGraph, bannedEdges);
-        if (nodesInPatternGraph.size() == lastChanged)
+        if (nodesInPatternGraph.count(nodeId))
         {
-            break;
+            timestampsInGraph.insert(timestampId);
         }
-        lastChanged = nodesInPatternGraph.size();
+    }
+    for (auto [nodeId, timestampId] : nodeIdToVisitTimestampId)
+    {
+        if (timestampsInGraph.count(timestampId))
+        {
+            nodesInPatternGraph.insert(timestampId);
+        }
     }
 
     for (const auto &[edge, iid] : graph_->getAllEdges())
@@ -168,9 +174,10 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
 bool GenerateGraphsOperator::generatePathFromNodeToNode(
     int node,
     const std::set<int> &finalNodes,
-    std::set<int> &visited,
+    std::map<int, int> nodeIdToVisitTimestampId,
     std::set<int> &nodesInPatternGraph,
-    const std::set<int> &bannedEdges) const
+    const std::set<int> &bannedEdges,
+    int &timestampId) const
 {
     if (finalNodes.count(node))
     {
@@ -178,12 +185,12 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
         return true;
     }
 
-    if (visited.count(node))
+    if (nodeIdToVisitTimestampId.count(node))
     {
-        return nodesInPatternGraph.find(node) != nodesInPatternGraph.end();
+        return nodesInPatternGraph.count(node);
     }
 
-    visited.insert(node);
+    nodeIdToVisitTimestampId[node] = timestampId++;
     bool havePathToFinalNode = false;
 
     for (const auto &[edge, iid] : graph_->getOutgoingEdgesFrom(node))
@@ -192,12 +199,13 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
         {
             continue;
         }
-
+        int newNodeId = graph_->getNodeId(edge->toName());
         if (generatePathFromNodeToNode(
-                graph_->getNodeId(edge->toName()), finalNodes, visited, nodesInPatternGraph, bannedEdges))
+                newNodeId, finalNodes, nodeIdToVisitTimestampId, nodesInPatternGraph, bannedEdges, timestampId))
         {
             havePathToFinalNode = true;
         }
+        nodeIdToVisitTimestampId[node] = std::min(nodeIdToVisitTimestampId[node], nodeIdToVisitTimestampId[newNodeId]);
     }
 
     if (havePathToFinalNode)

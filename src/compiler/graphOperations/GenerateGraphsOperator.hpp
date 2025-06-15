@@ -11,9 +11,10 @@ class GenerateGraphsOperator : public BaseOperator
     bool generatePathFromNodeToNode(
         int node,
         const std::set<int> &finalNodes,
-        std::set<int> &visited,
+        std::map<int, int> nodeIdToVisitTimestampId,
         std::set<int> &nodesInPatternGraph,
-        const std::set<int> &bannedEdges) const;
+        const std::set<int> &bannedEdges,
+        int &timestampId) const;
 
 public:
     GenerateGraphsOperator(const std::shared_ptr<Graph> &graph);

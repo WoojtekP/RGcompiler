@@ -3,6 +3,19 @@
 #include <common/Common.hpp>
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
 
+namespace
+{
+int fixParent(int nodeId, std::map<int, int> &nodeIdToOldestParent)
+{
+    if (nodeIdToOldestParent[nodeId] == nodeId)
+    {
+        return nodeId;
+    }
+    nodeIdToOldestParent[nodeId] = fixParent(nodeIdToOldestParent[nodeId], nodeIdToOldestParent);
+    return nodeIdToOldestParent[nodeId];
+}
+}  // namespace
+
 std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forPatterns(
     ActionType actionType) const
 {
@@ -104,20 +117,26 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 {
     std::shared_ptr<Graph> graph = std::make_shared<Graph>();
 
-    std::set<int> visited;
     std::set<int> nodesInPatternGraph;
+    std::map<int, int> nodeIdToOldestParent;
+    std::map<int, int> visitTime;
+    int visitedTimestampId = 0;
+    generatePathFromNodeToNode(
+        graph_->getNodeId(from),
+        to,
+        nodeIdToOldestParent,
+        visitTime,
+        nodesInPatternGraph,
+        bannedEdges,
+        visitedTimestampId);
 
-    int lastChanged = -1;
-    // TODO: This runs in O(N^*E) we should change it to O(E)
-    while (true)
+    for (auto [nodeId, parentNodeId] : nodeIdToOldestParent)
     {
-        visited.clear();
-        generatePathFromNodeToNode(graph_->getNodeId(from), to, visited, nodesInPatternGraph, bannedEdges);
-        if (nodesInPatternGraph.size() == lastChanged)
+        parentNodeId = fixParent(parentNodeId, nodeIdToOldestParent);
+        if (nodesInPatternGraph.count(parentNodeId))
         {
-            break;
+            nodesInPatternGraph.insert(nodeId);
         }
-        lastChanged = nodesInPatternGraph.size();
     }
 
     for (const auto &[edge, iid] : graph_->getAllEdges())
@@ -168,22 +187,31 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
 bool GenerateGraphsOperator::generatePathFromNodeToNode(
     int node,
     const std::set<int> &finalNodes,
-    std::set<int> &visited,
+    std::map<int, int> &nodeIdToOldestParent,
+    std::map<int, int> &visitTime,
     std::set<int> &nodesInPatternGraph,
-    const std::set<int> &bannedEdges) const
+    const std::set<int> &bannedEdges,
+    int &timestampId) const
 {
     if (finalNodes.count(node))
     {
+        if (!visitTime.count(node))
+        {
+            visitTime[node] = timestampId++;
+            nodeIdToOldestParent[node] = node;
+        }
         nodesInPatternGraph.insert(node);
         return true;
     }
 
-    if (visited.count(node))
+    if (visitTime.count(node))
     {
-        return nodesInPatternGraph.find(node) != nodesInPatternGraph.end();
+        return false;
     }
 
-    visited.insert(node);
+    visitTime[node] = timestampId++;
+    nodeIdToOldestParent[node] = node;
+
     bool havePathToFinalNode = false;
 
     for (const auto &[edge, iid] : graph_->getOutgoingEdgesFrom(node))
@@ -192,11 +220,17 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
         {
             continue;
         }
+        int newNodeId = graph_->getNodeId(edge->toName());
 
         if (generatePathFromNodeToNode(
-                graph_->getNodeId(edge->toName()), finalNodes, visited, nodesInPatternGraph, bannedEdges))
+                newNodeId, finalNodes, nodeIdToOldestParent, visitTime, nodesInPatternGraph, bannedEdges, timestampId))
         {
             havePathToFinalNode = true;
+        }
+
+        if (visitTime[nodeIdToOldestParent[newNodeId]] < visitTime[nodeIdToOldestParent[node]])
+        {
+            nodeIdToOldestParent[node] = nodeIdToOldestParent[newNodeId];
         }
     }
 

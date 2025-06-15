@@ -3,6 +3,19 @@
 #include <common/Common.hpp>
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
 
+namespace
+{
+int fixParent(int nodeId, std::map<int, int> &nodeIdToOldestParent)
+{
+    if (nodeIdToOldestParent[nodeId] == nodeId)
+    {
+        return nodeId;
+    }
+    nodeIdToOldestParent[nodeId] = fixParent(nodeIdToOldestParent[nodeId], nodeIdToOldestParent);
+    return nodeIdToOldestParent[nodeId];
+}
+}  // namespace
+
 std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forPatterns(
     ActionType actionType) const
 {
@@ -108,7 +121,6 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     std::map<int, int> nodeIdToOldestParent;
     std::map<int, int> visitTime;
     int visitedTimestampId = 0;
-
     generatePathFromNodeToNode(
         graph_->getNodeId(from),
         to,
@@ -120,6 +132,7 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 
     for (auto [nodeId, parentNodeId] : nodeIdToOldestParent)
     {
+        parentNodeId = fixParent(parentNodeId, nodeIdToOldestParent);
         if (nodesInPatternGraph.count(parentNodeId))
         {
             nodesInPatternGraph.insert(nodeId);
@@ -208,6 +221,7 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
             continue;
         }
         int newNodeId = graph_->getNodeId(edge->toName());
+
         if (generatePathFromNodeToNode(
                 newNodeId, finalNodes, nodeIdToOldestParent, visitTime, nodesInPatternGraph, bannedEdges, timestampId))
         {

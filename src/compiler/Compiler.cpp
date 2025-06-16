@@ -721,14 +721,19 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     std::string pos = mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++";
     if (useArray)
     {
-        if (positions.size() == depth - 1)
+        if (positions.empty())
         {
+            // We calculate position of first tag in move vector.
+            // Then each next tag will need to have position equal to last position + 1
             const std::string& tag = listOfActionsToTags->children_.begin()->first;
             const auto [lastNode, pos] =
                 graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getPositions(node, tag);
-            assert(lastNode);
             positions.push_back(pos);
-            node = lastNode;
+        }
+
+        if (positions.size() == depth - 1)
+        {
+            positions.push_back(positions.back() + 1);
         }
         pos = std::to_string(positions[depth - 1]);
     }

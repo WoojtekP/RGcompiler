@@ -143,11 +143,11 @@ void optimizePopPushSequences(const std::unique_ptr<Function>& function)
         }
         const auto& lastInstrStr = prevBlockInstr->backInstruction()->toString(0, 0, false);
         const auto& firstInstrStr = currBlockInstr->frontInstruction()->toString(0, 0, false);
-        if (lastInstrStr == "mr.pop_back()" && firstInstrStr.starts_with("mr.push_back"))
+        if (lastInstrStr == "mr.pop_back()" && firstInstrStr.starts_with("mr.emplace_back"))
         {
             prevBlockInstr->popInstructionBack();
             currBlockInstr->popInstructionFront();
-            const auto prefixLen = std::strlen("mr.push_back(");
+            const auto prefixLen = std::strlen("mr.emplace_back(");
             const auto pushedValue = firstInstrStr.substr(prefixLen, firstInstrStr.size() - 1 - prefixLen);
             currBlockInstr->pushInstructionFront(std::make_unique<AssignmentInstruction>("mr.back()", pushedValue));
         }
@@ -1338,7 +1338,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 }
                 else
                 {
-                    const auto pushTag = "mr.push_back(" + tagValueStr + ")";
+                    const auto pushTag = "mr.emplace_back(" + tagValueStr + ")";
                     blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(pushTag));
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>("mr.pop_back()"));
                 }

@@ -45,14 +45,14 @@ class cfg:
   
   result = runCap('g++ --version')
   if 'clang' in decodeOutput(result.stdout):
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto'
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto -DNDEBUG'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto -DNDEBUG'
   else:
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer -DNDEBUG -s'
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++20 -Ofast -flto=auto -march=native -ftracer'
-    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++20 -g -Og -ggdb3 -march=native -ftracer'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -ftracer -march=native -DNDEBUG -s'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -march=native -ftracer'
+    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++23 -g -Og -ggdb3 -march=native -ftracer'
     GCC_DEBUG_FLAGS += ' -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
-    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++20 -Og -pg -march=native -ftracer'
+    GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++23 -Og -pg -march=native -ftracer'
     # -finline-limit=100
 
 class util:

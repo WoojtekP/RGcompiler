@@ -96,14 +96,13 @@ if result.returncode != 0:
   exit(2)
 
 stats = decodeOutput(result.stdout).strip().split(' ')
-resSims = int(stats[0])
-resStates = int(stats[1])
+resSims = int(stats[1])
+resStates = int(stats[2])
 if usePerf:
   output = decodeOutput(result.stderr)
   if str.isnumeric(output.split(' ')[0]):
     elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
     print((TIME_FORMATTER+INSTR_FORMATTER+STATES_STAT_FORMATTER+SIMS_STAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
-    # TODO
   else:
     print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')

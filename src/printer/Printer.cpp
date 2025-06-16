@@ -130,9 +130,7 @@ void Printer::printConstants(const std::vector<std::unique_ptr<IVariable>>& cons
 }
 
 void Printer::printVariables(
-    const std::vector<std::unique_ptr<IVariable>>& variables,
-    bool isPublic,
-    const std::string& prefix)
+    const std::vector<std::unique_ptr<IVariable>>& variables, bool isPublic, const std::string& prefix)
 {
     if (std::none_of(variables.begin(), variables.end(), [isPublic](const std::unique_ptr<IVariable>& f) {
             return f->isPublic() == isPublic;
@@ -223,10 +221,9 @@ struct Move
 )" + moveInitialization + R"(
 
     Move(void) = default;
-    Move(const move_representation& mv)
-    {
-        mr = mv;
-    }
+    Move(const move_representation& mv) : mr(mv)
+    {}
+
     bool operator==(const Move& rhs) const
     {
         return mr == rhs.mr;

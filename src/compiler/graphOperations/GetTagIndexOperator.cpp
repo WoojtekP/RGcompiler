@@ -39,13 +39,11 @@ std::shared_ptr<Node> GetTagIndexOperator::fillPositions(
         return nullptr;
     }
 
-    std::shared_ptr<Node> lastNode = nullptr;
+    bool tagVisited = false;
+    bool rightTagFound = false;
+    std::shared_ptr<Node> lastNode;
     for (const auto& [edge, iid] : graph_->getOutgoingEdgesFrom(node->getName()))
     {
-        if (lastNode)
-        {
-            break;
-        }
         for (const auto& action : edge->getActions())
         {
             if (action->getType() == ActionType::Tag)
@@ -53,8 +51,9 @@ std::shared_ptr<Node> GetTagIndexOperator::fillPositions(
                 if (action->getLeftSide() == tags[positions.size()])
                 {
                     positions.push_back(getTagPositionForNode(node->getName()));
-                    lastNode = edge->getRightNode();
+                    rightTagFound = true;
                 }
+                tagVisited = true;
             }
             else if (action->getType() == ActionType::TagVariable)
             {
@@ -62,11 +61,19 @@ std::shared_ptr<Node> GetTagIndexOperator::fillPositions(
                 if (tagType && tagType == action->getRightSide())
                 {
                     positions.push_back(getTagPositionForNode(node->getName()));
-                    lastNode = edge->getRightNode();
+                    rightTagFound = true;
                 }
+                tagVisited = true;
             }
         }
-        lastNode = fillPositions(edge->getRightNode(), tags, positions, visited);
+        if (!tagVisited || rightTagFound)
+        {
+            lastNode = fillPositions(edge->getRightNode(), tags, positions, visited);
+            if (lastNode)
+            {
+                return lastNode;
+            }
+        }
     }
     return lastNode;
 }

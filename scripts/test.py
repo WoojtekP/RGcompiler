@@ -99,6 +99,7 @@ if "all" in games:
   games.append('chessTest1.hrg')
   
   # Simple games
+  
   games.append('alquerque.rbg')
   games.append('alquerque_noCapturingSequences.rbg')
 
@@ -270,10 +271,10 @@ for game in games:
   else:
     expectedList = [avgDepth] + avgScores
     stats = decodeOutput(result.stdout).strip().split(' ')
-    resSims = int(stats[0])
-    resStates = int(stats[1])
+    resSims = int(stats[1])
+    resStates = int(stats[2])
     resultList = [resStates / sims] # avgDepth
-    stats = stats[7:]
+    stats = stats[8:]
     for p in range(len(stats)//3): resultList.append(int(stats[p*3]) / sims) # avgScores
     if not verifyWithTolerance(expectedList, resultList):
       info = f'{util.ERROR} expected {util.CYAN}{" ".join(f"{x:1.2f}" for x in expectedList)}{util.RESET} but got {util.CYAN}{" ".join(f"{x:1.2f}" for x in resultList)}{util.RESET}'

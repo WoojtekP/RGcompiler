@@ -9,7 +9,13 @@ using ulong = unsigned long;
 #define USE_TIME 0
 #endif
 
-#define KEEPER_APPLY_ANY_MOVE 1
+#ifdef NDEBUG
+constexpr bool BENCHMARK = true;
+#else
+constexpr bool BENCHMARK = false;
+#endif
+
+constexpr bool KEEPER_APPLY_ANY_MOVE = true;
 
 fast_random::GenDefault randomGenerator(1);
 
@@ -22,110 +28,121 @@ ulong numStates = 0, minDepth = std::numeric_limits<ulong>::max(), maxDepth = 0;
 ulong numMoves = 0, minMoves = std::numeric_limits<ulong>::max(), maxMoves = 0;
 ulong sumScores[1+reasoner::PLAYERS_COUNT], minScores[1+reasoner::PLAYERS_COUNT], maxScores[1+reasoner::PLAYERS_COUNT];
 
-void exitWithError(const reasoner::GameState &state, const std::string msg)
-{
+void exitWithError(const reasoner::GameState &state, const std::string msg) {
   std::cerr << msg << std::endl;
   std::cerr << state.getStateDescription();
   exit(2);
 }
-reasoner::Move EMPTY_MOVE;
 
 bool keeperCompletion(reasoner::GameState &state) {
-  while (state.getCurrentPlayer() <= 0) {
-    if (state.getCurrentPlayer() == reasoner::keeper) {
-      if (state.isTerminal()) return false;
-      if constexpr(KEEPER_APPLY_ANY_MOVE) {
-        state.applyAnyMove(cache);
-      } else {
-        state.getAllMoves(moves, cache);
-        #ifndef NDEBUG
-          if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
-        #endif
-        state.applyMove(moves[0], cache);
+  while (true) {
+    switch (state.getCurrentPlayer()) {
+      case reasoner::keeper: {
+        if (state.isTerminal()) return false;
+        if constexpr(KEEPER_APPLY_ANY_MOVE) {
+          state.applyAnyMove(cache);
+        } else {
+          state.getAllMoves(moves, cache);
+          if constexpr(!BENCHMARK) {
+            if (moves.size() != 1) exitWithError(state, "Keeper has " + std::to_string(moves.size()) + " moves in keeperCompletion");
+          }
+          state.applyMove(moves[0], cache);
+        }
+        break;
       }
-    } else {// random
-      state.getAllMoves(moves, cache);
-      #ifndef NDEBUG
-        if (moves.size() == 0) exitWithError(state, "Random has no move in keeperCompletion");
-      #endif
-      state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
+      case reasoner::random: {
+        state.getAllMoves(moves, cache);
+        if constexpr(!BENCHMARK) {
+          if (moves.size() == 0) exitWithError(state, "Random has no move in keeperCompletion");
+        }
+        state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
+        break;
+      }
+      default: return true;
     }
   }
-  return true;
 }
 
 void doSimulation() {
   reasoner::GameState state = initial;
   uint depth = 0;
+  
   while (true) {
     //std::cerr << "depth " << depth << " player " << state.getCurrentPlayer() << std::endl;
-    #ifndef NDEBUG
+    if constexpr(!BENCHMARK) {
       if (state.getCurrentPlayer() == reasoner::keeper) exitWithError(state, "Keeper at the beginning of player loop");
-    #endif
+    }
     
     state.getAllMoves(moves, cache);
-    #ifndef NDEBUG
-      if (moves.size() == 0) {
-        exitWithError(state, "Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
-      }
-    #endif
-    depth++;
-    numMoves += moves.size();
-    if (moves.size() < minMoves) minMoves = moves.size(); else
-    if (moves.size() > maxMoves) maxMoves = moves.size();
-    state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
     
+    if constexpr(!BENCHMARK) {
+      if (moves.size() == 0) exitWithError(state, "Player " + std::to_string(state.getCurrentPlayer()) + " has 0 moves");
+    }
+    
+    depth++;
+    if constexpr(!BENCHMARK) {
+      numMoves += moves.size();
+      if (moves.size() < minMoves) minMoves = moves.size(); else
+      if (moves.size() > maxMoves) maxMoves = moves.size();
+    }
+    state.applyMove(moves[randomGenerator.rand_uint(moves.size())], cache);
     if (!keeperCompletion(state)) break;
   }
+  
   numStates += depth;
-  if (depth < minDepth) minDepth = depth; else
-  if (depth > maxDepth) maxDepth = depth;
-  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
-    uint score = state.getPlayerScore(player);
-    sumScores[player] += score;
-    if (score < minScores[player]) minScores[player] = score; else
-    if (score > maxScores[player]) maxScores[player] = score;    
+  if constexpr(!BENCHMARK) {
+    if (depth < minDepth) minDepth = depth; else
+    if (depth > maxDepth) maxDepth = depth;
+    for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
+      uint score = state.getPlayerScore(player);
+      sumScores[player] += score;
+      if (score < minScores[player]) minScores[player] = score; else
+      if (score > maxScores[player]) maxScores[player] = score;    
+    }
   }
 }
 
 int main(int argc, char** argv) {
   if (argc != 2) {
     if constexpr(USE_TIME) {
-      std::cerr << "Usage: " << argv[0] << " [time in ms]" << std::endl;
+      std::cerr << "Usage: " << argv[0] << " [time in ms]\n";
     } else {
-      std::cerr << "Usage: " << argv[0] << " [number of simulations]" << std::endl;
+      std::cerr << "Usage: " << argv[0] << " [number of simulations]\n";
     }
+    std::cerr << "Compiled in " << (BENCHMARK ? "benchmark" : "test") << " mode" << std::endl;
     return 1;
   }
 
   [[maybe_unused]] bool initialNonterminal = keeperCompletion(initial);
-  #ifndef NDEBUG
+  if constexpr(!BENCHMARK) {
     if (!initialNonterminal) exitWithError(initial, "Initial state is terminal");
-  #endif
-  
+  }
+
+  std::chrono::steady_clock::time_point endTime, startTime;
   if constexpr(USE_TIME) {
-    std::chrono::duration simulation_duration = std::chrono::milliseconds(std::stoi(argv[1]));
-    std::chrono::steady_clock::time_point end_time;
-    std::chrono::steady_clock::time_point start_time(std::chrono::steady_clock::now());
-    std::chrono::steady_clock::time_point planned_end_time = start_time + simulation_duration;
+    startTime = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point plannedEndTime = startTime + std::chrono::milliseconds(std::stoi(argv[1]));
     for (numSims = 1; ; numSims++) {
       doSimulation();
-      end_time = std::chrono::steady_clock::now();
-      if (end_time >= planned_end_time) break;
+      endTime = std::chrono::steady_clock::now();
+      if (endTime >= plannedEndTime) break;
     }
   } else {
     numSims = std::stoi(argv[1]);
+    startTime = std::chrono::steady_clock::now();
     for (uint i = 0; i < numSims; i++) doSimulation();
+    endTime = std::chrono::steady_clock::now();
   }
   
-  if (maxMoves == 0) maxMoves = minMoves;
-  if (maxDepth == 0) maxDepth = minDepth;
-
-  std::cout << std::fixed; std::cout.precision(2);
-  std::cout << numSims << " " << numStates << " " << minDepth << " " << maxDepth;
-  std::cout << " " << numMoves << " " << minMoves << " " << maxMoves;
-  for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
-    std::cout << " " << sumScores[player] << " " << minScores[player] << " " << maxScores[player];
+  std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(endTime-startTime).count() << " " << numSims << " " << numStates;
+  if constexpr (!BENCHMARK) {
+    std::cout << std::fixed; std::cout.precision(2);
+    if (maxMoves == 0) maxMoves = minMoves;
+    if (maxDepth == 0) maxDepth = minDepth;
+    std::cout << " " << minDepth << " " << maxDepth << " " << numMoves << " " << minMoves << " " << maxMoves;
+    for (uint player = 1; player <= reasoner::PLAYERS_COUNT; player++) {
+      std::cout << " " << sumScores[player] << " " << minScores[player] << " " << maxScores[player];
+    }
   }
   std::cout << std::endl;
   return 0;

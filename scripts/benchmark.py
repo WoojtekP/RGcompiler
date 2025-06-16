@@ -158,14 +158,15 @@ for game in games:
   print(f' | sims ',end='',flush=True)
   startTime = time.time()
   result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {limit}')
-  elapsedTime = time.time() - startTime
+  #elapsedTime = time.time() - startTime
   if result.returncode != 0:
     print(f'{util.ERROR} exitcode {result.returncode}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
   else:
     resOut = decodeOutput(result.stdout).strip().split(' ')
-    resSims = int(resOut[0])
-    resStates = int(resOut[1])
+    elapsedTime = int(resOut[0]) * 0.001 # Read time in ms
+    resSims = int(resOut[1])
+    resStates = int(resOut[2])
     
     print(TIME_FORMATTER.format(elapsedTime),end='')
     formatter = STATES_STAT_PRECISE_FORMATTER if resStates < 10 else STATES_STAT_FORMATTER

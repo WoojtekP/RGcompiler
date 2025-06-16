@@ -1666,18 +1666,18 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     generateRunStateFunction(graph);
     generateGetStateDescription();
     //tutaj
-    auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true);
+    auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true, true);
     isTerminal->addInstruction(std::make_unique<ReturnInstruction>(
         std::string(CURRENT_STATE_WORD) + " == " + std::to_string(graph->getNodeId(common::END_WORD))));
 
-    auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", "", true);
+    auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", "", true, true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>(
         std::string(common::PLAYER_WORD), std::string(common::PLAYER_TYPE_WORD)));
     getPlayerScore->addInstruction(
         std::make_unique<ReturnInstruction>("goals[" + std::string(common::PLAYER_WORD) + "- 1]"));
 
     auto getCurrentPlayer =
-        std::make_unique<Function>("getCurrentPlayer", std::string(common::PLAYER_OR_SYSTEM_TYPE_WORD), "", true);
+        std::make_unique<Function>("getCurrentPlayer", std::string(common::PLAYER_OR_SYSTEM_TYPE_WORD), "", true, true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>(std::string(common::PLAYER_WORD)));
 
     auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", "", true);

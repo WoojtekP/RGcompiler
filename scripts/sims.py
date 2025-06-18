@@ -117,12 +117,12 @@ else:
 #######################################################################################################################
 print()
 resAvgDepth = resStates / resSims
-resMinDepth = int(stats[2])
-resMaxDepth = int(stats[3])
-resMoves = int(stats[4])
-resMinMoves = int(stats[5])
-resMaxMoves = int(stats[6])
-stats = stats[7:]
+resMinDepth = int(stats[3])
+resMaxDepth = int(stats[4])
+resMoves = int(stats[5])
+resMinMoves = int(stats[6])
+resMaxMoves = int(stats[7])
+stats = stats[8:]
 resAvgScores = []
 resMinScores = []
 resMaxScores = []

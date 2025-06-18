@@ -4,7 +4,7 @@ from common import *
 os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 
 parser = argparse.ArgumentParser(description='Run predefined validation tests for given games.')
-parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests')
+parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests and \"short\" for a subset for quick test')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 parser.add_argument('-q', '--quiet', action='store_true', help='suppress g++ warnings')
 cpp_flags_group = parser.add_mutually_exclusive_group(required=False)
@@ -44,8 +44,10 @@ tests['simpleApplyTest3'] = (1000,2.0,[0.0,75.0], [1,2,3,0])
 tests['simpleApplyTest4'] = (1000,2.0,[0.0,50.0], [1,1,3,0])
 tests['simpleApplyTest5'] = (1000,1.0,[50.0], [1,2,0])
 tests['simpleApplyTest6'] = (1000,2.0,[0.0,50.0], [1,3,5,0])
+tests['simpleApplyDoubleTest'] = (1000,1.0,[28.56], [1,7,0])
+tests['simpleApplyDoubleRevTest'] = (1000,1.0,[28.56], [1,7,0])
+tests['simpleApplyDoubleSameTest'] = (1000,1.0,[28.56], [1,7,0])
 tests['chessTest1'] = (1000,4.0,[50.0,50.0], [1,7,28,256,1664])
-
 tests['alquerque'] = (100000,35.91,[54.88,45.12], [1,4,5,6,12,29,109,541,2730,14375,83003])
 tests['alquerque_noCapturingSequences'] = (100000,197.12,[52.77,47.23], [1,4,8,33,210,1430,10262,81306,717196,6784234,69173829])
 tests['amazons'] = (200,71.46,[50.02,49.98], [1,2176])#,4307152
@@ -55,8 +57,10 @@ tests['backgammon'] = (1000,109.98,[48.00,52.00], [1,36,2574,92664,6545432])#,23
 tests['battleships'] = (10000,195.53,[45.47,54.53], [1,120,14400,1850736])
 tests['bombardment'] = (20000,22.74,[51.31,48.69], [1,38,1444,48564,1633284])
 tests['breakthrough'] = (20000,64.10,[50.92,49.08], [1,22,484,11132,256036,6182818])#,149264638
-tests['chess'] = (1000,408.73,[50.02,49.98], [1,20,400,8902,197281,4865609,119060324])#,3195901860,84998978956,2439530234167,69352859712417])
+tests['chess'] = (1000,408.73,[50.02,49.98], [1,20,400,8902,197281,4865609,119060324])#,3195901860,84998978956,2439530234167,69352859712417
 tests['chess_kingCapture'] = (1000,117.95,[50.02,49.98], [1,20,400,8902,197742,4897256,120909363])#,3283514875
+tests['chessCylinder'] = (1000,399.82,[50.07,49.93], [1,20,392,9162,211036,5637296,149227488])#,4433920826
+tests['chessCylinder_kingCapture'] = (1000,113.22,[50.15,49.85], [1,20,400,9646,231440,6459255,179301818])#,5591796460
 tests['clobber'] = (10000,64.63,[48.88,51.12], [1,180,31252,5231000])
 tests['connect4'] = (20000,21.31,[55.72,44.28], [1,7,49,343,2401,16807])#,117649,823536,5673234
 tests['dashGuti'] = (100000,55.84,[61.33,38.66], [1,4,4,6,13,43,100,312,943,3564,14041,57217,254649])
@@ -96,10 +100,15 @@ if "all" in games:
   games.append('simpleApplyTest4.rg')
   games.append('simpleApplyTest5.rg')
   games.append('simpleApplyTest6.rg')
+  games.append('simpleApplyDoubleTest.rg')
+  games.append('simpleApplyDoubleTestRev.rg')
+  games.append('simpleApplyDoubleTestSame.rg')
+  
   games.append('chessTest1.hrg')
   
   # Simple games
   
+  games.append('alquerque.hrg')
   games.append('alquerque.rbg')
   games.append('alquerque_noCapturingSequences.rbg')
 
@@ -155,7 +164,7 @@ if "all" in games:
   games.append('chess.hrg')
   games.append('chess.rbg')
 
-  games.append('chess_kingCapture.hrg')
+  games.append('chess_kingCapture.rbg')
 
   games.append('chessCylinder.rbg')
 
@@ -181,6 +190,29 @@ if "all" in games:
   games.append('surakarta.rbg')
   
   games.append('ultimateTicTacToe.hrg')
+
+elif "short" in games:
+  games = []
+  
+  games.append('repeatTest.rg')
+  games.append('repeatTestBig.rg')
+  games.append('repeatTestHard.rg')
+  
+  games.append('simpleApplyTest0.rg')
+  games.append('simpleApplyTest1.rg')
+  games.append('simpleApplyTest2.rg')
+  games.append('simpleApplyTest3.rg')
+  games.append('simpleApplyTest4.rg')
+  games.append('simpleApplyTest5.rg')
+  games.append('simpleApplyTest6.rg')
+  games.append('simpleApplyDoubleTest.rg')
+  
+  games.append('breakthrough.rbg')
+
+  games.append('chess.hrg')
+  games.append('englishDraughts.hrg')
+
+  games.append('pretwa.rbg')
 
 
 print(f'Testing #{len(games)}: {" ".join(games)}')

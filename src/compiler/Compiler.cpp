@@ -572,7 +572,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
         if (applyMode && graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                              ->isMainSimpleApply(node->getName()))
         {
-            function->addInstruction(generateVoidEdgeInstruction(
+            auto edgeInstruction = generateVoidEdgeInstruction(
                 node,
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->getActionListToTags(node),
@@ -581,11 +581,15 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
                     ->isExhaustive(node->getName()),
                 graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
-                    ->hasAnyEmptyTagSequence(node->getName())));
+                    ->hasAnyEmptyTagSequence(node->getName()));
+            if (edgeInstruction)
+            {
+                function->addInstruction(std::move(edgeInstruction));
 
-            skipForExhaustiveSimpleApply =
-                graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
-                    ->isExhaustive(node->getName());
+                skipForExhaustiveSimpleApply =
+                    graphOperatorManager_->getOperator<PragmaSimpleApplyOperator>(unoptimizedGraph_)
+                        ->isExhaustive(node->getName());
+            }
         }
 
         if (!skipForExhaustiveSimpleApply)
@@ -725,7 +729,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         {
             // We calculate position of first tag in move vector.
             // Then each next tag will need to have position equal to last position + 1
-            const std::string& tag = listOfActionsToTags->children_.begin()->first;
+            const std::string& tag = listOfActionsToTags->children_.begin()->first.tag_;
             const auto [lastNode, pos] =
                 graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getPositions(node, tag);
             positions.push_back(pos);
@@ -739,10 +743,11 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
     }
 
     auto sw = std::make_unique<SwitchInstruction>("mr[" + pos + "]");
+    std::set<std::pair<int, int>> caseAlreadyAdded;
     int cnt = 0;
     for (auto pairFullTagAndChild : listOfActionsToTags->children_)
     {
-        std::string tag = pairFullTagAndChild.first;
+        std::string tag = pairFullTagAndChild.first.tag_;
         std::pair<int, int> values;
         if (auto tagType = getTagType(tag))
         {
@@ -754,7 +759,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         }
         int minValue = values.first, maxValue = values.second;
         minValues.push_back(minValue);
-        tags.push_back(pairFullTagAndChild.first);
+        tags.push_back(pairFullTagAndChild.first.tag_);
         auto innerInstructions = std::move(makeSwitchForTags(
             pairFullTagAndChild.second,
             tags,
@@ -764,6 +769,10 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
             minValues,
             positions,
             node));
+        if (!innerInstructions)
+        {
+            return nullptr;
+        }
         minValues.pop_back();
         tags.pop_back();
         std::unique_ptr<BlockInstruction> breakInstruction = std::make_unique<BlockInstruction>();
@@ -802,6 +811,10 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         }
         else
         {
+            if (caseAlreadyAdded.insert(std::make_pair(minValue, maxValue)).second)
+            {
+                return nullptr;
+            }
             sw->addCaseInstruction(minValue, maxValue, std::move(breakInstruction));
         }
     }
@@ -842,6 +855,11 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
         auto switchBody = makeSwitchForTags(
             listOfActionsToTags, tags, 1, isExhaustive, hasAnyEmptyTagSequence, minValues, positions, node);
+
+        if (!switchBody)
+        {
+            return nullptr;
+        }
 
         if (isExhaustive && !hasAnyEmptyTagSequence)
         {

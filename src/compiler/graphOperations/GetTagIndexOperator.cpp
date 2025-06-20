@@ -66,7 +66,7 @@ std::shared_ptr<Node> GetTagIndexOperator::fillPositions(
                 tagVisited = true;
             }
         }
-        if (!tagVisited || rightTagFound)
+        if (!tagVisited || (tagVisited && !rightTagFound))
         {
             lastNode = fillPositions(edge->getRightNode(), tags, positions, visited);
             if (lastNode)

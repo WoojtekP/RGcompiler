@@ -6,9 +6,22 @@
 
 #include <compiler/graphOperations/BaseOperator.hpp>
 
+struct TagWrapper
+{
+private:
+    std::string getTagKey(const std::string& tag) const;
+
+public:
+    TagWrapper(const std::string& tag);
+    bool operator<(const TagWrapper& tagWrapper) const { return key_ < tagWrapper.key_; }
+
+    std::string tag_;
+    std::string key_;
+};
+
 struct SimpleApplySwitchTreeNode
 {
-    std::unordered_map<std::string, std::shared_ptr<SimpleApplySwitchTreeNode>> children_;
+    std::map<TagWrapper, std::shared_ptr<SimpleApplySwitchTreeNode>> children_;
     std::vector<std::shared_ptr<IAction>> listOfActions_;
     std::unique_ptr<Node> endNode_;
     bool empty() const { return children_.empty() && listOfActions_.empty(); }

@@ -1,8 +1,10 @@
 #pragma once
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include <graph/Action.hpp>
+
 namespace common
 {
 constexpr std::string_view PLAYER_WORD = "player";
@@ -23,6 +25,34 @@ inline bool isActionAssignmentKeeperToPlayer(const std::shared_ptr<IAction>& act
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == PLAYER_WORD &&
            (action->getRightSide() == KEEPER_CASTED_WORD || action->getRightSide() == KEEPER_WORD);
+}
+
+inline std::optional<std::string> getTagVar(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        return tagTmp.substr(0, pos - 1);
+    }
+    return {};
+}
+
+inline std::optional<std::string> getTagType(const std::string& tag)
+{
+    assert(tag.size());
+    std::string tagTmp = tag.substr(1, tag.size());
+    auto pos = tagTmp.find(":");
+
+    if (pos != std::string::npos)
+    {
+        std::string res = tagTmp.substr(pos + 2);
+        res.pop_back();
+        return res;
+    }
+    return {};
 }
 
 }  // namespace common

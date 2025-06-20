@@ -1,12 +1,29 @@
 #include "PragmaSimpleApplyOperator.hpp"
 
+#include <common/Common.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
+
 namespace
 {
 constexpr std::string_view pragmaSimpleApply = "SimpleApply";
 constexpr std::string_view pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
 }  // namespace
+
+std::string TagWrapper::getTagKey(const std::string& tag) const
+{
+    std::optional<std::string> tagType = common::getTagType(tag);
+    if (tagType)
+    {
+        return *tagType;
+    }
+    return tag;
+}
+
+TagWrapper::TagWrapper(const std::string& tag)
+: tag_(tag)
+, key_(getTagKey(tag))
+{}
 
 void SimpleApplySwitchTreeNode::insert(
     const std::vector<std::string>& tags,
@@ -21,11 +38,12 @@ void SimpleApplySwitchTreeNode::insert(
         return;
     }
     const auto& tag = tags[currTagPos];
-    if (!children_.count(tag))
+    TagWrapper tagWrapper(tag);
+    if (!children_.count(tagWrapper))
     {
-        children_[tag] = std::make_shared<SimpleApplySwitchTreeNode>();
+        children_[tagWrapper] = std::make_shared<SimpleApplySwitchTreeNode>();
     }
-    children_[tag]->insert(tags, std::move(actions), std::move(endNode), currTagPos + 1);
+    children_[tagWrapper]->insert(tags, std::move(actions), std::move(endNode), currTagPos + 1);
 }
 
 const std::shared_ptr<SimpleApplySwitchTreeNode>& PragmaSimpleApplyOperator::getActionListToTags(

@@ -194,6 +194,7 @@ private:
     ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<Graph> unoptimizedGraph_;
+    std::shared_ptr<Graph> mainGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     Program program_;

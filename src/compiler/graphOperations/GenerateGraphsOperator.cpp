@@ -245,3 +245,10 @@ bool GenerateGraphsOperator::generatePathFromNodeToNode(
 GenerateGraphsOperator::GenerateGraphsOperator(const std::shared_ptr<Graph> &graph)
 : BaseOperator(graph)
 {}
+
+std::shared_ptr<Graph> GenerateGraphsOperator::forMainGraph() const
+{
+    int nodeId = graph_->getNodeId(std::string(common::END_WORD));
+    assert(nodeId != -1);
+    return generateGraphForPattern(std::string(common::BEGIN_WORD), {nodeId});
+}

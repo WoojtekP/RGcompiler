@@ -318,6 +318,8 @@ void Compiler::initializeGraph()
     }
 
     graph_->initialize(valueAssigner_);
+    mainGraph_ = graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forMainGraph();
+    mainGraph_->initialize(valueAssigner_);
 
     patternReachabilityGraphs_ =
         graphOperatorManager_->getOperator<GenerateGraphsOperator>(graph_)->forPatterns(ActionType::Reachability);
@@ -525,6 +527,10 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 {
     for (auto& node : graph->getOuterNodes())
     {
+        if (!mainGraph_->getNodeIdOptional(node->getName()))
+        {
+            continue;
+        }
         const std::string state = node->toString();
         std::string prefix(STATE_WORD);
         bool isSimpleApply = false;

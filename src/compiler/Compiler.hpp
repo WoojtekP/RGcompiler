@@ -79,21 +79,24 @@ private:
         const bool hasAnyEmptyTagSequence,
         std::vector<int> &minValues,
         std::vector<int> &positions,
-        std::shared_ptr<Node> node);
+        std::shared_ptr<Node> node,
+        const bool isCacheNeed);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Graph> &graph,
         const std::shared_ptr<Edge> &edge,
         int iid,
         bool applyEdgeMode = false,
         bool addReturn = false,
-        bool skipFirstInstruction = false);
+        bool skipFirstInstruction = false,
+        const bool isCacheNeed = true);
     std::unique_ptr<BlockInstruction> generateVoidEdgeInstruction(
         const std::shared_ptr<Node> &node,
         const std::shared_ptr<SimpleApplySwitchTreeNode> &listOfActionsToTags,
         const std::pair<std::vector<std::shared_ptr<IAction>>, std::unique_ptr<Node>>
             &listOfActionsToPlayerChangeAndEndNode,
         const bool isExhaustive,
-        const bool hasAnyEmptyTagSequence);
+        const bool hasAnyEmptyTagSequence,
+        const bool isCacheNeed = true);
 
     template<typename TPtrNode, typename TPtrAction>
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
@@ -101,7 +104,8 @@ private:
         std::vector<TPtrAction> &actions,
         const TPtrNode &toNode,
         bool applyEdgeMode,
-        bool simpleApplyEdgeMode = false);
+        bool simpleApplyEdgeMode = false,
+        const bool isCacheNeed = true);
     std::unique_ptr<BlockInstruction> generateBoolEdgeInstruction(
         const std::string &from,
         const std::string &to,
@@ -111,7 +115,8 @@ private:
         int edgeIdx,
         bool isApplyAnyMove = false,
         bool addReturn = false,
-        bool skipFirstInstruction = false);
+        bool skipFirstInstruction = false,
+        const bool isCacheNeed = true);
     std::unique_ptr<BlockInstruction> prepareBaseInstructions(
         const std::shared_ptr<Graph> &graph,
         const std::vector<std::shared_ptr<IAction>> &actions,
@@ -121,7 +126,8 @@ private:
         const std::shared_ptr<Edge> &edge,
         int iid,
         const std::string &prefix,
-        BoolFunctionType patternId = BoolFunctionType::Default);
+        BoolFunctionType patternId = BoolFunctionType::Default,
+        const bool isCacheNeed = true);
     void generateSpecialFunctions(const std::shared_ptr<Graph> &graph);
     void generateRunStateFunction(const std::shared_ptr<Graph> &graph, bool applyMode = false);
     void generateGetFromStateForEdge(const std::shared_ptr<Graph> &graph);
@@ -177,12 +183,18 @@ private:
         std::unique_ptr<Function> &function,
         std::shared_ptr<Graph> graph,
         const std::string &state,
-        bool isApplyAnyMove = false);
+        bool isApplyAnyMove = false,
+        const bool isCacheNeed = true);
+    bool checkIsCacheNeed(const std::string &functionName, const std::shared_ptr<Graph> &graph);
+    bool checkIsCacheNeedForPattern(const std::string &from, const std::string to) const;
+    void calculatePatternsWithCache();
+    bool arePatternAndMainGraphUnique();
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;
     std::shared_ptr<Graph> graph_;
     std::shared_ptr<Graph> unoptimizedGraph_;
+    std::shared_ptr<Graph> mainGraph_;
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> patternReachabilityGraphs_;
     std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> applyAnyMoveGraphs_;
     Program program_;
@@ -209,4 +221,6 @@ private:
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::string> areAllNodesInApplyAnyGraphUnique_;
     std::map<std::string, int> functionCallCounter_;
+    std::set<std::string> functionsWithCache_;
+    std::set<std::pair<std::string, std::string>> patternsWithCache_;
 };

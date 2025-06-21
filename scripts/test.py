@@ -183,7 +183,7 @@ if "all" in games:
   games.append('oware.hrg')
 
   games.append('pentago.hrg')
-  games.append('pentago.rbg')
+  # games.append('pentago.rbg')
   games.append('pentago_split.hrg')
   games.append('pentago_split.rbg')
   

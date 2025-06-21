@@ -22,9 +22,11 @@ class ContainerChooser
 private:
     const std::string cacheName_;
 
-    std::string createCache(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
+    std::string createCache(
+        const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache, bool removeCache) const;
 
 public:
     ContainerChooser(const std::string& cacheName);
-    std::string getAdditionalData(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const;
+    std::string getAdditionalData(
+        const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache, bool removeCache) const;
 };

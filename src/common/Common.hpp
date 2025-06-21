@@ -21,6 +21,12 @@ inline bool isActionAssignmentToPlayer(const std::shared_ptr<IAction>& action)
     return action->getType() == ActionType::Assignment && action->getLeftSide() == PLAYER_WORD;
 }
 
+inline bool isActionAssignmentToPlayerButNotKeeper(const std::shared_ptr<IAction>& action)
+{
+    return action->getType() == ActionType::Assignment && action->getLeftSide() == PLAYER_WORD &&
+           action->getRightSide() != KEEPER_WORD;
+}
+
 inline bool isActionAssignmentKeeperToPlayer(const std::shared_ptr<IAction>& action)
 {
     return action->getType() == ActionType::Assignment && action->getLeftSide() == PLAYER_WORD &&

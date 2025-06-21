@@ -21,4 +21,5 @@ public:
     GenerateGraphsOperator(const std::shared_ptr<Graph> &graph);
     std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> forPatterns(ActionType actionType) const;
     std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> forApplyAnyMove() const;
+    std::shared_ptr<Graph> forMainGraph() const;
 };

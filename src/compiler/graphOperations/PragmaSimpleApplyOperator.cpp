@@ -1,7 +1,5 @@
 #include "PragmaSimpleApplyOperator.hpp"
 
-#include <iostream>
-
 #include <common/Common.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
@@ -106,12 +104,9 @@ void PragmaSimpleApplyOperator::parseItem(
         auto& varName = action["rhs"]["rhs"]["identifier"];
         if (varName.is_string() && mapOrgNameToNewName.count(varName.get<std::string>()))
         {
-            std::cout << "\n " << varName.get<std::string>() << "\n";
-            std::cout << "xdd";
             action["rhs"]["rhs"]["identifier"] = mapOrgNameToNewName[varName.get<std::string>()];
         }
 
-        std::cout << "item : " << action << "\n\n";
         data.actionsToTagOrPlayerChange_.push_back(std::make_shared<ActionAssignment>(action, expressionFactory));
     }
 

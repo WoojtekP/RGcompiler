@@ -811,7 +811,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
         }
         else
         {
-            if (caseAlreadyAdded.insert(std::make_pair(minValue, maxValue)).second)
+            if (!caseAlreadyAdded.insert(std::make_pair(minValue, maxValue)).second)
             {
                 return nullptr;
             }

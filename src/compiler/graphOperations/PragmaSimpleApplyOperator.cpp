@@ -1,5 +1,7 @@
 #include "PragmaSimpleApplyOperator.hpp"
 
+#include <iostream>
+
 #include <common/Common.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
@@ -8,6 +10,8 @@ namespace
 {
 constexpr std::string_view pragmaSimpleApply = "SimpleApply";
 constexpr std::string_view pragmaSimpleApplyExhaustive = "SimpleApplyExhaustive";
+constexpr std::string_view prefixVariableName = "tempVar_";
+
 }  // namespace
 
 std::string TagWrapper::getTagKey(const std::string& tag) const
@@ -67,6 +71,7 @@ void PragmaSimpleApplyOperator::parseItem(
     data.endNode_ = std::make_unique<Node>(item["rhs"]);
 
     std::vector<std::string> tags;
+    std::map<std::string, std::string> mapOrgNameToNewName;
     for (const auto& tag : item["tags"])
     {
         if (tag.contains("Variable"))
@@ -76,7 +81,9 @@ void PragmaSimpleApplyOperator::parseItem(
             if (tagVar["type_"] != nullptr)
             {
                 std::string tagType = tagVar["type_"]["identifier"];
-                data.tagNames_.push_back("(" + tagVarName + " : " + tagType + ")");
+                mapOrgNameToNewName[tagVarName] =
+                    std::string(prefixVariableName) + std::to_string(mapOrgNameToNewName.size());
+                data.tagNames_.push_back("(" + mapOrgNameToNewName[tagVarName] + " : " + tagType + ")");
             }
             else
             {
@@ -94,8 +101,17 @@ void PragmaSimpleApplyOperator::parseItem(
         }
     }
 
-    for (const auto& action : item["assignments"])
+    for (auto action : item["assignments"])
     {
+        auto& varName = action["rhs"]["rhs"]["identifier"];
+        if (varName.is_string() && mapOrgNameToNewName.count(varName.get<std::string>()))
+        {
+            std::cout << "\n " << varName.get<std::string>() << "\n";
+            std::cout << "xdd";
+            action["rhs"]["rhs"]["identifier"] = mapOrgNameToNewName[varName.get<std::string>()];
+        }
+
+        std::cout << "item : " << action << "\n\n";
         data.actionsToTagOrPlayerChange_.push_back(std::make_shared<ActionAssignment>(action, expressionFactory));
     }
 

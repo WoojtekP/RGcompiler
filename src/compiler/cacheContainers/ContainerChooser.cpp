@@ -11,10 +11,13 @@ const auto INIT_CACHE = R"(RgCache()
 
 const auto RESET_MAIN_PART = R"(inline void reset()
 {
+    currentMrId = 0;
+)";
+
+const auto RESET_MAIN_CACHE_PART = R"(
     depth = 0;
     pattern_cache[0].clear();
     state_cache.clear();
-    currentMrId = 0;
 )";
 
 const auto CLEAR_CURRENT = R"(inline void clearCurrent() { pattern_cache[depth].clear(); }
@@ -48,14 +51,15 @@ const auto INC_DEPTH = R"(inline void incDepth()
 const auto DEC_DEPTH = R"(inline void decDepth() { --depth; }
 )";
 
-std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache)
+std::string getResetMethod(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache, bool removeCache)
 {
     std::string clearingCaches;
     for (const auto& [_, cache] : stateToCache)
     {
         clearingCaches += cache->getCacheName() + cache->getResetInstruction() + ";\n";
     }
-    return RESET_MAIN_PART + clearingCaches + "}\n";
+    return std::string(RESET_MAIN_PART) + (removeCache ? "" : std::string(RESET_MAIN_CACHE_PART)) + clearingCaches +
+           "}\n";
 }
 }  // namespace
 
@@ -64,26 +68,38 @@ ContainerChooser::ContainerChooser(const std::string& cacheName)
 {}
 
 std::string ContainerChooser::getAdditionalData(
-    const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const
+    const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache, bool removeCache) const
 {
-    return createCache(stateToCache);
+    return createCache(stateToCache, removeCache);
 }
 
-std::string ContainerChooser::createCache(const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache) const
+std::string ContainerChooser::createCache(
+    const std::map<std::string, std::shared_ptr<IStateCache>>& stateToCache, bool removeCache) const
 {
     std::string rgCache = "class " + cacheName_ + "{\n";
     rgCache += "public:\n";
-    rgCache += INIT_CACHE;
-    rgCache += getResetMethod(stateToCache);
-    rgCache += CLEAR_CURRENT;
-    rgCache += INSERT_2;
-    rgCache += INSERT_3;
-    rgCache += INC_DEPTH;
-    rgCache += DEC_DEPTH;
-    rgCache += "\n";
-    rgCache += "unsigned depth = 0;\n";
-    rgCache += "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
-    rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
+    if (!removeCache)
+    {
+        rgCache += INIT_CACHE;
+    }
+    rgCache += getResetMethod(stateToCache, removeCache);
+    if (!removeCache)
+    {
+        rgCache += CLEAR_CURRENT;
+        rgCache += INSERT_2;
+        rgCache += INSERT_3;
+        rgCache += INC_DEPTH;
+        rgCache += DEC_DEPTH;
+        rgCache += "\n";
+    }
+
+    if (!removeCache)
+    {
+        rgCache += "unsigned depth = 0;\n";
+        rgCache +=
+            "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
+        rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
+    }
     rgCache += "int currentMrId = 0;\n";
     for (const auto& [_, cache] : stateToCache)
     {

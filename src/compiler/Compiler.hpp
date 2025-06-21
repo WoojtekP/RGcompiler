@@ -188,6 +188,7 @@ private:
     bool checkIsCacheNeed(const std::string &functionName, const std::shared_ptr<Graph> &graph);
     bool checkIsCacheNeedForPattern(const std::string &from, const std::string to) const;
     void calculatePatternsWithCache();
+    bool arePatternAndMainGraphUnique();
 
     const Parser &parser_;
     ValueAssigner valueAssigner_;

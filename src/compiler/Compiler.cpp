@@ -420,7 +420,7 @@ void Compiler::generateSourceCode(
     printer.printHashAndComparisonFunctions(parser_.getVariables());
     printer.printFunctions(program_.getFunctions());
     printer.endMainClass();
-    printer.printMainCache(containerChooser_.getAdditionalData(stateToCache_));
+    printer.printMainCache(containerChooser_.getAdditionalData(stateToCache_, arePatternAndMainGraphUnique()));
     printer.endHeaderFile();
     printer.endSourceFile();
 }
@@ -2237,4 +2237,11 @@ void Compiler::calculatePatternsWithCache()
             patternsWithCache_.insert(pairNodeNameAndId.first);
         }
     }
+}
+
+bool Compiler::arePatternAndMainGraphUnique()
+{
+    return patternsWithCache_.empty() &&
+           graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->areAllNodesWithPragmaUnique(
+               pragmaUniqueData_);
 }

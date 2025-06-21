@@ -33,6 +33,12 @@ GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionChangePlayer() co
     return getEdges([](const std::shared_ptr<IAction> &action) { return common::isActionAssignmentToPlayer(action); });
 }
 
+GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionChangePlayerButNotKeeper() const
+{
+    return getEdges(
+        [](const std::shared_ptr<IAction> &action) { return common::isActionAssignmentToPlayerButNotKeeper(action); });
+}
+
 GetEdgeOperator::ReturnType GetEdgeOperator::getEdgesWithActionTag() const
 {
     return getEdges([](const std::shared_ptr<IAction> &action) {

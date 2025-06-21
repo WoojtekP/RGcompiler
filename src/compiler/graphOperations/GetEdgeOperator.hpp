@@ -11,6 +11,7 @@ class GetEdgeOperator : public BaseOperator
 public:
     GetEdgeOperator(const std::shared_ptr<Graph> &graph);
     ReturnType getEdgesWithActionChangePlayer() const;
+    ReturnType getEdgesWithActionChangePlayerButNotKeeper() const;
     ReturnType getEdgesWithActionTag() const;
     const std::vector<std::tuple<std::string, std::string, int>> &getEdgeNames();
     std::vector<std::tuple<std::string, std::string, int>> getUnambiguousPathFromNode(

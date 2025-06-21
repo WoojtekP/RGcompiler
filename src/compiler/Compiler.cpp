@@ -1747,6 +1747,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
     auto function = std::make_unique<Function>(functionName, "void", "", false);
     function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", std::string(CUSTOM_TYPE_WORD)));
+    function->setAttributes("inline");
 
     if (applyMode)
     {
@@ -1769,7 +1770,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
     auto sw = std::make_unique<SwitchInstruction>("val");
 
     for (const auto& [edge, iid] :
-         graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayer())
+         graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayerButNotKeeper())
     {
         const auto stateFunctionName =
             prefix + (preserveOriginalNames_ ? edge->toName() : std::to_string(graph->getNodeId(edge->toName())));

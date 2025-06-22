@@ -83,17 +83,37 @@ void SymbolsManager::fillIntegerOperationsData()
             continue;
         }
         const auto srcTypeId = parser_.getSourceType(type);
-        const auto dstType = parser_.getDestinationType(type);
+        auto dstType = parser_.getDestinationType(type);
         if (parser_.isArrayType(dstType))
         {
-            // TODO: implement
+            const auto srcSndTypeId = parser_.getSourceType(dstType);
+            dstType = parser_.getDestinationType(dstType);
+            if (parser_.isArrayType(dstType) || srcTypeId != srcSndTypeId)
+            {
+                continue;
+            }
+            const auto dstTypeId = dstType["identifier"].get<std::string>();
+            // TODO: fix - do not use "Bool" constant
+            if (integerTypes_.isWithoutNan(srcTypeId) && integerTypes_.isWithoutNan(srcSndTypeId) &&
+                (integerTypes_.isAnyInt(dstTypeId) || dstTypeId == "Bool"))
+            {
+                const auto constantMap = getBinaryMapFromConstant(srcTypeId, srcSndTypeId, constant);
+                const auto& srcTypeDomain = parser_.getDomain(srcTypeId);
+                const auto& srcSndTypeDomain = parser_.getDomain(srcSndTypeId);
+                const auto& dstTypeDomain = parser_.getDomain(dstTypeId);
+                if (const auto operation = operationsDeducer_.getBinaryOperationForMap(
+                        srcTypeDomain, srcSndTypeDomain, dstTypeDomain, constantMap))
+                {
+                    constantToArithmeticOperation_.emplace(constant["identifier"].get<std::string>(), *operation);
+                }
+            }
         }
         else
         {
             const auto dstTypeId = dstType["identifier"].get<std::string>();
             if (integerTypes_.isWithoutNan(srcTypeId) && integerTypes_.isAnyInt(dstTypeId))
             {
-                const auto constantMap = getUnaryMapFromConstant(srcTypeId, dstType, constant);
+                const auto constantMap = getUnaryMapFromConstant(srcTypeId, constant);
                 const auto& srcTypeDomain = parser_.getDomain(srcTypeId);
                 const auto& dstTypeDomain = parser_.getDomain(dstTypeId);
                 if (const auto operation =
@@ -107,7 +127,7 @@ void SymbolsManager::fillIntegerOperationsData()
 }
 
 std::map<std::string, std::string> SymbolsManager::getUnaryMapFromConstant(
-    const std::string& srcTypeId, const nlohmann::json& dstType, const nlohmann::json& constant)
+    const std::string& srcTypeId, const nlohmann::json& constant)
 {
     ValueFactory valueFactory;
     const auto constValue = valueFactory.createValue(constant["value"]);
@@ -130,6 +150,57 @@ std::map<std::string, std::string> SymbolsManager::getUnaryMapFromConstant(
         else
         {
             map.emplace(symbol, defaultValue->symbol);
+        }
+    }
+    return map;
+}
+
+std::map<std::string, std::map<std::string, std::string>> SymbolsManager::getBinaryMapFromConstant(
+    const std::string& srcTypeId, const std::string& srcSndTypeId, const nlohmann::json& constant)
+{
+    ValueFactory valueFactory;
+    const auto constValue = valueFactory.createValue(constant["value"]);
+    MapValue* outerMap = dynamic_cast<MapValue*>(constValue.get());
+    assert(outerMap != nullptr);
+    const auto& outerIdToValueMap = outerMap->idToValueMap;
+    SingleValue* outerDefault = dynamic_cast<SingleValue*>(outerMap->defaultValue.get());
+    assert(outerDefault != nullptr || dynamic_cast<MapValue*>(outerMap->defaultValue.get()) != nullptr);
+
+    std::map<std::string, std::map<std::string, std::string>> map;
+    const auto& domain1 = parser_.getDomain(srcTypeId);
+    const auto& domain2 = parser_.getDomain(srcSndTypeId);
+    for (const auto& symbol1 : domain1)
+    {
+        MapValue* innerMap = nullptr;
+        SingleValue* innerDefault = nullptr;
+        auto outerIt = outerIdToValueMap.find(symbol1);
+        if (outerIt != outerIdToValueMap.end())
+        {
+            innerMap = dynamic_cast<MapValue*>(outerIt->second.get());
+            assert(innerMap != nullptr);
+            innerDefault = dynamic_cast<SingleValue*>(innerMap->defaultValue.get());
+            assert(innerDefault != nullptr);
+        }
+        else
+        {
+            innerMap = dynamic_cast<MapValue*>(outerMap->defaultValue.get());
+            assert(innerMap != nullptr);
+            innerDefault = dynamic_cast<SingleValue*>(innerMap->defaultValue.get());
+            assert(innerDefault != nullptr);
+        }
+        for (const auto& symbol2 : domain2)
+        {
+            auto innerIt = innerMap->idToValueMap.find(symbol2);
+            if (innerIt != innerMap->idToValueMap.end())
+            {
+                auto singleValue = dynamic_cast<SingleValue*>(innerIt->second.get());
+                assert(singleValue != nullptr);
+                map[symbol1][symbol2] = singleValue->symbol;
+            }
+            else
+            {
+                map[symbol1][symbol2] = innerDefault->symbol;
+            }
         }
     }
     return map;

@@ -23,7 +23,9 @@ public:
 
 private:
     std::map<std::string, std::string> getUnaryMapFromConstant(
-        const std::string& srcType, const nlohmann::json& dstType, const nlohmann::json& constant);
+        const std::string& srcType, const nlohmann::json& constant);
+    std::map<std::string, std::map<std::string, std::string>> getBinaryMapFromConstant(
+        const std::string& srcTypeId, const std::string& srcSndTypeId, const nlohmann::json& constant);
 
     struct IntegerTypes
     {

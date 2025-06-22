@@ -2,6 +2,170 @@
 
 #include <set>
 
+namespace
+{
+std::optional<std::string> getNanSymbolFromDomainStrict(
+    const std::vector<std::string>& domain, const SymbolToValueMap& symbolToValue_)
+{
+    int missing = 0;
+    std::string nanSymbol;
+    for (const auto& symbol : domain)
+    {
+        if (symbolToValue_.count(symbol) == 0)
+        {
+            ++missing;
+            nanSymbol = symbol;
+        }
+    }
+    if (missing == 1)
+    {
+        return nanSymbol;
+    }
+    return std::nullopt;
+}
+
+bool matchesBinaryOp(
+    const std::vector<std::string>& lhsDomain,
+    const std::vector<std::string>& rhsDomain,
+    const std::vector<std::string>& resultDomain,
+    const std::map<std::string, std::map<std::string, std::string>>& constantMap,
+    const SymbolToValueMap& symbolToValue_,
+    std::function<int(int, int)> op,
+    ArithmeticSystem system)
+{
+    int minVal = std::numeric_limits<int>::max();
+    int maxVal = std::numeric_limits<int>::min();
+    for (const auto& s : resultDomain)
+    {
+        if (symbolToValue_.count(s))
+        {
+            minVal = std::min(minVal, symbolToValue_.at(s));
+            maxVal = std::max(maxVal, symbolToValue_.at(s));
+        }
+    }
+    std::optional<std::string> nanSymbol = getNanSymbolFromDomainStrict(resultDomain, symbolToValue_);
+    bool hasNan = nanSymbol.has_value();
+    if (system == ArithmeticSystem::Overflow && !hasNan)
+    {
+        return false;
+    }
+    if ((system == ArithmeticSystem::Modular || system == ArithmeticSystem::Saturated) && hasNan)
+    {
+        return false;
+    }
+    for (const auto& lhs : lhsDomain)
+    {
+        for (const auto& rhs : rhsDomain)
+        {
+            auto it1 = constantMap.find(lhs);
+            if (it1 == constantMap.end())
+            {
+                return false;
+            }
+            auto it2 = it1->second.find(rhs);
+            if (it2 == it1->second.end())
+            {
+                return false;
+            }
+            const auto& result = it2->second;
+            int lhsVal = symbolToValue_.at(lhs);
+            int rhsVal = symbolToValue_.at(rhs);
+            int expectedValue = op(lhsVal, rhsVal);
+            switch (system)
+            {
+                case ArithmeticSystem::Overflow:
+                    if (expectedValue < minVal || expectedValue > maxVal)
+                    {
+                        if (result != *nanSymbol)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        auto itSym = std::find_if(resultDomain.begin(), resultDomain.end(), [&](const std::string& s) {
+                            return symbolToValue_.count(s) && symbolToValue_.at(s) == expectedValue;
+                        });
+                        if (itSym == resultDomain.end() || result != *itSym)
+                        {
+                            return false;
+                        }
+                    }
+                    break;
+                case ArithmeticSystem::Modular:
+                {
+                    int n = maxVal - minVal + 1;
+                    int modValue = ((expectedValue - minVal) % n + n) % n + minVal;
+                    auto itSym = std::find_if(resultDomain.begin(), resultDomain.end(), [&](const std::string& s) {
+                        return symbolToValue_.count(s) && symbolToValue_.at(s) == modValue;
+                    });
+                    if (itSym == resultDomain.end() || result != *itSym)
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                case ArithmeticSystem::Saturated:
+                {
+                    int satValue = std::min(std::max(expectedValue, minVal), maxVal);
+                    auto itSym = std::find_if(resultDomain.begin(), resultDomain.end(), [&](const std::string& s) {
+                        return symbolToValue_.count(s) && symbolToValue_.at(s) == satValue;
+                    });
+                    if (itSym == resultDomain.end() || result != *itSym)
+                    {
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                    return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool matchesComparison(
+    const std::vector<std::string>& lhsDomain,
+    const std::vector<std::string>& rhsDomain,
+    const std::vector<std::string>& resultDomain,
+    const std::map<std::string, std::map<std::string, std::string>>& constantMap,
+    const SymbolToValueMap& symbolToValue_,
+    std::function<bool(int, int)> cmp)
+{
+    if (resultDomain.size() != 2)
+    {
+        return false;
+    }
+    const auto& falseSymbol = resultDomain[0];
+    const auto& trueSymbol = resultDomain[1];
+    for (const auto& lhs : lhsDomain)
+    {
+        for (const auto& rhs : rhsDomain)
+        {
+            auto it1 = constantMap.find(lhs);
+            if (it1 == constantMap.end())
+            {
+                return false;
+            }
+            auto it2 = it1->second.find(rhs);
+            if (it2 == it1->second.end())
+            {
+                return false;
+            }
+            const auto& result = it2->second;
+            int lhsVal = symbolToValue_.at(lhs);
+            int rhsVal = symbolToValue_.at(rhs);
+            if (result != (cmp(lhsVal, rhsVal) ? trueSymbol : falseSymbol))
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+}  // namespace
+
 void IntegerOperationsDeducer::fillIntegerValuesInfo(const std::vector<nlohmann::json>& integerPragmas)
 {
     for (const auto& integerPragma : integerPragmas)
@@ -52,9 +216,30 @@ std::optional<ArithmeticData> IntegerOperationsDeducer::getUnaryOperationForMap(
 }
 
 std::optional<ArithmeticData> IntegerOperationsDeducer::getBinaryOperationForMap(
+    const std::vector<std::string>& lhsDomain,
+    const std::vector<std::string>& rhsDomain,
+    const std::vector<std::string>& resultDomain,
     const std::map<std::string, std::map<std::string, std::string>>& constantMap) const
 {
-    // TODO: implement
+    if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::less<int>()))
+    {
+        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Less};
+    }
+    if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::greater<int>()))
+    {
+        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Greater};
+    }
+    for (auto system : {ArithmeticSystem::Overflow, ArithmeticSystem::Modular, ArithmeticSystem::Saturated})
+    {
+        if (matchesBinaryOp(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::plus<int>(), system))
+        {
+            return ArithmeticData{.system = system, .operation = ArithmeticOperation::Add};
+        }
+        if (matchesBinaryOp(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::minus<int>(), system))
+        {
+            return ArithmeticData{.system = system, .operation = ArithmeticOperation::Sub};
+        }
+    }
     return std::nullopt;
 }
 

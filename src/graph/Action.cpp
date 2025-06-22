@@ -4,6 +4,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <common/ComparisonType.hpp>
+#include <compiler/SymbolsManager.hpp>
 #include <graph/Expression.hpp>
 #include <graph/ExpressionFactory.hpp>
 #include <parser/Parser.hpp>
@@ -43,18 +45,56 @@ ActionType ActionAssignment::getType() const
     return ActionType::Assignment;
 }
 
-ActionComparison::ActionComparison(const nlohmann::json& label, const ExpressionFactory& expressionFactory)
+ActionComparison::ActionComparison(
+    const nlohmann::json& label,
+    const ExpressionFactory& expressionFactory,
+    const SymbolsManager& symbolsManager,
+    const Parser& parser)
 : ActionBase(label, expressionFactory)
-{}
+, cmp_(getNegated() ? ComparisonType::Neq : ComparisonType::Eq)
+{
+    if (label["lhs"]["kind"] != "Access" || !symbolsManager.isNan(right_->toString()))
+    {
+        return;
+    }
+    const auto lhs = label["lhs"]["lhs"]["identifier"].get<std::string>();
+    const auto typeOfExpression = parser.findTypeOfExpression(label["lhs"]);
+    const auto expressionTypeName = typeOfExpression["identifier"].get<std::string>();
+    const auto expressionDomain = parser.getDomain(expressionTypeName);
+    const auto [minSymbol, maxSymbol] = symbolsManager.getMinMaxArithmeticSymbols(expressionDomain);
+    for (const auto& [constant, arithmeticData] : symbolsManager.constantToArithmeticOperationMap())
+    {
+        if (arithmeticData.system == ArithmeticSystem::Overflow && lhs == constant)
+        {
+            if (arithmeticData.operation == ArithmeticOperation::Inc && !maxSymbol.empty())
+            {
+                cmp_ = getNegated() ? ComparisonType::Less : ComparisonType::Ge;
+                right_ = std::make_unique<ExpressionReference>(maxSymbol);
+                return;
+            }
+            else if (arithmeticData.operation == ArithmeticOperation::Dec && !minSymbol.empty())
+            {
+                cmp_ = getNegated() ? ComparisonType::Gr : ComparisonType::Leq;
+                right_ = std::make_unique<ExpressionReference>(minSymbol);
+                return;
+            }
+        }
+    }
+}
 
 std::string ActionComparison::toString() const
 {
-    return left_->toString() + (getNegated() ? "!=" : "==") + right_->toString();
+    return left_->toString() + cmpToString(cmp_) + right_->toString();
 }
 
 ActionType ActionComparison::getType() const
 {
     return ActionType::Comparison;
+}
+
+ComparisonType ActionComparison::getComparisonType() const
+{
+    return cmp_;
 }
 
 ActionReachability::ActionReachability(const nlohmann::json& label, const ExpressionFactory& expressionFactory)

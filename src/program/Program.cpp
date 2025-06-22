@@ -4,8 +4,9 @@
 #include <memory>
 #include <vector>
 
+#include <common/ComparisonType.hpp>
 #include <compiler/ValueAssigner.hpp>
-#include <program/Program.hpp>
+
 
 std::string ElementaryType::toString() const
 {
@@ -120,30 +121,6 @@ AssignmentInstruction::AssignmentInstruction(const std::string &left, const std:
 std::string AssignmentInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     return addSpacesAndSemicolon(delimiter, semicolon, left_->toString(0, shift, false) + " = " + right_);
-}
-
-std::string cmpToString(const ComparisonType cmpType)
-{
-    switch (cmpType)
-    {
-        case ComparisonType::None:
-            return "";
-        case ComparisonType::Neg:
-            return "!";
-        case ComparisonType::Eq:
-            return "==";
-        case ComparisonType::Neq:
-            return "!=";
-        case ComparisonType::Gr:
-            return ">";
-        case ComparisonType::Ge:
-            return ">=";
-        case ComparisonType::Less:
-            return "<";
-        case ComparisonType::Leq:
-            return "<=";
-    }
-    throw std::invalid_argument("[Program] Unkwnon ComparisonType: " + std::to_string(static_cast<int>(cmpType)));
 }
 
 ComparisonInstruction::ComparisonInstruction(const std::string &expr, ComparisonType cmp)

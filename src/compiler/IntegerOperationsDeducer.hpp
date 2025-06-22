@@ -33,7 +33,7 @@ class IntegerOperationsDeducer
 {
 public:
     void fillIntegerValuesInfo(const std::vector<nlohmann::json>& integerPragmas);
-    int getNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const;
+    std::pair<std::string, int> getNanAndNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const;
     std::optional<ArithmeticData> getUnaryOperationForMap(
         const std::vector<std::string>& srcDomain,
         const std::vector<std::string>& dstDomain,

@@ -14,3 +14,8 @@ add_library(GraphLib
     Node.cpp
     Node.hpp
 )
+
+target_link_libraries(GraphLib
+    PRIVATE
+    ComparisonLib
+)

@@ -1,6 +1,5 @@
 #include "Node.hpp"
 
-#include <exception>
 #include <string>
 
 #include <nlohmann/json.hpp>

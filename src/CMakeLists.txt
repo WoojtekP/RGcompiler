@@ -1,5 +1,6 @@
 add_executable(rg2cpp main.cpp)
 
+add_subdirectory(common)
 add_subdirectory(compiler)
 add_subdirectory(graph)
 add_subdirectory(parser)

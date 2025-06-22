@@ -4,9 +4,12 @@
 
 #include <nlohmann/json.hpp>
 
+#include <common/ComparisonType.hpp>
+
 class ExpressionFactory;
 class IExpression;
 class Parser;
+class SymbolsManager;
 
 enum class ActionType
 {
@@ -54,10 +57,18 @@ public:
 
 class ActionComparison : public ActionBase
 {
+private:
+    ComparisonType cmp_ = ComparisonType::None;
+
 public:
-    ActionComparison(const nlohmann::json& label, const ExpressionFactory& expressionFactory);
+    ActionComparison(
+        const nlohmann::json& label,
+        const ExpressionFactory& expressionFactory,
+        const SymbolsManager& symbolsManager,
+        const Parser& parser);
     std::string toString() const override;
     ActionType getType() const override;
+    ComparisonType getComparisonType() const;
 };
 
 class ActionReachability : public ActionBase

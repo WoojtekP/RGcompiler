@@ -2,6 +2,7 @@
 #include <ranges>
 
 #include <common/Common.hpp>
+#include <common/ComparisonType.hpp>
 #include <compiler/Compiler.hpp>
 #include <compiler/ValueFactory.hpp>
 #include <compiler/SymbolsManager.hpp>
@@ -1408,7 +1409,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
-            const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
+            const auto cmpType = dynamic_cast<ActionComparison*>(action.get())->getComparisonType();
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
 
@@ -1663,7 +1664,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
-            const auto cmpType = action->getNegated() ? ComparisonType::Neq : ComparisonType::Eq;
+            const auto cmpType = dynamic_cast<ActionComparison*>(action.get())->getComparisonType();
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
 

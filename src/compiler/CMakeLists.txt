@@ -38,6 +38,7 @@ target_link_libraries(SymbolsManagerLib
 
 target_link_libraries(CompilerLib
     PRIVATE
+    ComparisonLib
     GraphOperationsLib
     CacheContainersLib
     PragmaLib

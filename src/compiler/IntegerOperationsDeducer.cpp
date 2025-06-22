@@ -1,6 +1,5 @@
 #include "IntegerOperationsDeducer.hpp"
 
-#include <iostream>
 #include <set>
 
 void IntegerOperationsDeducer::fillIntegerValuesInfo(const std::vector<nlohmann::json>& integerPragmas)
@@ -16,14 +15,22 @@ void IntegerOperationsDeducer::fillIntegerValuesInfo(const std::vector<nlohmann:
     }
 }
 
-int IntegerOperationsDeducer::getNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const
+std::pair<std::string, int> IntegerOperationsDeducer::getNanAndNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const
 {
     int integerSymbolsCounter = 0;
+    std::string nanSymbol;
     for (const auto& [symbol, _] : symbolToValue)
     {
-        integerSymbolsCounter += symbolToValue_.count(symbol);
+        if (symbolToValue_.count(symbol))
+        {
+            ++integerSymbolsCounter;
+        }
+        else
+        {
+            nanSymbol = symbol;
+        }
     }
-    return integerSymbolsCounter;
+    return std::make_pair(nanSymbol, integerSymbolsCounter);
 }
 
 const SymbolToValueMap& IntegerOperationsDeducer::getSymbolToValueMap() const

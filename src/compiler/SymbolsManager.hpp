@@ -14,6 +14,9 @@ public:
     SymbolsManager(const Parser& parser);
     const ValueAssigner& getValueAssigner() const;
     const ConstantToOperation& constantToArithmeticOperationMap() const;
+    std::pair<std::string, std::string> getMinMaxArithmeticSymbols(
+        const std::vector<std::string>& symbols) const;
+    bool isNan(const std::string& symbol) const;
 
     void fillIntegerOperationsData();
     void assignValuesForSymbolsAndTags();
@@ -26,6 +29,7 @@ private:
     {
         std::set<std::string> withoutNan;
         std::set<std::string> withNan;
+        std::set<std::string> nanSymbols;
         bool isAnyInt(const std::string& type) const;
         bool isWithoutNan(const std::string& type) const;
         bool isWithNan(const std::string& type) const;

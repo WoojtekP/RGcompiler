@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <common/ComparisonType.hpp>
 #include <compiler/ValueAssigner.hpp>
 
 struct IType
@@ -198,20 +199,6 @@ public:
 
     std::string toString(int delimiter, int shift, bool semicolon);
 };
-
-enum class ComparisonType
-{
-    None,
-    Neg,
-    Eq,
-    Neq,
-    Gr,
-    Ge,
-    Less,
-    Leq,
-};
-
-std::string cmpToString(const ComparisonType cmpType);
 
 class ComparisonInstruction : public IInstruction
 {

@@ -52,7 +52,7 @@ std::shared_ptr<IAction> ActionFactory::createActionReachability(const nlohmann:
 
 std::shared_ptr<IAction> ActionFactory::createActionComparison(const nlohmann::json& label)
 {
-    return std::make_shared<ActionComparison>(label, expressionFactory_);
+    return std::make_shared<ActionComparison>(label, expressionFactory_, symbolsManager_, parser_);
 }
 
 std::shared_ptr<IAction> ActionFactory::createActionAssignmentAny(const nlohmann::json& label)

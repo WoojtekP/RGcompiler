@@ -18,6 +18,35 @@ const ConstantToOperation& SymbolsManager::constantToArithmeticOperationMap() co
     return constantToArithmeticOperation_;
 }
 
+bool SymbolsManager::isNan(const std::string& symbol) const
+{
+    return integerTypes_.nanSymbols.contains(symbol);
+}
+
+std::pair<std::string, std::string> SymbolsManager::getMinMaxArithmeticSymbols(
+    const std::vector<std::string>& symbols) const
+{
+    const auto& symbolToValueMap = operationsDeducer_.getSymbolToValueMap();
+    std::string minSymbol, maxSymbol;
+    int minValue = INT_MAX, maxValue = INT_MIN;
+    for (const auto& symbol : symbols)
+    {
+        const auto symbolToValueIt = symbolToValueMap.find(symbol);
+        if (symbolToValueIt != symbolToValueMap.end())
+        {
+            if (symbolToValueIt->second > maxValue)
+            {
+                maxSymbol = symbolToValueIt->first;
+            }
+            else if (symbolToValueIt->second < minValue)
+            {
+                minSymbol = symbolToValueIt->first;
+            }
+        }
+    }
+    return std::make_pair(minSymbol, maxSymbol);
+}
+
 void SymbolsManager::assignValuesForSymbolsAndTags()
 {
     valueAssigner_.assignValuesForSymbols(operationsDeducer_.getSymbolToValueMap(), parser_.getTypeDeclarations());
@@ -34,7 +63,7 @@ void SymbolsManager::fillIntegerOperationsData()
 
     for (const auto& [typeName, symbolToValue] : valueAssigner_.getTypeToSymbolToValueMap())
     {
-        const auto integerSymbolsCounter = operationsDeducer_.getNumberOfIntegerSymbols(symbolToValue);
+        const auto [nanSymbol, integerSymbolsCounter] = operationsDeducer_.getNanAndNumberOfIntegerSymbols(symbolToValue);
         if (integerSymbolsCounter == symbolToValue.size())
         {
             integerTypes_.withoutNan.insert(typeName);
@@ -42,6 +71,7 @@ void SymbolsManager::fillIntegerOperationsData()
         if (integerSymbolsCounter == symbolToValue.size() - 1)
         {
             integerTypes_.withNan.insert(typeName);
+            integerTypes_.nanSymbols.insert(nanSymbol);
         }
     }
 

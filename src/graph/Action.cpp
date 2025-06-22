@@ -53,6 +53,7 @@ ActionComparison::ActionComparison(
 : ActionBase(label, expressionFactory)
 , cmp_(getNegated() ? ComparisonType::Neq : ComparisonType::Eq)
 {
+    // TODO: remove comparison with 1/0
     if (label["lhs"]["kind"] != "Access" || !symbolsManager.isNan(right_->toString()))
     {
         return;
@@ -77,6 +78,10 @@ ActionComparison::ActionComparison(
                 cmp_ = getNegated() ? ComparisonType::Gr : ComparisonType::Leq;
                 right_ = std::make_unique<ExpressionReference>(minSymbol);
                 return;
+            }
+            else if (arithmeticData.operation == ArithmeticOperation::Add || arithmeticData.operation == ArithmeticOperation::Sub)
+            {
+                throw std::runtime_error("[Action] ActionComparison not implemented for add/sub");
             }
         }
     }

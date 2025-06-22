@@ -20,6 +20,16 @@ private:
     std::unique_ptr<IExpression> createEdgeNameExpression(const nlohmann::json& expression) const;
     std::unique_ptr<IExpression> createArithmeticExpression(
         const nlohmann::json& accessExpression, const std::string& constant, const ArithmeticData arithmeticData) const;
+    std::unique_ptr<IExpression> createUnaryArithmeticExpression(
+        const nlohmann::json& accessExpression,
+        const std::string& srcTypeId,
+        const std::string& dstTypeId,
+        const ArithmeticData arithmeticData) const;
+    std::unique_ptr<IExpression> createBinaryArithmeticExpression(
+        const nlohmann::json& accessExpression,
+        const std::string& srcTypeId,
+        const std::string& dstTypeId,
+        const ArithmeticData arithmeticData) const;
 
     const Parser& parser_;
     const SymbolsManager& symbolsManager_;

@@ -13,6 +13,7 @@ enum class ArithmeticSystem
     Overflow,
     Modular,
     Saturated,
+    Comparison,
 };
 
 enum class ArithmeticOperation
@@ -21,6 +22,8 @@ enum class ArithmeticOperation
     Dec,
     Add,
     Sub,
+    Less,
+    Greater,
 };
 
 struct ArithmeticData
@@ -39,6 +42,9 @@ public:
         const std::vector<std::string>& dstDomain,
         const std::map<std::string, std::string>& constantMap) const;
     std::optional<ArithmeticData> getBinaryOperationForMap(
+        const std::vector<std::string>& lhsDomain,
+        const std::vector<std::string>& rhsDomain,
+        const std::vector<std::string>& resultDomain,
         const std::map<std::string, std::map<std::string, std::string>>& constantMap) const;
 
     const SymbolToValueMap& getSymbolToValueMap() const;

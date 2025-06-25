@@ -243,8 +243,8 @@ inline size_t hash(int x) noexcept
     return x;
 }
 
-template<template<typename, size_t> class Container, typename T, size_t N>
-size_t hash(const Container<T, N>& range) noexcept
+template<template<typename, size_t, typename...> class Container, typename T, size_t N, typename... Args>
+size_t hash(const Container<T, N, Args...>& range) noexcept
 {
     size_t acc = 0;
     for (const auto& x : range)

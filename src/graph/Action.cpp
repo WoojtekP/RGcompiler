@@ -69,13 +69,13 @@ ActionComparison::ActionComparison(
         {
             if (arithmeticData.operation == ArithmeticOperation::Inc && !maxSymbol.empty())
             {
-                cmp_ = getNegated() ? ComparisonType::Less : ComparisonType::Ge;
+                cmp_ = getNegated() ? ComparisonType::Leq : ComparisonType::Gr;
                 right_ = std::make_unique<ExpressionReference>(maxSymbol);
                 return;
             }
             else if (arithmeticData.operation == ArithmeticOperation::Dec && !minSymbol.empty())
             {
-                cmp_ = getNegated() ? ComparisonType::Gr : ComparisonType::Leq;
+                cmp_ = getNegated() ? ComparisonType::Ge : ComparisonType::Less;
                 right_ = std::make_unique<ExpressionReference>(minSymbol);
                 return;
             }

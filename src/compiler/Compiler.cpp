@@ -722,8 +722,8 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
     int curentPos = 1;
     std::unique_ptr<BlockInstruction> blockInstruction = std::make_unique<BlockInstruction>();
     std::map<std::string, std::string> tagToValue;
-    bool skipCurrentMrId =
-        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+    bool skipCurrentMrId = false;
+    // !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
 
     for (auto tag : tags)
     {
@@ -734,6 +734,7 @@ std::unique_ptr<BlockInstruction> Compiler::getAssignments(
                               std::to_string(minValues.size() - curentPos + 1);
             if (skipCurrentMrId)
             {
+                assert(positions.size() > curentPos - 1);
                 pos = std::to_string(positions[curentPos - 1]);
             }
             tagToValue[*tagVar] = "mr[" + pos + "] - " + std::to_string(minValues[curentPos - 1]);
@@ -787,25 +788,30 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 
     bool useArray =
         !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
+    // Temporary removed usage of direct positions in move vector because of problems with simple apply in oware
+    // In order for this to work whole semantic of simple apply would need to be changed to:
+    // @simpleApply [tag1, tag2, /] -- to się aplikuje jak dwa tagi pasują i więcej tagów nie ma.
+    // @simpleApply [tag1, tag2] -- to się aplikuje jak dwa tagi pasują, dalej mogą też być tagi.
+    // @simpleApply [] -- to zawsze pasuje, ale każdy inny simpleApply ma pierwszeństwo bo ma dłuższy ciąg tagów.
     std::string pos = mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++";
-    if (useArray)
-    {
-        if (positions.empty())
-        {
-            // We calculate position of first tag in move vector.
-            // Then each next tag will need to have position equal to last position + 1
-            const std::string& tag = listOfActionsToTags->children_.begin()->first.tag_;
-            const auto [lastNode, pos] =
-                graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getPositions(node, tag);
-            positions.push_back(pos);
-        }
+    // if (useArray)
+    // {
+    //     if (positions.empty())
+    //     {
+    //         // We calculate position of first tag in move vector.
+    //         // Then each next tag will need to have position equal to last position + 1
+    //         const std::string& tag = listOfActionsToTags->children_.begin()->first.tag_;
+    //         const auto [lastNode, pos] =
+    //             graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->getPositions(node, tag);
+    //         positions.push_back(pos);
+    //     }
 
-        if (positions.size() == depth - 1)
-        {
-            positions.push_back(positions.back() + 1);
-        }
-        pos = std::to_string(positions[depth - 1]);
-    }
+    //     if (positions.size() == depth - 1)
+    //     {
+    //         positions.push_back(positions.back() + 1);
+    //     }
+    //     pos = std::to_string(positions[depth - 1]);
+    // }
 
     auto sw = std::make_unique<SwitchInstruction>("mr[" + pos + "]");
     std::set<std::pair<int, int>> caseAlreadyAdded;
@@ -853,8 +859,12 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                 std::unique_ptr<IfInstruction> ifInstruction;
                 if (useArray)
                 {
+                    // ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                    //     "mr[" + std::to_string(positions[depth]) + "]", "-1", ComparisonType::Neq));
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "mr[" + std::to_string(positions[depth]) + "]", "-1", ComparisonType::Neq));
+                        "mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
+                        "-1",
+                        ComparisonType::Neq));
                 }
                 else
                 {
@@ -946,11 +956,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
 
             bool useArray = !maxMoveLen_ &&
                             graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-
             if (useArray)
             {
+                // ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                //     " mr[" + std::to_string(positions[0]) + "]", "-1", ComparisonType::Neq));
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    " mr[" + std::to_string(positions[0]) + "]", "-1", ComparisonType::Neq));
+                    " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]", "-1", ComparisonType::Neq));
             }
             else
             {
@@ -990,9 +1001,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 "static_cast<int>(mr.size())",
                 mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
                 ComparisonType::Neq));
-            ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
-            blockInstruction->pushInstructionBack(std::move(ifInstruction));
         }
+        else
+        {
+            ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
+                " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]", "-1", ComparisonType::Neq));
+        }
+        ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
+        blockInstruction->pushInstructionBack(std::move(ifInstruction));
 
         blockInstruction->pushInstructionBack(std::move(blockInstructionTmp));
     }
@@ -2188,7 +2204,9 @@ bool Compiler::checkIsCacheNeed(const std::string& functionName, const std::shar
         graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(pragmaUniqueData_);
     if (functionName.starts_with(APPLY_STATE_WORD))
     {
-        return !(allUnique && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition());
+        // Commented because of oware bug
+        // return !(allUnique && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition());
+        return true;
     }
     else if (allUnique && patternsWithCache_.empty())
     {

@@ -136,7 +136,7 @@ gamesOK = []
 for game in games:
   print(HEAD_FORMATTER.format(f'{game}:'),end='',flush=True)
   
-  ######## Compile ########
+  ######## Translate ########
   if not args.reuse:
     print(f' | ast ',end='',flush=True)
     startTime = time.time()
@@ -158,6 +158,7 @@ for game in games:
     print(TIME_FORMATTER.format(elapsedTime),end='',flush=True)
     sumRg2CppTime += elapsedTime
   
+  ######## Compile cpp ########
   print(f' | {compiler} ',end='',flush=True)
   startTime = time.time()
   error = compileCpp('sims', compiler, f'{cppFlags} -DUSE_TIME={useTime}')

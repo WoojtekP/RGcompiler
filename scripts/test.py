@@ -4,30 +4,33 @@ from common import *
 os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 
 parser = argparse.ArgumentParser(description='Run predefined validation tests for given games.')
-parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests and \"short\" for a subset for quick test')
+parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests and \"short\" for a subset of games for quick test')
 parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
 parser.add_argument('-q', '--quiet', action='store_true', help='suppress g++ warnings')
+parser.add_argument('--clang', action='store_true', help='use clang++ instead of g++')
 cpp_flags_group = parser.add_mutually_exclusive_group(required=False)
-cpp_flags_group.add_argument('-debug', action='store_true', help='compile with gdb symbols')
-cpp_flags_group.add_argument('-profile', action='store_true', help='generate profiler information')
-cpp_flags_group.add_argument('-benchmark', action='store_true', help='maximum speed flags')
+cpp_flags_group.add_argument('--test', action='store_true', help='optimization and asserts (default)')
+#cpp_flags_group.add_argument('--benchmark', action='store_true', help='maximum speed flags')
+cpp_flags_group.add_argument('--debug', action='store_true', help='gdb symbols and sanitizers')
+cpp_flags_group.add_argument('--profile', action='store_true', help='generate profiler information')
 
 args = parser.parse_args()
 games = args.game
 translateOptions = args.translateOptions
 if args.profile:
-  gccOptions = cfg.GCC_PROFILE_FLAGS
+  cppFlags = cfg.GCC_PROFILE_FLAGS
   infoGccOptions = "profile"
 elif args.debug:
-  gccOptions = cfg.GCC_DEBUG_FLAGS
+  cppFlags = cfg.GCC_DEBUG_FLAGS
   infoGccOptions = "debug"
-elif args.benchmark:
-  gccOptions = cfg.GCC_BENCHMARK_FLAGS
-  infoGccOptions = "benchmark"
+# elif args.benchmark:
+  # cppFlags = cfg.GCC_BENCHMARK_FLAGS
+  # infoGccOptions = "benchmark"
 else:
-  gccOptions = cfg.GCC_TEST_FLAGS
+  cppFlags = cfg.GCC_TEST_FLAGS
   infoGccOptions = "test"
 
+compiler = 'clang++' if args.clang else 'g++'
 
 #######################################################################################################################
 # (sims, avgDepth, [avgScore0,...], [perft0,perft1,...]
@@ -79,6 +82,7 @@ tests['pentago'] = (10000,29.07,[53.57,46.43], [1,288,80640,21934080])
 tests['pentago_split'] = (10000,54.74,[54.67,45.33], [1,36,288,10080,80640,2741760])
 tests['pretwa'] = (100000,21.00,[52.00,48.00], [1,3,5,7,18,56,146,444,1442,4834,17712])
 tests['reversi'] = (1000,60.41,[47.51,52.49], [1,4,12,56,244,1396,8200,55092,390216,3005288,24571056])#,1939879668
+tests['surakarta'] = (10000,239.45,[50.51,49.49], [1,16,256,5382,111122,2572484,58479230])#,1442032302
 tests['ticTacDie'] = (100000,7.63,[64.87,35.13], [1,1,9,9,72,72,504,504,3024,3024,15120,13680,54720,49392,148176,100224,200448,127872,127872,0])
 tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#,148176,200448,127872
 tests['theMillGame'] = (100000,62.58,[52.25,47.75], [1,24,552,12144,255024,5140800,99274176])#,1873562112
@@ -102,8 +106,8 @@ if "all" in games:
   games.append('simpleApplyTest5.rg')
   games.append('simpleApplyTest6.rg')
   games.append('simpleApplyDoubleTest.rg')
-  games.append('simpleApplyDoubleTestRev.rg')
-  games.append('simpleApplyDoubleTestSame.rg')
+  games.append('simpleApplyDoubleRevTest.rg')
+  games.append('simpleApplyDoubleSameTest.rg')
   
   games.append('chessTest1.hrg')
   
@@ -221,7 +225,7 @@ elif "short" in games:
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
 print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
-print(f'g++ {infoGccOptions} options: {gccOptions}')
+print(f'g++ {infoGccOptions} options: {cppFlags}')
 
 #######################################################################################################################
 
@@ -255,41 +259,43 @@ for game in games:
     print(f'No tests for game {gameName} for {game}')
     continue
 
-  ######## Compile ########
-  print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
+  ######## Translate and compile ########
+  print(HEAD_FORMATTER.format(f'{game} ast:'),end='',flush=True)
   startTime = time.time()
-  result = runCap(f'python3 scripts/compile.py {game} -t"{translateOptions}"')
+  error = createAST(game, translateOptions, True)
   elapsedTime = time.time() - startTime
-  if result.returncode != 0:
-    info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
-  else:
-    info = f'{util.OK}'
-  print(TIME_FORMATTER.format(info, elapsedTime))
-  if result.returncode != 0:
-    print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
+  if error != None: info = f'{util.ERROR}\n{util.CYAN}{error}{util.RESET}'
+  else: info = f'{util.OK}'
+  print(TIME_FORMATTER.format(info,elapsedTime))
+  if error != None:
+    print(f'{util.CYAN}{error}{util.RESET}')
     continue
-  print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
+      
+  print(HEAD_FORMATTER.format(f'{game} rg2cpp:'),end='',flush=True)
   startTime = time.time()
-  result = runCap(f'''
-    g++ -c {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/reasoner.o &&
-    g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/sims &&
-    g++ test/perft.cpp {cfg.BUILD_TEST_DIR}/reasoner.o -I{cfg.BUILD_TEST_DIR} {gccOptions} -o {cfg.BUILD_TEST_DIR}/perft
-  ''')
+  error = rg2cpp(game, cfg.DEFAULT_RG2CPP_OPTIONS + ' ' + cfg.DEBUG_RG2CPP_OPTIONS, True)
   elapsedTime = time.time() - startTime
-  if result.returncode != 0:
-    info = f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}'
-  else:
-    info = f'{util.OK}'
-  print(TIME_FORMATTER.format(info, elapsedTime))
-  if not args.quiet:
-    errOutput = decodeOutput(result.stderr).strip()
-    if errOutput != "":
-      print(f'{util.CYAN}{errOutput}{util.RESET}')
-  if result.returncode != 0: continue
-
+  if error != None: info = f'{util.ERROR}\n{util.CYAN}{error}{util.RESET}'
+  else: info = f'{util.OK}'
+  print(TIME_FORMATTER.format(info,elapsedTime))
+  if error != None:
+    print(f'{util.CYAN}{error}{util.RESET}')
+    continue
+  
   isOK = True
-
+  
   ######## Sims ########
+  print(HEAD_FORMATTER.format(f'{game} {compiler} sims:'),end='',flush=True)
+  startTime = time.time()
+  error = compileCpp('sims', compiler, cppFlags)
+  elapsedTime = time.time() - startTime
+  if error != None: info = f'{util.ERROR}\n{util.CYAN}{error}{util.RESET}'
+  else: info = f'{util.OK}'
+  print(TIME_FORMATTER.format(info,elapsedTime))
+  if error != None:
+    print(f'{util.CYAN}{error}{util.RESET}')
+    continue
+
   sims = tests[gameName][0]
   avgDepth = tests[gameName][1]
   avgScores = tests[gameName][2]
@@ -321,6 +327,17 @@ for game in games:
   if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   ######## Perft ########
+  print(HEAD_FORMATTER.format(f'{game} {compiler} perft:'),end='',flush=True)
+  startTime = time.time()
+  error = compileCpp('perft', compiler, cppFlags)
+  elapsedTime = time.time() - startTime
+  if error != None: info = f'{util.ERROR}\n{util.CYAN}{error}{util.RESET}'
+  else: info = f'{util.OK}'
+  print(TIME_FORMATTER.format(info,elapsedTime))
+  if error != None:
+    print(f'{util.CYAN}{error}{util.RESET}')
+    continue
+    
   expectedPerft = tests[gameName][3]
   for depth in range(len(expectedPerft)):
     print(HEAD_FORMATTER.format(f'{game} perft {depth}:'),end='',flush=True)
@@ -345,6 +362,7 @@ for game in games:
     if errInfo != None: print(f'{util.CYAN}{errInfo}{util.RESET}')
 
   if isOK: gamesOK.append(game)
+  ################
 
 totalElapsedTime = time.time() - totalStartTime
 gamesError = [game for game in games if game not in gamesOK]

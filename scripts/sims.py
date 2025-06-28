@@ -3,21 +3,21 @@ import sys, os, argparse, time
 from common import *
 os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 
-parser = argparse.ArgumentParser(description='Compile and run simulations.')
-parser.add_argument('game', nargs=1, help='game name')
+parser = argparse.ArgumentParser(description='Benchmark simulations.')
+parser.add_argument('game', nargs='+', help='run tests for these games (use \"all\" for all default predefined tests')
 parser.add_argument('limit', nargs=1, help='number of simulations (int) or time in seconds (float, ended with "s")')
-parser.add_argument('-t', dest='translateOptions', nargs='?', help='translate options for interpreter_node/lib/cli', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
-parser.add_argument('-skipcompilation', action='store_true', help='skip compile.py and use the existing reasoner sources')
-parser.add_argument('-perf', action='store_true', help='count instructions by perf')
+parser.add_argument('-t', dest='translateFlags', nargs='?', help='translate flags for interpreter_rust', default=cfg.DEFAULT_TRANSLATE_OPTIONS)
+parser.add_argument('--reuse', action='store_true', help='reuse already built reasoner (no translation nor rg2cpp)')
+parser.add_argument('--perf', action='store_true', help='count instructions by perf')
+parser.add_argument('--clang', action='store_true', help='use clang++ instead of g++')
 cpp_flags_group = parser.add_mutually_exclusive_group(required=False)
-cpp_flags_group.add_argument('-benchmark', action='store_true', help='maximum speed flags')
-cpp_flags_group.add_argument('-test', action='store_true', help='optimization with asserts (default)')
-cpp_flags_group.add_argument('-debug', action='store_true', help='compile with gdb symbols')
-cpp_flags_group.add_argument('-profile', action='store_true', help='generate profiler information')
+cpp_flags_group.add_argument('--benchmark', action='store_true', help='maximum speed flags (default)')
+cpp_flags_group.add_argument('--test', action='store_true', help='optimization and asserts')
+cpp_flags_group.add_argument('--debug', action='store_true', help='gdb symbols and sanitizers')
+cpp_flags_group.add_argument('--profile', action='store_true', help='generate profiler information')
 
 args = parser.parse_args()
-
-game = args.game[0]
+games = args.game
 if args.limit[0].endswith('s'):
   useTime = 1
   limitS = float(args.limit[0][:-1])
@@ -25,118 +25,216 @@ if args.limit[0].endswith('s'):
 else:
   useTime = 0
   limit = int(args.limit[0])
+translateFlags = args.translateFlags
+benchmarkMode = False
+if args.profile:
+  cppFlags = cfg.GCC_PROFILE_FLAGS
+  mode = "profile"
+elif args.debug:
+  cppFlags = cfg.GCC_DEBUG_FLAGS
+  mode = "debug"
+elif args.test:
+  cppFlags = cfg.GCC_TEST_FLAGS
+  mode = "test"
+else:
+  cppFlags = cfg.GCC_BENCHMARK_FLAGS
+  mode = "benchmark"
+  benchmarkMode = True
 
-translateOptions = args.translateOptions
+if args.clang: compiler = 'clang++'
+else: compiler = 'g++'
+
+if "all" in games:
+  games = []
+  games.append('amazons.hrg')
+  games.append('amazons_split2.hrg')
+  games.append('ataxx.hrg')
+  games.append('backgammon.hrg')
+  games.append('battleships.hrg')
+  games.append('bombardment.hrg')
+  games.append('breakthrough.hrg')
+  games.append('chess.hrg')
+  games.append('clobber.hrg')
+  games.append('connect4.hrg')
+  games.append('dotsAndBoxes.hrg')
+  games.append('englishDraughts.hrg')
+  games.append('foxAndGeese.hrg')
+  games.append('gomoku_standard.hrg')
+  games.append('knightthrough.hrg')
+  games.append('oware.hrg')
+  games.append('pentago.hrg')
+  games.append('pentago_split.hrg')
+  games.append('ticTacDie.hrg')
+  games.append('twentyOne.hrg')
+  
+  games.append('amazons.rbg')
+  games.append('amazons_split2.rbg')
+  games.append('breakthrough.rbg')
+  # games.append('chessGardner5x5_kingCapture.rbg')
+  # games.append('chess_kingCapture_200.rbg')
+  # games.append('chess_kingCapture.rbg')
+  # games.append('chessLosAlamos6x6_kingCapture.rbg')
+  # games.append('chessQuick5x6_kingCapture.rbg')
+  games.append('chess.rbg')
+  # games.append('chessSilverman4x5_kingCapture.rbg')
+  games.append('connect4.rbg')
+  # games.append('connect6_split.rbg')
+  games.append('englishDraughts.rbg')
+  # games.append('englishDraughts_split.rbg')
+  # games.append('foxAndHounds.rbg')
+  # games.append('go_constsum.rbg')
+  # games.append('gomoku_freeStyle.rbg')
+  games.append('gomoku_standard.rbg')
+  # games.append('go_nopass.rbg')
+  # games.append('go.rbg')
+  games.append('hex.rbg')
+  # games.append('internationalDraughts.rbg')
+  games.append('knightthrough.rbg')
+  # games.append('knightthrough_split.rbg')
+  # games.append('paperSoccer.rbg')
+  games.append('pentago.rbg')
+  games.append('pentago_split.rbg')
+  games.append('reversi.rbg')
+  games.append('skirmish.rbg')
+  games.append('theMillGame.rbg')
+  # games.append('theMillGame_split.rbg')
+  # games.append('ticTacToe.rbg')
+  games.append('yavalath.rbg')
+  
+  # games.append('breakthrough.kif')
+  # games.append('connect4.kif')
+  # games.append('hex.kif')
+  # games.append('knightthrough.kif')
+ 
+print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
+if useTime: print(f'{limitS}s')
+else: print(f'{limit} sims')
+print(f'{len(games)} games: {" ".join(games)}')
+print(f'Translate flags: {translateFlags}')
+print(f'rg2cpp flags: {cfg.DEFAULT_RG2CPP_OPTIONS}')
+print(f'{compiler} flags: {cppFlags}')
+print()
 
 HEAD_FORMATTER = '{: <50} '
-TIME_FORMATTER = '{:7.3f}s'
-FULL_FORMATTER = HEAD_FORMATTER + TIME_FORMATTER
-
-INSTR_SCALE = 1_000
+TIME_FORMATTER = '{:6.3f}s'
 STATES_STAT_FORMATTER = ' {:15,.0f} states/s'
 STATES_STAT_PRECISE_FORMATTER = ' {:11,.3f} states/s'
 SIMS_STAT_FORMATTER = ' {:15,.0f} sims/s'
 SIMS_STAT_PRECISE_FORMATTER = ' {:11,.3f} sims/s'
+INSTR_SCALE = 1_000
 INSTR_FORMATTER = ' {:12,.0f} k instr'
 
-usePerf = args.perf
+sumASTTime = 0
+sumRg2CppTime = 0
+sumCppTime = 0
+sumSimsTime = 0
+sumSimsCount = 0
+if args.perf: sumInstr = 0
+gamesOK = []
 
-if args.profile:
-  gccOptions = cfg.GCC_PROFILE_FLAGS
-  infoGccOptions = "profile"
-elif args.debug:
-  gccOptions = cfg.GCC_DEBUG_FLAGS
-  infoGccOptions = "debug"
-elif args.benchmark:
-  gccOptions = cfg.GCC_BENCHMARK_FLAGS
-  infoGccOptions = "benchmark"
-else:
-  gccOptions = cfg.GCC_TEST_FLAGS
-  infoGccOptions = "test"
-
-print(f'Testing: {game}')
-print(f'Translate options: {translateOptions}')
-print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
-print(f'g++ {infoGccOptions} options: {gccOptions}')
-if usePerf: print(f'Using perf')
-print()
+#######################################################################################################################
+for game in games:
+  print(HEAD_FORMATTER.format(f'{game}:'),end='',flush=True)
+  
+  ######## Compile ########
+  if not args.reuse:
+    print(f' | ast ',end='',flush=True)
+    startTime = time.time()
+    error = createAST(game, translateFlags, True)
+    if error != None:
+      print(f'\n{util.ERROR} {util.CYAN}{error}{util.RESET}')
+      continue
+    elapsedTime = time.time() - startTime
+    print(TIME_FORMATTER.format(elapsedTime),end='',flush=True)
+    sumASTTime += elapsedTime
     
-#######################################################################################################################
-
-### Compile ###
-if not args.skipcompilation:
-  print(HEAD_FORMATTER.format(f'{game} compile:'),end='',flush=True)
+    print(f' | rg2cpp ',end='',flush=True)
+    startTime = time.time()
+    result = rg2cpp(game, cfg.DEFAULT_RG2CPP_OPTIONS + ' ' + cfg.DEBUG_RG2CPP_OPTIONS, True)
+    if error != None:
+      print(f'\n{util.ERROR} {util.CYAN}{error}{util.RESET}')
+      continue
+    elapsedTime = time.time() - startTime
+    print(TIME_FORMATTER.format(elapsedTime),end='',flush=True)
+    sumRg2CppTime += elapsedTime
+  
+  print(f' | {compiler} ',end='',flush=True)
   startTime = time.time()
-  run(f'python3 scripts/compile.py {game} -t"{translateOptions}" -silent')
+  error = compileCpp('sims', compiler, f'{cppFlags} -DUSE_TIME={useTime}')
   elapsedTime = time.time() - startTime
-  print(TIME_FORMATTER.format(elapsedTime))
-
-### g++ ###
-print(HEAD_FORMATTER.format(f'{game} g++:'),end='',flush=True)
-startTime = time.time()
-run(f'g++ test/sims.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {gccOptions} -DUSE_TIME={useTime} -o {cfg.BUILD_TEST_DIR}/sims')
-elapsedTime = time.time() - startTime
-print(TIME_FORMATTER.format(elapsedTime))
-
-### Sims ###
-if useTime:
-  print(HEAD_FORMATTER.format(f'{game} sims time {limitS}s:'),end='',flush=True)
-else:
-  print(HEAD_FORMATTER.format(f'{game} sims count {limit}:'),end='',flush=True)
-startTime = time.time()
-if usePerf:
-  result = runCap(f'perf stat -e instructions -x " " {cfg.BUILD_TEST_DIR}/sims {limit}')
-else:
-  result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {limit}')
-elapsedTime = time.time() - startTime
-if result.returncode != 0:
-  print(f'{util.ERROR} exitcode {result.returncode}')
-  print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
-  print(f'{util.ERROR} {util.CYAN}(exitcode {result.returncode}) {decodeOutput(result.stderr)}{util.RESET}')
-  exit(2)
-
-stats = decodeOutput(result.stdout).strip().split(' ')
-resSims = int(stats[1])
-resStates = int(stats[2])
-if usePerf:
-  output = decodeOutput(result.stderr)
-  if str.isnumeric(output.split(' ')[0]):
-    elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
-    print((TIME_FORMATTER+INSTR_FORMATTER+STATES_STAT_FORMATTER+SIMS_STAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
+  if error != None:
+    print(f'{util.ERROR} {util.CYAN}{error}{util.RESET}')
+    continue
+  print(TIME_FORMATTER.format(elapsedTime),end='',flush=True)
+  sumCppTime += elapsedTime
+  
+  ######## Sims ########
+  print(f' | sims ',end='',flush=True)
+  if args.perf:
+    result = runCap(f'perf stat -e instructions -x " " {cfg.BUILD_TEST_DIR}/sims {limit}')
   else:
-    print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+    result = runCap(f'{cfg.BUILD_TEST_DIR}/sims {limit}')
+
+  if result.returncode != 0:
+    print(f'{util.ERROR} exitcode {result.returncode}')
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
-    exit(2)
-else:
-  print(TIME_FORMATTER.format(elapsedTime),end='')
-  formatter = STATES_STAT_PRECISE_FORMATTER if resStates < 10 else STATES_STAT_FORMATTER
-  print(formatter.format(resStates/elapsedTime).replace(',',' '),end='')
-  formatter = SIMS_STAT_PRECISE_FORMATTER if resSims < 10 else SIMS_STAT_FORMATTER
-  print(formatter.format(resSims/elapsedTime).replace(',',' '))
+  else:
+    stats = decodeOutput(result.stdout).strip().split(' ')
+    elapsedTime = int(stats[0]) * 0.001 # Read time in ms
+    resSims = int(stats[1])
+    resStates = int(stats[2])
+
+    if args.perf:
+      output = decodeOutput(result.stderr)
+      if str.isnumeric(output.split(' ')[0]):
+        elapsedInstr = int(output.split(' ')[0]) / INSTR_SCALE
+        sumInstr += elapsedInstr
+        print((TIME_FORMATTER+INSTR_FORMATTER+STATES_STAT_FORMATTER+SIMS_STAT_FORMATTER).format(elapsedTime, elapsedInstr, resStates/elapsedTime, resSims/elapsedTime).replace(',',' '))
+      else:
+        print(f'{util.ERROR} {util.CYAN}exitcode {result.returncode}{util.RESET}')
+        print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
+        continue
+    else:
+      print(TIME_FORMATTER.format(elapsedTime),end='')
+      formatter = STATES_STAT_PRECISE_FORMATTER if resStates < 10 else STATES_STAT_FORMATTER
+      print(formatter.format(resStates/elapsedTime).replace(',',' '),end='')
+      formatter = SIMS_STAT_PRECISE_FORMATTER if resSims < 10 else SIMS_STAT_FORMATTER
+      print(formatter.format(resSims/elapsedTime).replace(',',' '))
+    
+    if not benchmarkMode:
+      resAvgDepth = resStates / resSims
+      resMinDepth = int(stats[3])
+      resMaxDepth = int(stats[4])
+      resMoves = int(stats[5])
+      resMinMoves = int(stats[6])
+      resMaxMoves = int(stats[7])
+      stats = stats[8:]
+      resAvgScores = []
+      resMinScores = []
+      resMaxScores = []
+      for p in range(len(stats)//3):
+        resAvgScores.append(int(stats[p*3]) / resSims)
+        resMinScores.append(int(stats[p*3+1]))
+        resMaxScores.append(int(stats[p*3+2]))
+      print(f'sims: {resSims} states: {resStates}')
+      print(f'depth: min {resMinDepth} avg {resAvgDepth:1.2f} max {resMaxDepth}')
+      print(f'moves: min {resMinMoves} avg {resMoves/resStates:1.2f} max {resMaxMoves}')
+      print(f'avg scores: {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}  min scores: {" ".join(f"{minScore}" for minScore in resMinScores)}  max scores: {" ".join(f"{maxScore}" for maxScore in resMaxScores)}')
+      print()
+    
+    sumSimsTime += elapsedTime
+    sumSimsCount += resSims
+    
+    if args.profile: run(f'gprof {cfg.BUILD_TEST_DIR}/sims gmon.out > gmon.txt')
 
 #######################################################################################################################
-print()
-resAvgDepth = resStates / resSims
-resMinDepth = int(stats[3])
-resMaxDepth = int(stats[4])
-resMoves = int(stats[5])
-resMinMoves = int(stats[6])
-resMaxMoves = int(stats[7])
-stats = stats[8:]
-resAvgScores = []
-resMinScores = []
-resMaxScores = []
-for p in range(len(stats)//3):
-  resAvgScores.append(int(stats[p*3]) / resSims)
-  resMinScores.append(int(stats[p*3+1]))
-  resMaxScores.append(int(stats[p*3+2]))
-print(f'sims: {resSims}')
-print(f'states: {resStates}')
-print(f'depth: min {resMinDepth} avg {resAvgDepth:1.2f} max {resMaxDepth}')
-print(f'moves: min {resMinMoves} avg {resMoves/resStates:1.2f} max {resMaxMoves}')
-print(f'avg scores: {" ".join(f"{avgScore:1.2f}" for avgScore in resAvgScores)}')
-print(f'min scores: {" ".join(f"{minScore}" for minScore in resMinScores)}')
-print(f'max scores: {" ".join(f"{maxScore}" for maxScore in resMaxScores)}')
-
-if args.profile:
-  run(f'gprof {cfg.BUILD_TEST_DIR}/sims gmon.out > gmon.txt')
+if len(games) > 1:
+  print()
+  print(f'--- Summary ---')
+  FORMATTER = HEAD_FORMATTER + '{:.3f}s'
+  print(FORMATTER.format(f'Total AST time:', sumASTTime))
+  print(FORMATTER.format(f'Total rg2cpp time:', sumRg2CppTime))
+  print(FORMATTER.format(f'Total {compiler} time:', sumCppTime))
+  print(FORMATTER.format(f'Total sims time:', sumSimsTime))
+  if args.perf: print((HEAD_FORMATTER+'{:,.0f} k').format(f'Total instructions:', sumInstr))
+  print((HEAD_FORMATTER+'{:,.0f}').format(f'Total sims count:', sumSimsCount))

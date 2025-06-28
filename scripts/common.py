@@ -1,4 +1,4 @@
-import subprocess
+import sys, os, subprocess, time
 from shutil import which
 
 def run(cmd):
@@ -50,10 +50,42 @@ class cfg:
   else:
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -ftracer -march=native -DNDEBUG -s'
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -march=native -ftracer'
-    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++23 -g -Og -ggdb3 -march=native -ftracer'
-    GCC_DEBUG_FLAGS += ' -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
+    GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++23 -g -Og -ggdb3 -march=native -ftracer -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
     GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++23 -Og -pg -march=native -ftracer'
     # -finline-limit=100
+
+def createAST(game, translateFlags, silent):
+  parsed = parseGameName(game)
+  if parsed == None: return f'Cannot parse {game}'
+  (gameName,gameFile) = parsed
+  if not os.path.isfile(f'{cfg.RG_DIR}/games/{gameFile}'): return f'There is no file {cfg.RG_DIR}/games/{gameFile}'
+
+  if not silent: print(f'Preparing {game} with options {translateFlags}')
+  startTime = time.time()
+  tmp_ast_file = f'{cfg.BUILD_TEST_DIR}/{game}.json.tmp'
+  result = runCap(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml ast {translateFlags} {cfg.RG_DIR}/games/{gameFile} > {tmp_ast_file}')
+  if result.returncode != 0: return decodeOutput(result.stderr).strip()
+  result = runCap(f'python3 scripts/adjust_AST.py {tmp_ast_file} {cfg.BUILD_TEST_DIR}/{game}.json')
+  if result.returncode != 0: return decodeOutput(result.stderr).strip()
+  run(f'rm {tmp_ast_file}')
+  elapsedTime = time.time() - startTime
+  if not silent: print(FORMATTER.format("ast:",elapsedTime))
+  
+def rg2cpp(game, compileFlags, silent):
+  if not silent:
+    print(f'Compiling {game} with options "{compileFlags}"')
+    startTime = time.time()
+  os.chdir(cfg.BUILD_TEST_DIR)
+  result = runCap(f'../{cfg.BUILD_DIR}/src/rg2cpp --file {game}.json -o reasoner {compileFlags}')
+  os.chdir('..')
+  if result.returncode != 0: return decodeOutput(result.stderr).strip()
+  if not silent:
+    elapsedTime = time.time() - startTime
+    print(FORMATTER.format("rg2cpp:",elapsedTime))
+
+def compileCpp(main, compiler, flags):
+  result = runCap(f'{compiler} test/{main}.cpp {cfg.BUILD_TEST_DIR}/reasoner.cpp -I{cfg.BUILD_TEST_DIR} {flags} -o {cfg.BUILD_TEST_DIR}/{main}')
+  if result.returncode != 0: return decodeOutput(result.stderr).strip()
 
 class util:
   RESET = "\033[0m"

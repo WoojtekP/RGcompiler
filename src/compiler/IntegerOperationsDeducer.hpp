@@ -23,7 +23,9 @@ enum class ArithmeticOperation
     Add,
     Sub,
     Less,
-    Greater,
+    Leq,
+    Gr,
+    Ge,
 };
 
 struct ArithmeticData

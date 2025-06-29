@@ -185,11 +185,17 @@ std::unique_ptr<IExpression> ExpressionFactory::createBinaryArithmeticExpression
             condition = expression + "<" + borderValue;
             oppositeOperator = "+";
             break;
-        case ArithmeticOperation::Greater:
+        case ArithmeticOperation::Gr:
             expression = lhsId + ">" + rhsId;
             break;
         case ArithmeticOperation::Less:
             expression = lhsId + "<" + rhsId;
+            break;
+        case ArithmeticOperation::Ge:
+            expression = lhsId + ">=" + rhsId;
+            break;
+        case ArithmeticOperation::Leq:
+            expression = lhsId + "<=" + rhsId;
             break;
         default:
             throw std::runtime_error("[ExpressionFactory] Unsupported binary arithmetic operation");

@@ -222,5 +222,37 @@ TEST(IntegerOperationsDeducerShould, DetectGreater) {
     auto res = deducer.getBinaryOperationForMap(dom, dom, resDom, map_greater);
     ASSERT_TRUE(res.has_value());
     EXPECT_EQ(res->system, ArithmeticSystem::Comparison);
-    EXPECT_EQ(res->operation, ArithmeticOperation::Greater);
+    EXPECT_EQ(res->operation, ArithmeticOperation::Gr);
+}
+
+TEST(IntegerOperationsDeducerShould, DetectLessEqual) {
+    std::vector<std::string> dom = {"a", "b"};
+    std::vector<std::string> resDom = {"f", "t"};
+    auto pragma = make_pragma({"a", "b"}, 0);
+    IntegerOperationsDeducer deducer;
+    deducer.fillIntegerValuesInfo({pragma});
+    std::map<std::string, std::map<std::string, std::string>> map_less_equal = {
+        {"a", { {"a", "t"}, {"b", "t"} }},
+        {"b", { {"a", "f"}, {"b", "t"} }}
+    };
+    auto res = deducer.getBinaryOperationForMap(dom, dom, resDom, map_less_equal);
+    ASSERT_TRUE(res.has_value());
+    EXPECT_EQ(res->system, ArithmeticSystem::Comparison);
+    EXPECT_EQ(res->operation, ArithmeticOperation::Leq);
+}
+
+TEST(IntegerOperationsDeducerShould, DetectGreaterEqual) {
+    std::vector<std::string> dom = {"a", "b"};
+    std::vector<std::string> resDom = {"f", "t"};
+    auto pragma = make_pragma({"a", "b"}, 0);
+    IntegerOperationsDeducer deducer;
+    deducer.fillIntegerValuesInfo({pragma});
+    std::map<std::string, std::map<std::string, std::string>> map_greater_equal = {
+        {"a", { {"a", "t"}, {"b", "f"} }},
+        {"b", { {"a", "t"}, {"b", "t"} }}
+    };
+    auto res = deducer.getBinaryOperationForMap(dom, dom, resDom, map_greater_equal);
+    ASSERT_TRUE(res.has_value());
+    EXPECT_EQ(res->system, ArithmeticSystem::Comparison);
+    EXPECT_EQ(res->operation, ArithmeticOperation::Ge);
 }

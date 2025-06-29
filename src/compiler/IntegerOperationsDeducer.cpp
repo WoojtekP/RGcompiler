@@ -227,7 +227,15 @@ std::optional<ArithmeticData> IntegerOperationsDeducer::getBinaryOperationForMap
     }
     if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::greater<int>()))
     {
-        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Greater};
+        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Gr};
+    }
+    if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::less_equal<int>()))
+    {
+        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Leq};
+    }
+    if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::greater_equal<int>()))
+    {
+        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Ge};
     }
     for (auto system : {ArithmeticSystem::Overflow, ArithmeticSystem::Modular, ArithmeticSystem::Saturated})
     {

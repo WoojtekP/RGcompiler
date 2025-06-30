@@ -100,7 +100,7 @@ std::string ContainerChooser::createCache(
             "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
         rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
     }
-    rgCache += "int currentMrId = 0;\n";
+    rgCache += "uint currentMrId = 0;\n";
     for (const auto& [_, cache] : stateToCache)
     {
         rgCache += cache->getCacheType() + " " + cache->getCacheName() + ";\n";

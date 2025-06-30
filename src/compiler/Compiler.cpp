@@ -16,7 +16,7 @@ namespace
 {
 constexpr const int SMALL_VECTOR_MOVE_SIZE = 12;
 const std::string UNUSED_TAG_VALUE = "-1";
-constexpr std::string_view CUSTOM_TYPE_WORD = "int";
+constexpr std::string_view CUSTOM_TYPE_WORD = "uint";
 constexpr std::string_view CURRENT_MR_ID_WORD = "currentMrId";
 constexpr std::string_view APPLY_STATE_WORD = "apply_state_";
 constexpr std::string_view STATE_WORD = "state_";
@@ -880,7 +880,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                 else
                 {
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) >" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
+                        "mr.size() >" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
                 }
 
                 ifInstruction->addInstruction(std::move(innerInstructions));
@@ -977,7 +977,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             else
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "static_cast<int>(mr.size())",
+                    "mr.size()",
                     mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
                     ComparisonType::Gr));
             }
@@ -1009,7 +1009,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         if (!useArray)
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "static_cast<int>(mr.size())",
+                "mr.size()",
                 mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
                 ComparisonType::Neq));
         }
@@ -1471,7 +1471,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     std::unique_ptr<IfInstruction> ifInstruction;
 
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "static_cast<int>(mr.size()) > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
+                        "mr.size() > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
                         " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
 
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(

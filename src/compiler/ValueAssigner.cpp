@@ -152,18 +152,19 @@ void ValueAssigner::assignValuesForPlayers(SymbolToTypesMap& reservedValuesPerTy
         if (el["identifier"] == "Player")
         {
             auto& reservedValuesForPlayers = reservedValuesPerType["Player"];
-            auto& reservedValuesForPlayersOrKeeper = reservedValuesPerType["PlayerOrSystem"];
-            typeToSymbolToValue_["PlayerOrSystem"].emplace("random", -1);
+            auto& reservedValuesForPlayersOrSystem = reservedValuesPerType["PlayerOrSystem"];
+            typeToSymbolToValue_["PlayerOrSystem"].emplace("random", 1);
             typeToSymbolToValue_["PlayerOrSystem"].emplace("keeper", 0);
-            reservedValuesForPlayersOrKeeper.insert(0);
-            int value = 1;
+            reservedValuesForPlayersOrSystem.insert(1);
+            reservedValuesForPlayersOrSystem.insert(0);
+            int value = 2;
             for (const auto& identifier : el["type"]["identifiers"])
             {
                 const auto symbol = identifier.get<std::string>();
                 typeToSymbolToValue_["Player"].emplace(symbol, value);
                 typeToSymbolToValue_["PlayerOrSystem"].emplace(symbol, value);
                 reservedValuesForPlayers.insert(value);
-                reservedValuesForPlayersOrKeeper.insert(value);
+                reservedValuesForPlayersOrSystem.insert(value);
                 value++;
             }
             return;

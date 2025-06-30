@@ -15,7 +15,7 @@ std::string ElementaryType::toString() const
 
 std::string ElementaryType::definitionToString() const
 {
-    return "int";
+    return "uint";
 }
 
 std::string FunctionType::toString() const

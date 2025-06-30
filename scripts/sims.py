@@ -105,7 +105,19 @@ if "all" in games:
   # games.append('connect4.kif')
   # games.append('hex.kif')
   # games.append('knightthrough.kif')
- 
+
+elif "short" in games:
+  games = []
+  games.append('alquerque.hrg')
+  games.append('breakthrough.hrg')
+  games.append('chess.hrg')
+  games.append('chessCylinder.rbg')
+  games.append('dotsAndBoxes.hrg')
+  games.append('englishDraughts.hrg')
+  games.append('pretwa.rbg')
+  games.append('yavalath.rbg')
+
+
 print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
 if useTime: print(f'{limitS}s')
 else: print(f'{limit} sims')

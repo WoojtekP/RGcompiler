@@ -190,8 +190,8 @@ if "all" in games:
 
   games.append('pentago.hrg')
   # games.append('pentago.rbg')
-  games.append('pentago_split.hrg')
-  games.append('pentago_split.rbg')
+  # games.append('pentago_split.hrg')
+  # games.append('pentago_split.rbg')
   
   games.append('surakarta.rbg')
   

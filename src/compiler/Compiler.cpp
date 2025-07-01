@@ -15,7 +15,7 @@
 namespace
 {
 constexpr const int SMALL_VECTOR_MOVE_SIZE = 12;
-const std::string UNUSED_TAG_VALUE = "-1";
+const std::string UNUSED_TAG_NAME = "unusedTag";
 constexpr std::string_view CUSTOM_TYPE_WORD = "uint";
 constexpr std::string_view CURRENT_MR_ID_WORD = "currentMrId";
 constexpr std::string_view APPLY_STATE_WORD = "apply_state_";
@@ -460,6 +460,17 @@ void Compiler::generateTypes()
 
 void Compiler::generateConstants()
 {
+    auto elementaryType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
+    auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
+    const std::string playerCountConstantName = "PLAYERS_COUNT";
+    program_.addConstantDeclaration(std::make_unique<Constant>(
+        playerCountConstantName, elementaryType, std::move(playerCountConstantValue)));
+
+    auto unusedTagType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
+    auto unusedTagValue = std::make_unique<SingleValue>("std::numeric_limits<uint>::max()");
+    program_.addConstantDeclaration(std::make_unique<Constant>(
+        UNUSED_TAG_NAME, elementaryType, std::move(unusedTagValue)));
+
     ValueFactory valueFactory;
     for (const auto& constant : parser_.getConstants())
     {
@@ -468,12 +479,6 @@ void Compiler::generateConstants()
         const std::string identifier = constant["identifier"].get<std::string>();
         program_.addConstantDeclaration(std::make_unique<Constant>(identifier, std::move(valueType), std::move(value)));
     }
-
-    auto playerCountConstantType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
-    auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
-    const std::string playerCountConstantName = "PLAYERS_COUNT";
-    program_.addConstantDeclaration(std::make_unique<Constant>(
-        playerCountConstantName, std::move(playerCountConstantType), std::move(playerCountConstantValue)));
 }
 
 void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
@@ -497,7 +502,7 @@ void Compiler::generateVariables(const std::shared_ptr<Graph>& graph)
     {
         program_.addVariableDeclaration(std::make_unique<Variable>(
             "verificationCache",
-            std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, int, move_hash>"))));
+            std::move(std::make_shared<CustomType>("std::unordered_map<move_representation, uint, move_hash>"))));
     }
 }
 
@@ -874,7 +879,7 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
                     //     "mr[" + std::to_string(positions[depth]) + "]", "-1", ComparisonType::Neq));
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                         "mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
-                        "-1",
+                        UNUSED_TAG_NAME,
                         ComparisonType::Neq));
                 }
                 else
@@ -972,7 +977,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 // ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
                 //     " mr[" + std::to_string(positions[0]) + "]", "-1", ComparisonType::Neq));
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]", "-1", ComparisonType::Neq));
+                    " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
+                    UNUSED_TAG_NAME,
+                    ComparisonType::Neq));
             }
             else
             {
@@ -1016,7 +1023,9 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         else
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]", "-1", ComparisonType::Neq));
+                " mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "]",
+                UNUSED_TAG_NAME,
+                ComparisonType::Neq));
         }
         ifInstruction->addInstruction(std::make_unique<ReturnInstruction>("false"));
         blockInstruction->pushInstructionBack(std::move(ifInstruction));
@@ -1027,7 +1036,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     if ((!isExhaustive || hasAnyEmptyTagSequence) && !useArray)
     {
         blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-            "const int tmp" + std::string(CURRENT_MR_ID_WORD), mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
+            "const uint tmp" + std::string(CURRENT_MR_ID_WORD), mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
         blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
             mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD), "tmp" + std::string(CURRENT_MR_ID_WORD)));
     }
@@ -1491,7 +1500,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     assert(tagPosition != -1);
                     const auto accessTag = "mr[" + std::to_string(tagPosition) + "]";
                     const auto setTag = accessTag + " = " + tagValueStr;
-                    const auto unsetTag = accessTag + " = " + UNUSED_TAG_VALUE;
+                    const auto unsetTag = accessTag + " = " + UNUSED_TAG_NAME;
                     blockInstruction->pushInstructionFront(std::make_unique<CustomInstruction>(setTag));
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(unsetTag));
                 }
@@ -1838,7 +1847,7 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>(
         std::string(common::PLAYER_WORD), std::string(common::PLAYER_TYPE_WORD)));
     getPlayerScore->addInstruction(
-        std::make_unique<ReturnInstruction>("goals[" + std::string(common::PLAYER_WORD) + "- 1]"));
+        std::make_unique<ReturnInstruction>("goals[" + std::string(common::PLAYER_WORD) + "- 2]"));
 
     auto getCurrentPlayer =
         std::make_unique<Function>("getCurrentPlayer", std::string(common::PLAYER_OR_SYSTEM_TYPE_WORD), "", true, true);
@@ -1853,20 +1862,8 @@ void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
     {
         clearingCaches += "verificationCache.clear();\n";
     }
-    bool useArray =
-        !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-
-    if (useArray)
-    {
-        getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-            clearingCaches + "moves.clear();\nMove mr;\nmr.mr.fill(-1);\nrunState(currentState, moves,mr.mr," +
-            mainCacheName_ + ")"));
-    }
-    else
-    {
-        getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-            clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
-    }
+    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
+        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
 
     auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
     applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));

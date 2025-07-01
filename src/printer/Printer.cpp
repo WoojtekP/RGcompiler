@@ -43,6 +43,7 @@ void Printer::initializeHeaderFile(bool debug)
     headerFile_ << "#include <unordered_map>" << std::endl;
     headerFile_ << "#include <unordered_set>" << std::endl;
     headerFile_ << "#include <vector>" << std::endl;
+    headerFile_ << "#include <limits>" << std::endl;
     headerFile_ << std::endl;
     headerFile_ << "#include <boost/container/static_vector.hpp>" << std::endl;
     headerFile_ << "#include <boost/container/small_vector.hpp>" << std::endl;
@@ -111,7 +112,7 @@ void Printer::printSymbolValues()
         }
         for (const auto& [value, symbol] : valueToSymbols)
         {
-            headerFile_ << "constexpr int " << symbol << " = " << value << ";" << std::endl;
+            headerFile_ << "constexpr uint " << symbol << " = " << value << ";" << std::endl;
         }
     }
     headerFile_ << std::endl;
@@ -206,7 +207,7 @@ void Printer::printMoveRepresentationDeclaration(const std::pair<std::string, in
     if (moveContainer.find("array") != std::string::npos)
     {
         moveInitialization += " = {";
-        const std::string unusedTagValue = "-1";
+        const std::string unusedTagValue = "unusedTag";
         for (int i = 1; i < moveSize; ++i)
         {
             moveInitialization += unusedTagValue + ",";
@@ -238,7 +239,7 @@ inline void combine(size_t& acc, size_t x) noexcept
     acc ^= x;
 }
 
-inline size_t hash(int x) noexcept
+inline size_t hash(uint x) noexcept
 {
     return x;
 }
@@ -263,7 +264,7 @@ struct move_hash
     }
 };)";
 
-    headerFile_ << "using move_representation = " << moveContainer << "<int";
+    headerFile_ << "using move_representation = " << moveContainer << "<uint";
     if (moveSize != -1)
     {
         headerFile_ << "," << moveSize;
@@ -280,8 +281,8 @@ void Printer::printHashAndComparisonFunctions(const nlohmann::json& variables)
 {
     const auto hasherDeclaration = R"(struct Hasher
     {
-        size_t operator()(const std::tuple<GameState, int>& state) const noexcept;
-        size_t operator()(const std::tuple<GameState, move_representation, int>& state) const noexcept;
+        size_t operator()(const std::tuple<GameState, uint>& state) const noexcept;
+        size_t operator()(const std::tuple<GameState, move_representation, uint>& state) const noexcept;
     };)";
     const auto comparisonOperatorDeclaration = "bool operator==(const GameState& rhs) const;";
 
@@ -304,14 +305,14 @@ void Printer::printHashAndComparisonFunctions(const nlohmann::json& variables)
     headerFile_ << comparisonOperatorDeclaration << std::endl;
 
     sourceFile_ << "size_t GameState::Hasher::operator()"
-                << "(const std::tuple<GameState, int>& state) const noexcept" << std::endl;
+                << "(const std::tuple<GameState, uint>& state) const noexcept" << std::endl;
     sourceFile_ << "{" << std::endl;
     sourceFile_ << "const auto& [gameState, nodeId] = state;" << std::endl;
     sourceFile_ << "return " << hashExpr << ";" << std::endl;
     sourceFile_ << "}" << std::endl << std::endl;
 
     sourceFile_ << "size_t GameState::Hasher::operator()"
-                << "(const std::tuple<GameState, move_representation, int>& state) const noexcept" << std::endl;
+                << "(const std::tuple<GameState, move_representation, uint>& state) const noexcept" << std::endl;
     sourceFile_ << "{" << std::endl;
     sourceFile_ << "const auto& [gameState, move, nodeId] = state;" << std::endl;
     sourceFile_ << "return " << hashExpr << " ^ hash(move);" << std::endl;

@@ -23,13 +23,13 @@ const auto RESET_MAIN_CACHE_PART = R"(
 const auto CLEAR_CURRENT = R"(inline void clearCurrent() { pattern_cache[depth].clear(); }
 )";
 
-const auto INSERT_2 = R"(inline bool insert(const GameState& gameState, const int nodeId)
+const auto INSERT_2 = R"(inline bool insert(const GameState& gameState, const uint nodeId)
 {
     return pattern_cache[depth].insert(std::make_tuple(gameState, nodeId)).second;
 })";
 
 const auto INSERT_3 =
-    R"(inline bool insert(const GameState& gameState, const move_representation& mr, const int nodeId)
+    R"(inline bool insert(const GameState& gameState, const move_representation& mr, const uint nodeId)
 {
     return state_cache.insert(std::make_tuple(gameState, mr, nodeId)).second;
 })";
@@ -97,8 +97,8 @@ std::string ContainerChooser::createCache(
     {
         rgCache += "unsigned depth = 0;\n";
         rgCache +=
-            "std::unordered_set<std::tuple<GameState, move_representation, int>, GameState::Hasher> state_cache;\n";
-        rgCache += "std::vector<std::unordered_set<std::tuple<GameState, int>, GameState::Hasher>> pattern_cache;\n";
+            "std::unordered_set<std::tuple<GameState, move_representation, uint>, GameState::Hasher> state_cache;\n";
+        rgCache += "std::vector<std::unordered_set<std::tuple<GameState, uint>, GameState::Hasher>> pattern_cache;\n";
     }
     rgCache += "uint currentMrId = 0;\n";
     for (const auto& [_, cache] : stateToCache)

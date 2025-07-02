@@ -356,6 +356,7 @@ for game in games:
       resStates = int(stats[1])
       if expectedPerft[depth] != resLeaves:
         info = f'{util.ERROR} expected {util.CYAN}{expectedPerft[depth]}{util.RESET} but got {util.CYAN}{resLeaves}{util.RESET}'
+        isOK = False
       else:
         info = f'{util.OK}'
       errInfo = None
@@ -366,12 +367,12 @@ for game in games:
   ################
 
 totalElapsedTime = time.time() - totalStartTime
-gamesError = [game for game in games if game not in gamesOK]
+gamesBad = [game for game in games if game not in gamesOK]
 
 print()
 print((HEAD_FORMATTER+TIME_FORMATTER).format(f'--- Summary --- {util.GREEN}{util.RESET}', '', totalElapsedTime))
 print(f'Games {util.OK}: {" ".join(gamesOK)}')
-if len(gamesError) == 0:
+if len(gamesBad) == 0:
   print(f'No errors.')
 else:
-  print(f'Games with {util.ERROR}: {" ".join(gamesError)}')
+  print(f'Games with {util.ERROR}: {" ".join(gamesBad)}')

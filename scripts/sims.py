@@ -112,8 +112,10 @@ elif "short" in games:
   games.append('breakthrough.hrg')
   games.append('chess.hrg')
   games.append('chessCylinder.rbg')
+  games.append('connect4.hrg')
   games.append('dotsAndBoxes.hrg')
   games.append('englishDraughts.hrg')
+  games.append('pentago.hrg')
   games.append('pretwa.rbg')
   games.append('yavalath.rbg')
 

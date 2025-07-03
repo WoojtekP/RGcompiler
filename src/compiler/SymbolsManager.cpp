@@ -1,5 +1,7 @@
 #include "SymbolsManager.hpp"
 
+#include <limits.h>
+
 #include <compiler/ValueFactory.hpp>
 #include <parser/Parser.hpp>
 #include <program/Program.hpp>
@@ -63,7 +65,8 @@ void SymbolsManager::fillIntegerOperationsData()
 
     for (const auto& [typeName, symbolToValue] : valueAssigner_.getTypeToSymbolToValueMap())
     {
-        const auto [nanSymbol, integerSymbolsCounter] = operationsDeducer_.getNanAndNumberOfIntegerSymbols(symbolToValue);
+        const auto [nanSymbol, integerSymbolsCounter] =
+            operationsDeducer_.getNanAndNumberOfIntegerSymbols(symbolToValue);
         if (integerSymbolsCounter == symbolToValue.size())
         {
             integerTypes_.withoutNan.insert(typeName);

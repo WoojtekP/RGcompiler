@@ -4,8 +4,8 @@
 #include <common/Common.hpp>
 #include <common/ComparisonType.hpp>
 #include <compiler/Compiler.hpp>
-#include <compiler/ValueFactory.hpp>
 #include <compiler/SymbolsManager.hpp>
+#include <compiler/ValueFactory.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/stateCache/StateCacheFactory.hpp>
 #include <parser/Parser.hpp>
@@ -255,11 +255,12 @@ void Compiler::initializePragmaDisjoint()
 void Compiler::initializePragmaUnique()
 {
     initializePragmaVerticesSet("Unique", pragmaUniqueData_);
+    graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->init(pragmaUniqueData_);
 
     for (const auto& [from, to, graph] : patternReachabilityGraphs_)
     {
-        if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
-                pragmaUniqueData_) ||
+        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->init(pragmaUniqueData_);
+        if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique() ||
             allUnique_)
         {
             areAllNodesInPatternGraphUnique_.insert({from, to});
@@ -268,8 +269,8 @@ void Compiler::initializePragmaUnique()
 
     for (const auto& [from, to, graph] : applyAnyMoveGraphs_)
     {
-        if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
-                pragmaUniqueData_) ||
+        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->init(pragmaUniqueData_);
+        if (graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique() ||
             allUnique_)
         {
             areAllNodesInApplyAnyGraphUnique_.insert(from);
@@ -463,13 +464,13 @@ void Compiler::generateConstants()
     auto elementaryType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
     auto playerCountConstantValue = std::make_unique<SingleValue>(std::to_string(getNumberOfPlayers()));
     const std::string playerCountConstantName = "PLAYERS_COUNT";
-    program_.addConstantDeclaration(std::make_unique<Constant>(
-        playerCountConstantName, elementaryType, std::move(playerCountConstantValue)));
+    program_.addConstantDeclaration(
+        std::make_unique<Constant>(playerCountConstantName, elementaryType, std::move(playerCountConstantValue)));
 
     auto unusedTagType = std::make_shared<CustomType>(std::string(CUSTOM_TYPE_WORD));
     auto unusedTagValue = std::make_unique<SingleValue>("std::numeric_limits<uint>::max()");
-    program_.addConstantDeclaration(std::make_unique<Constant>(
-        UNUSED_TAG_NAME, elementaryType, std::move(unusedTagValue)));
+    program_.addConstantDeclaration(
+        std::make_unique<Constant>(UNUSED_TAG_NAME, elementaryType, std::move(unusedTagValue)));
 
     ValueFactory valueFactory;
     for (const auto& constant : parser_.getConstants())
@@ -984,9 +985,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
             else
             {
                 ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                    "mr.size()",
-                    mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
-                    ComparisonType::Gr));
+                    "mr.size()", mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD), ComparisonType::Gr));
             }
             ifInstruction->addInstruction(std::move(switchBody));
             blockAction = std::move(ifInstruction);
@@ -1016,9 +1015,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         if (!useArray)
         {
             ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                "mr.size()",
-                mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD),
-                ComparisonType::Neq));
+                "mr.size()", mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD), ComparisonType::Neq));
         }
         else
         {
@@ -1036,7 +1033,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     if ((!isExhaustive || hasAnyEmptyTagSequence) && !useArray)
     {
         blockInstruction->pushInstructionFront(std::make_unique<AssignmentInstruction>(
-            "const uint tmp" + std::string(CURRENT_MR_ID_WORD), mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
+            "const uint tmp" + std::string(CURRENT_MR_ID_WORD),
+            mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD)));
         blockInstruction->pushInstructionBack(std::make_unique<AssignmentInstruction>(
             mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD), "tmp" + std::string(CURRENT_MR_ID_WORD)));
     }
@@ -1480,8 +1478,8 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                     std::unique_ptr<IfInstruction> ifInstruction;
 
                     ifInstruction = std::make_unique<IfInstruction>(std::make_unique<ComparisonInstruction>(
-                        "mr.size() > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) +
-                        " && mr[" + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
+                        "mr.size() > " + mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + " && mr[" +
+                        mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "] == " + tagValueStr));
 
                     blockInstruction->pushInstructionBack(std::make_unique<CustomInstruction>(
                         mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "--"));
@@ -1767,7 +1765,8 @@ void Compiler::generateGetStateDescription()
         }
         function->addInstruction(std::make_unique<CustomInstruction>(
             "ss << \"" + var->identifier + " = \" << " +
-            formatValueForPrinting(var->identifier, var->valueType, var->value.get(), symbolsManager_.getValueAssigner(), parser_) +
+            formatValueForPrinting(
+                var->identifier, var->valueType, var->value.get(), symbolsManager_.getValueAssigner(), parser_) +
             " << std::endl"));
     }
     function->addInstruction(
@@ -2006,7 +2005,9 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
     auto destinationType = generateType(functionType["rhs"]);
     const std::string sourceTypeName = sourceType->identifier;
     return std::make_shared<FunctionType>(
-        std::move(sourceType), std::move(destinationType), symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
+        std::move(sourceType),
+        std::move(destinationType),
+        symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
 }
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
@@ -2170,8 +2171,7 @@ void Compiler::handleBoolDisjoint(
 
 bool Compiler::checkIsCacheNeed(const std::string& functionName, const std::shared_ptr<Graph>& graph)
 {
-    bool allUnique =
-        graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(pragmaUniqueData_);
+    bool allUnique = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique();
     if (functionName.starts_with(APPLY_STATE_WORD))
     {
         // Commented because of oware bug
@@ -2237,6 +2237,5 @@ void Compiler::calculatePatternsWithCache()
 bool Compiler::arePatternAndMainGraphUnique()
 {
     return patternsWithCache_.empty() &&
-           graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->areAllNodesWithPragmaUnique(
-               pragmaUniqueData_);
+           graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph_)->areAllNodesWithPragmaUnique();
 }

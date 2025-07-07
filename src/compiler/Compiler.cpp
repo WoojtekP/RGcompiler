@@ -2195,8 +2195,7 @@ void Compiler::calculatePatternsWithCache()
 {
     for (const auto& [from, to, graph] : patternReachabilityGraphs_)
     {
-        if (!graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique(
-                pragmaUniqueData_))
+        if (!graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique())
         {
             patternsWithCache_.insert({from, to});
         }

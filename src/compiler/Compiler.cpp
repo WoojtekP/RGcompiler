@@ -39,7 +39,6 @@ void fillPaternsDependency(
                 const std::string from = action->getLeftSide();
                 const std::string to = action->getRightSide();
                 int newId = patternNameToId.at({from, to});
-                patternsDependency[id].insert(newId);
                 patternsDependency[newId].insert(id);
             }
         }

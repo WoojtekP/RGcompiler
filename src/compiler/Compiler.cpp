@@ -1776,32 +1776,32 @@ void Compiler::generateGetStateDescription()
 
 void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, bool applyMode)
 {
-    const auto functionName = (applyMode ? "runApplyState" : "runState");
+    const auto functionName = (applyMode ? "applyMove" : "getAllMoves");
     const auto prefix = (applyMode ? std::string(APPLY_STATE_WORD) : std::string(STATE_WORD));
 
-    auto function = std::make_unique<Function>(functionName, "void", "", false);
-    function->addArgument(std::make_unique<VariableDeclarationInstruction>("val", std::string(CUSTOM_TYPE_WORD)));
-    function->setAttributes("inline");
-
+    auto function = std::make_unique<Function>(functionName, "void", "", true);
     if (applyMode)
     {
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "const move_representation&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "const Move&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
+        function->addInstruction(std::make_unique<CustomInstruction>(mainCacheName_ + ".reset()"));
     }
     else
     {
         function->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
-        function->addArgument(std::make_unique<VariableDeclarationInstruction>("mr", "move_representation&"));
+        function->addArgument(std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
+        std::string clearingCaches = mainCacheName_ + ".reset();\n";
+        function->addInstruction(std::make_unique<CustomInstruction>(clearingCaches + "moves.clear();\nMove mr\n"));
     }
-    function->addArgument(
-        std::make_unique<VariableDeclarationInstruction>(mainCacheName_, "[[maybe_unused]]" + mainCacheType_ + "&"));
-    std::string functionArguments = (applyMode ? "mr" : "moves, mr");
+
+    std::string functionArguments = (applyMode ? "mr.mr" : "moves, mr.mr");
     if (!optNoCycleDetection_ &&
         checkIsCacheNeed((applyMode ? std::string(APPLY_STATE_WORD) : std::string(STATE_WORD)), graph))
     {
         functionArguments += "," + mainCacheName_;
     }
 
-    auto sw = std::make_unique<SwitchInstruction>("val");
+    auto sw = std::make_unique<SwitchInstruction>("currentState");
 
     for (const auto& [edge, iid] :
          graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayerButNotKeeper())
@@ -1833,48 +1833,27 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
 void Compiler::generateSpecialFunctions(const std::shared_ptr<Graph>& graph)
 {
-    generateRunStateFunction(graph, true);
-    generateRunStateFunction(graph);
-    generateGetStateDescription();
-    //tutaj
     auto isTerminal = std::make_unique<Function>("isTerminal", "bool", "", true, true);
     isTerminal->addInstruction(std::make_unique<ReturnInstruction>(
         std::string(CURRENT_STATE_WORD) + " == " + std::to_string(graph->getNodeId(common::END_WORD))));
-
+    isTerminal->setDefineInHeader(true);
     auto getPlayerScore = std::make_unique<Function>("getPlayerScore", "Score", "", true, true);
     getPlayerScore->addArgument(std::make_unique<VariableDeclarationInstruction>(
         std::string(common::PLAYER_WORD), std::string(common::PLAYER_TYPE_WORD)));
     getPlayerScore->addInstruction(
         std::make_unique<ReturnInstruction>("goals[" + std::string(common::PLAYER_WORD) + "- 2]"));
-
+    getPlayerScore->setDefineInHeader(true);
     auto getCurrentPlayer =
         std::make_unique<Function>("getCurrentPlayer", std::string(common::PLAYER_OR_SYSTEM_TYPE_WORD), "", true, true);
     getCurrentPlayer->addInstruction(std::make_unique<ReturnInstruction>(std::string(common::PLAYER_WORD)));
-
-    auto getAllMovesFunction = std::make_unique<Function>("getAllMoves", "void", "", true);
-    getAllMovesFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("moves", "std::vector<Move>&"));
-    getAllMovesFunction->addArgument(
-        std::make_unique<VariableDeclarationInstruction>(mainCacheName_, mainCacheType_ + "&"));
-    std::string clearingCaches = mainCacheName_ + ".reset();\n";
-    if (verification_)
-    {
-        clearingCaches += "verificationCache.clear();\n";
-    }
-    getAllMovesFunction->addInstruction(std::make_unique<CustomInstruction>(
-        clearingCaches + "moves.clear();\nMove mr;\nrunState(currentState, moves,mr.mr," + mainCacheName_ + ")"));
-
-    auto applyMoveFunction = std::make_unique<Function>("applyMove", "void", "", true);
-    applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("m", "const Move&"));
-    applyMoveFunction->addArgument(std::make_unique<VariableDeclarationInstruction>("rgCache", "RgCache&"));
-    applyMoveFunction->addInstruction(std::make_unique<CustomInstruction>(mainCacheName_ + ".reset()"));
-    applyMoveFunction->addInstruction(
-        std::make_unique<CustomInstruction>("runApplyState(currentState, m.mr, rgCache)"));
-
+    getCurrentPlayer->setDefineInHeader(true);
     program_.addFunction(std::move(isTerminal));
     program_.addFunction(std::move(getPlayerScore));
     program_.addFunction(std::move(getCurrentPlayer));
-    program_.addFunction(std::move(getAllMovesFunction));
-    program_.addFunction(std::move(applyMoveFunction));
+    generateGetStateDescription();
+    generateRunStateFunction(graph);
+    generateRunStateFunction(graph, true);
+    generateApplyAnyMove();
 }
 
 void Compiler::generateApplyAnyMove()
@@ -1966,7 +1945,6 @@ void Compiler::generateFunctions()
     generatePatternReachabilityFunctions();
     generateVoidStateFunctions(graph_);
     generateVoidStateFunctions(graph_, true);
-    generateApplyAnyMove();
     generateSpecialFunctions(graph_);
 
     if (optGccInline_ == InlineMode::SingleCall)

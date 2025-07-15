@@ -7,7 +7,6 @@
 #include <common/ComparisonType.hpp>
 #include <compiler/ValueAssigner.hpp>
 
-
 std::string ElementaryType::toString() const
 {
     return identifier;
@@ -435,9 +434,14 @@ void Function::addInstruction(std::unique_ptr<IInstruction> &&instruction)
     instructions_.push_back(std::move(instruction));
 }
 
-void Function::setAttributes(const std::string& attributes)
+void Function::setAttributes(const std::string &attributes)
 {
     attributes_ = attributes;
+}
+
+void Function::setDefineInHeader(bool defineInHeader)
+{
+    defineInHeader_ = defineInHeader;
 }
 
 bool Function::isPublic()
@@ -447,9 +451,13 @@ bool Function::isPublic()
 
 std::string Function::declarationToString()
 {
+    std::string prefix = (attributes_.empty() ? attributes_ : attributes_ + " ");
+    if (defineInHeader_)
+    {
+        return prefix + getDeclaration(2, 0, false, false);
+    }
     std::string argumentsList = getArgumentsList();
-    return (attributes_.empty() ? attributes_ : attributes_ + " ") + returnType_ + " " + name_ + "(" +
-           argumentsList + ")" + (isConst_ ? "const" : "") + ";";
+    return prefix + returnType_ + " " + name_ + "(" + argumentsList + ")" + (isConst_ ? "const" : "") + ";";
 }
 
 std::string Function::getName()
@@ -462,12 +470,22 @@ std::string Function::getReturnType()
     return returnType_;
 }
 
-const std::vector<std::unique_ptr<IInstruction>>& Function::getInstructions() const
+const std::vector<std::unique_ptr<IInstruction>> &Function::getInstructions() const
 {
     return instructions_;
 }
 
 std::string Function::toString(int delimiter, int shift, bool semicolon)
+{
+    if (defineInHeader_)
+    {
+        return "";
+    }
+
+    return getDeclaration(delimiter, shift, semicolon);
+}
+
+std::string Function::getDeclaration(int delimiter, int shift, bool semicolon, bool useFunctionNamesapce)
 {
     std::string result;
     std::string body;
@@ -478,12 +496,11 @@ std::string Function::toString(int delimiter, int shift, bool semicolon)
         body += instruction->toString(shift, shift, true) + "\n";
     }
 
-    result += getLeadingSpaces(delimiter) + returnType_ + " " + functionNamespace_ + name_ + "(" + argumentsList + ")" +
-              (isConst_ ? "const" : "") + "\n";
+    result += getLeadingSpaces(delimiter) + returnType_ + " " + (useFunctionNamesapce ? functionNamespace_ : "") +
+              name_ + "(" + argumentsList + ")" + (isConst_ ? "const" : "") + "\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     result += body;
     result += getLeadingSpaces(delimiter) + "}\n";
-
     return result;
 }
 

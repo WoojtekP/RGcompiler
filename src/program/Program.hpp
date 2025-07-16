@@ -223,8 +223,8 @@ class BlockInstruction : public IInstruction
 public:
     BlockInstruction();
 
-    const std::unique_ptr<IInstruction>& frontInstruction() const;
-    const std::unique_ptr<IInstruction>& backInstruction() const;
+    const std::unique_ptr<IInstruction> &frontInstruction() const;
+    const std::unique_ptr<IInstruction> &backInstruction() const;
     void pushInstructionBack(std::unique_ptr<IInstruction> &&instruction);
     void pushInstructionFront(std::unique_ptr<IInstruction> &&instruction);
     void popInstructionFront();
@@ -243,7 +243,7 @@ public:
     IfInstruction(std::unique_ptr<ComparisonInstruction> &&condition);
 
     std::vector<std::unique_ptr<IInstruction>> extractInstructions();
-    const std::unique_ptr<ComparisonInstruction>& getCondition() const;
+    const std::unique_ptr<ComparisonInstruction> &getCondition() const;
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
     void addElseInstruction(std::unique_ptr<IInstruction> &&instruction);
 
@@ -317,8 +317,9 @@ public:
 
 class Function : public IInstruction
 {
-    bool isPublic_;
-    bool isConst_;
+    bool isPublic_ = false;
+    bool isConst_ = false;
+    bool defineInHeader_ = false;
     std::string name_;
     std::string returnType_;
     std::string attributes_;
@@ -337,17 +338,19 @@ public:
 
     void addArgument(std::unique_ptr<VariableDeclarationInstruction> &&var);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
-    void setAttributes(const std::string& attributes);
+    void setAttributes(const std::string &attributes);
+    void setDefineInHeader(bool defineInHeader);
 
     bool isPublic();
     std::string declarationToString();
     std::string toString(int delimiter, int shift, bool semicolon) override;
     std::string getName();
     std::string getReturnType();
-    const std::vector<std::unique_ptr<IInstruction>>& getInstructions() const;
+    const std::vector<std::unique_ptr<IInstruction>> &getInstructions() const;
 
 private:
     std::string getArgumentsList();
+    std::string getDeclaration(int delimiter, int shift, bool semicolon, bool useFunctionNamesapce = true);
 };
 
 class Program

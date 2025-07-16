@@ -29,7 +29,8 @@ def parseGameName(game):
     print(f'Invalid game name (too many dots): {game}')
     return None
   baseName = nameWithExt[0].split('-')[0]
-  gameFile = nameWithExt[1] + '/' + game
+  if nameWithExt[1] == 'py': gameFile = 'py/hrg/' + nameWithExt[0] + '.hrg'
+  else: gameFile = nameWithExt[1] + '/' + game
   return (baseName, gameFile)
 
 class cfg:

@@ -128,8 +128,6 @@ std::string Parser::getSourceType(const nlohmann::json& t) const
     {
         return t["lhs"]["identifier"];
     }
-
-    //  std::cout << t << "\n";
     return "?";
 }
 

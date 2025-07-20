@@ -51,6 +51,22 @@ struct FunctionType : public IType
     int domainSize;
 };
 
+struct ListType : public IType
+{
+    ListType(const std::string &id)
+    : IType(id) {};
+    ListType(std::shared_ptr<IType> src, std::shared_ptr<IType> dst)
+    : source(std::move(src))
+    , destination(std::move(dst))
+    {}
+    ~ListType() = default;
+    std::string toString() const override;
+    std::string definitionToString() const override;
+
+    std::shared_ptr<IType> source;
+    std::shared_ptr<IType> destination;
+};
+
 struct CustomType : public IType
 {
     CustomType() = default;
@@ -101,6 +117,19 @@ struct MapValue : public IValue
     std::unique_ptr<IValue> defaultValue;
 };
 
+struct ListValue : public IValue
+{
+    ListValue() = default;
+    ListValue(std::vector<std::string> entries)
+    : entries(std::move(entries))
+    {}
+    ~ListValue() = default;
+    std::string toString(const std::shared_ptr<IType> &, const ValueAssigner &) const override;
+
+    std::vector<std::string> entries;
+};
+
+
 struct IVariable
 {
     IVariable() = default;
@@ -117,6 +146,7 @@ struct IVariable
     {}
     virtual ~IVariable() = default;
     virtual std::string toString() const = 0;
+    virtual bool isConstexpr() const { return false; }
     bool isPublic() { return isPublic_; }
 
     bool isPublic_;
@@ -128,11 +158,18 @@ struct IVariable
 struct Constant : public IVariable
 {
     Constant() = default;
-    Constant(const std::string &id, std::shared_ptr<IType> valType, std::unique_ptr<IValue> val)
-    : IVariable(id, std::move(valType), std::move(val))
+    Constant(
+        const std::string &id,
+        std::shared_ptr<IType> valType,
+        std::unique_ptr<IValue> val,
+        const bool isConstexpr = true)
+    : IVariable(id, std::move(valType), std::move(val)), isConstexpr_(isConstexpr)
     {}
     ~Constant() = default;
     std::string toString() const override;
+    bool isConstexpr() const override { return isConstexpr_; }
+
+    bool isConstexpr_;
 };
 
 struct Variable : public IVariable
@@ -280,7 +317,7 @@ public:
 
 class IterLoopInstruction : public ILoopInstruction
 {
-    std::string variableName_;
+    const std::string variableName_;
     const std::string lowerBound_;
     const std::string upperBound_;
 
@@ -292,16 +329,19 @@ public:
 
 class RangeLoopInstruction : public ILoopInstruction
 {
-    std::string variableName_;
+    const std::string variableName_;
+    std::string rangeName_;
     std::vector<std::string> range_;
 
 public:
     RangeLoopInstruction(const std::string &variableName);
 
+    void setRange(const std::string &rangeName);
     void setRange(const std::vector<std::string> &range);
     void addToRange(const std::string &rangeElement);
     void addInstruction(std::unique_ptr<IInstruction> &&instruction);
 
+    std::string formatRange() const;
     std::string toString(int delimiter, int shift, bool semicolon) override;
 };
 

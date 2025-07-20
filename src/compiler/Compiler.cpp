@@ -277,6 +277,11 @@ void Compiler::initializePragmaUnique()
     }
 }
 
+void Compiler::initializePragmaIterator()
+{
+    pragmaIteratorData_.parse(parser_, symbolsManager_);
+}
+
 void Compiler::initializePragmaRepeat()
 {
     if (allUnique_)
@@ -299,6 +304,7 @@ void Compiler::initializePragmas()
     graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->init(parser_);
     initializePragmaDisjoint();
     initializePragmaUnique();
+    initializePragmaIterator();
     initializePragmaRepeat();
     initializePragmaSimpleApply();
 }
@@ -472,6 +478,24 @@ void Compiler::generateConstants()
         std::make_unique<Constant>(UNUSED_TAG_NAME, elementaryType, std::move(unusedTagValue)));
 
     ValueFactory valueFactory;
+    for (const auto& iteratorName : pragmaIteratorData_.getIteratorNames())
+    {
+        const auto constantName = pragmaIteratorData_.getConstantNameForIterator(iteratorName);
+        auto constantType = parser_.findTypeOfVariable(constantName);
+        auto iteratorType = generateIteratorType(constantType);
+        for (const auto& constant : parser_.getConstants())
+        {
+            if (constant["identifier"] == constantName)
+            {
+                auto iteratorValue = valueFactory.createIteratorValue(constant["value"]);
+                const auto isConstexpr = false;
+                program_.addConstantDeclaration(std::make_unique<Constant>(
+                    iteratorName, std::move(iteratorType), std::move(iteratorValue), isConstexpr));
+                break;
+            }
+        }
+    }
+
     for (const auto& constant : parser_.getConstants())
     {
         auto valueType = generateType(constant["type"]);
@@ -1391,6 +1415,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
     }
     std::reverse(nodes.begin(), nodes.end());
     auto nodeIt = nodes.begin();
+    std::shared_ptr<Node> assignAnyNode = nullptr;
     std::shared_ptr<IAction> assignAnyAction = nullptr;
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
@@ -1415,6 +1440,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
+            if (pragmaIteratorData_.contains(*nodeIt))
+            {
+                continue;
+            }
             const auto cmpType = dynamic_cast<ActionComparison*>(action.get())->getComparisonType();
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
@@ -1533,13 +1562,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
                 throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
             }
             assignAnyAction = action;
+            assignAnyNode = *nodeIt;
         }
     }
 
-    if (assignAnyAction)
+    if (assignAnyAction && assignAnyNode)
     {
         const auto tmpVarName = getTemporaryVariableName(temporaryVariableCnt, edgeId);
-        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction), tmpVarName);
+        return wrapIntoLoopIfNeeded(assignAnyAction, assignAnyNode, std::move(blockInstruction), tmpVarName);
     }
     return blockInstruction;
 }
@@ -1637,6 +1667,12 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         isCacheNeed);
     int temporaryVariableCnt = 0;
     int edgeId = graph->getEdgeId(stateFrom, stateTo, iid);
+    std::vector<std::shared_ptr<Node>> nodes = {edge->getLeftNode()};
+    nodes.insert(nodes.end(), edge->getInnerNodes().begin(), edge->getInnerNodes().end());
+    assert(nodes.size() == actions.size());
+    nodes.push_back(edge->getRightNode());
+    auto nodeIt = nodes.rbegin();
+    std::shared_ptr<Node> assignAnyNode = nullptr;
     std::shared_ptr<IAction> assignAnyAction = nullptr;
     auto skipFirstInstructionIter = actions.rend();
     if (skipFirstInstruction)
@@ -1670,6 +1706,10 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
+            if (pragmaIteratorData_.contains(*nodeIt))
+            {
+                continue;
+            }
             const auto cmpType = dynamic_cast<ActionComparison*>(action.get())->getComparisonType();
             std::unique_ptr<IfInstruction> ifInstruction = std::make_unique<IfInstruction>(
                 std::make_unique<ComparisonInstruction>(action->getLeftSide(), action->getRightSide(), cmpType));
@@ -1699,13 +1739,14 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
                 throw std::runtime_error("[Compiler] Multiple nodes of type AssignmentAny are not supported.");
             }
             assignAnyAction = action;
+            assignAnyNode = *nodeIt;
         }
     }
 
-    if (assignAnyAction)
+    if (assignAnyAction && assignAnyNode)
     {
         const auto tmpVarName = getTemporaryVariableName(temporaryVariableCnt, edgeId);
-        return wrapIntoLoopIfNeeded(assignAnyAction, std::move(blockInstruction), tmpVarName);
+        return wrapIntoLoopIfNeeded(assignAnyAction, assignAnyNode, std::move(blockInstruction), tmpVarName);
     }
     return blockInstruction;
 }
@@ -1976,6 +2017,18 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
     throw std::runtime_error("Illegal kind of type (not implemented): " + t["kind"].get<std::string>());
 }
 
+std::shared_ptr<IType> Compiler::generateIteratorType(const nlohmann::json& functionType)
+{
+    auto sourceType = generateType(functionType["lhs"]);
+    auto destinationType = generateType(functionType["rhs"]["lhs"]);
+    const std::string sourceTypeName = sourceType->identifier;
+    return std::make_shared<FunctionType>(
+        std::move(sourceType),
+        std::make_shared<ListType>(destinationType, destinationType),
+        symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName)
+    );
+}
+
 std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)
 {
     auto sourceType = generateType(functionType["lhs"]);
@@ -1989,6 +2042,7 @@ std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& func
 
 std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
     const std::shared_ptr<IAction>& actionAssignAny,
+    const std::shared_ptr<Node>& node,
     std::unique_ptr<BlockInstruction> blockInstruction,
     const std::string& tmpVariableName) const
 {
@@ -2019,8 +2073,8 @@ std::unique_ptr<BlockInstruction> Compiler::wrapIntoLoopIfNeeded(
             return blockInstruction;
         }
     }
-    const LoopFactory loopFactory(parser_, symbolsManager_.getValueAssigner());
-    auto loopInstruction = loopFactory.createLoopInstruction(*actionAssignAny);
+    const LoopFactory loopFactory(parser_, symbolsManager_.getValueAssigner(), pragmaIteratorData_);
+    auto loopInstruction = loopFactory.createLoopInstruction(node, actionAssignAny);
     if (dynamic_cast<RangeLoopInstruction*>(loopInstruction.get()))
     {
         blockInstruction->pushInstructionFront(

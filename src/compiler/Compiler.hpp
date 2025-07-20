@@ -3,6 +3,7 @@
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
+#include <compiler/pragma/Iterator.hpp>
 #include <compiler/pragma/RepeatFlat.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
 #include <compiler/SymbolsManager.hpp>
@@ -158,9 +159,11 @@ private:
     std::string getStateIntId(std::string name);
     std::pair<std::string, int> getMoveRepresentation();
     std::shared_ptr<IType> generateType(const nlohmann::json &t);
+    std::shared_ptr<IType> generateIteratorType(const nlohmann::json &t);
     std::shared_ptr<IType> generateFunctionType(const nlohmann::json &t);
     std::unique_ptr<BlockInstruction> wrapIntoLoopIfNeeded(
         const std::shared_ptr<IAction> &actionAssignAny,
+        const std::shared_ptr<Node> &node,
         std::unique_ptr<BlockInstruction> blockInstruction,
         const std::string &tmpVariableName) const;
     std::string getTemporaryVariableName(int idx, int edgeId);
@@ -168,6 +171,7 @@ private:
     void initializePragmaVerticesSet(const std::string &pragmaName, std::set<std::string> &data);
     void initializePragmaDisjoint();
     void initializePragmaUnique();
+    void initializePragmaIterator();
     void initializePragmaRepeat();
     void initializePragmaSimpleApply();
     void initializePragmas();
@@ -218,6 +222,7 @@ private:
     std::set<std::string> pragmaUniqueData_;
     std::set<std::string> pragmaSimpleApplyData_;
     RepeatFlatData pragmaRepeatFlatData_;
+    IteratorData pragmaIteratorData_;
     std::set<std::pair<std::string, std::string>> areAllNodesInPatternGraphUnique_;
     std::set<std::string> areAllNodesInApplyAnyGraphUnique_;
     std::map<std::string, int> functionCallCounter_;

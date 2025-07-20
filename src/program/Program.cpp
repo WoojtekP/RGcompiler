@@ -31,6 +31,20 @@ std::string FunctionType::definitionToString() const
     return "Arr<" + destination->toString() + ", " + std::to_string(domainSize) + ">";
 }
 
+std::string ListType::toString() const
+{
+    if (identifier.empty())
+    {
+        return definitionToString();
+    }
+    return identifier;
+}
+
+std::string ListType::definitionToString() const
+{
+    return "std::vector<" + destination->toString() + ">";
+}
+
 std::string CustomType::toString() const
 {
     return identifier;
@@ -71,6 +85,17 @@ std::string MapValue::toString(const std::shared_ptr<IType> &t, const ValueAssig
         return result;
     }
     throw std::invalid_argument("Function type is expected.");
+}
+
+std::string ListValue::toString(const std::shared_ptr<IType>& listType, const ValueAssigner&) const
+{
+    std::string result = listType->toString() + "{";
+    for (const auto& entry : entries)
+    {
+        result += entry + ",";
+    }
+    result += "}";
+    return result;
 }
 
 std::string Constant::toString() const
@@ -315,6 +340,11 @@ RangeLoopInstruction::RangeLoopInstruction(const std::string &variableName)
 : variableName_(variableName)
 {}
 
+void RangeLoopInstruction::setRange(const std::string &rangeName)
+{
+    rangeName_ = rangeName;
+}
+
 void RangeLoopInstruction::setRange(const std::vector<std::string> &range)
 {
     range_ = range;
@@ -325,19 +355,32 @@ void RangeLoopInstruction::addToRange(const std::string &rangeElement)
     range_.push_back(rangeElement);
 }
 
+std::string RangeLoopInstruction::formatRange() const
+{
+    if (!rangeName_.empty())
+    {
+        return rangeName_;
+    }
+    if (!range_.empty())
+    {
+        std::string result = "";
+        for (const auto &value : range_)
+        {
+            result += value + ",";
+        }
+        if (result.back() == ',')
+        {
+            result.pop_back();
+        }
+        return result;
+    }
+    throw std::runtime_error("[Program] Range loop created without valid range");
+}
+
 std::string RangeLoopInstruction::toString(int delimiter, int shift, bool semicolon)
 {
     std::string result = "";
-    result += getLeadingSpaces(delimiter) + "for (const auto& " + variableName_ + " : {";
-    for (const auto &value : range_)
-    {
-        result += value + ",";
-    }
-    if (result.back() == ',')
-    {
-        result.pop_back();
-    }
-    result += "})\n";
+    result += getLeadingSpaces(delimiter) + "for (const auto& " + variableName_ + " : " + formatRange() + ")\n";
     result += getLeadingSpaces(delimiter) + "{\n";
     for (const auto &instruction : instructions_)
     {

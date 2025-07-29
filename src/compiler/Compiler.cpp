@@ -483,11 +483,12 @@ void Compiler::generateConstants()
         const auto constantName = pragmaIteratorData_.getConstantNameForIterator(iteratorName);
         auto constantType = parser_.findTypeOfVariable(constantName);
         auto iteratorType = generateIteratorType(constantType);
+        const auto iteratorDomain = parser_.getDomain(parser_.getSourceType(parser_.getDestinationType(constantType)));
         for (const auto& constant : parser_.getConstants())
         {
             if (constant["identifier"] == constantName)
             {
-                auto iteratorValue = valueFactory.createIteratorValue(constant["value"]);
+                auto iteratorValue = valueFactory.createIteratorValue(constant["value"], iteratorDomain);
                 const auto isConstexpr = false;
                 program_.addConstantDeclaration(std::make_unique<Constant>(
                     iteratorName, std::move(iteratorType), std::move(iteratorValue), isConstexpr));

@@ -1,4 +1,4 @@
-q#!/usr/bin/env python3
+#!/usr/bin/env python3
 import sys, os, argparse, time
 from common import *
 os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir

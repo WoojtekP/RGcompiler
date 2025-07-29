@@ -22,9 +22,8 @@ class IteratorData
 {
 public:
     void parse(const Parser& parser, const SymbolsManager& symbolsManager);
-    bool contains(const std::shared_ptr<Node>& lhsNode, const std::shared_ptr<Node>& rhsNode) const;
-    bool contains(const std::shared_ptr<Node>& node) const;
-    bool contains(const std::shared_ptr<Node>& node, const std::shared_ptr<IAction>& assignmentAnyAction) const;
+    bool isComparisonToOptimize(const std::shared_ptr<Node>& node) const;
+    bool isIteratorAction(const std::shared_ptr<Node>& node, const std::shared_ptr<IAction>& assignmentAnyAction) const;
     std::string getRangeName(
         const std::shared_ptr<Node>& node, const std::shared_ptr<IAction>& assignmentAnyAction) const;
     const std::set<std::string> getIteratorNames() const;

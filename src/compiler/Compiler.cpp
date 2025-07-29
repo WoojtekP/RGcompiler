@@ -1414,20 +1414,17 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         // last action was erased in prepareBaseInstructions call, therefore we need to adjust set of nodes
         nodes.pop_back();
     }
-    std::reverse(nodes.begin(), nodes.end());
-    auto nodeIt = nodes.begin();
+    auto nodeIt = nodes.rbegin();
     std::shared_ptr<Node> assignAnyNode = nullptr;
     std::shared_ptr<IAction> assignAnyAction = nullptr;
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
         nodeIt++;
-
         if (action_iterator == skipFirstInstructionIter)
         {
             break;
         }
-
         if (action->getType() == ActionType::Assignment)
         {
             std::string lvalue = action->getLeftSide();
@@ -1441,7 +1438,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateVoidEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
-            if (pragmaIteratorData_.contains(*nodeIt))
+            if (pragmaIteratorData_.isComparisonToOptimize(*nodeIt))
             {
                 continue;
             }
@@ -1684,6 +1681,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
     for (auto action_iterator = actions.rbegin(); action_iterator != actions.rend(); action_iterator++)
     {
         auto action = *action_iterator;
+        nodeIt++;
         if (action_iterator == skipFirstInstructionIter)
         {
             break;
@@ -1707,7 +1705,7 @@ std::unique_ptr<BlockInstruction> Compiler::generateBoolEdgeInstruction(
         }
         else if (action->getType() == ActionType::Comparison)
         {
-            if (pragmaIteratorData_.contains(*nodeIt))
+            if (pragmaIteratorData_.isComparisonToOptimize(*nodeIt))
             {
                 continue;
             }

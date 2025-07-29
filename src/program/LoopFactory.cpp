@@ -23,7 +23,7 @@ std::unique_ptr<ILoopInstruction> LoopFactory::createLoopInstruction(
     }
     const auto& typeName = action->getRightSide();
     const auto iteratorVariableName = action->getLeftSide() + "It";
-    if (pragmaIteratorData_.contains(node, action))
+    if (pragmaIteratorData_.isIteratorAction(node, action))
     {
         auto loopInstruction = std::make_unique<RangeLoopInstruction>(iteratorVariableName);
         loopInstruction->setRange(pragmaIteratorData_.getRangeName(node, action));

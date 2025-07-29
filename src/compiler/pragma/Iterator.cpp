@@ -1,7 +1,5 @@
 #include "Iterator.hpp"
 
-#include <iostream>
-
 #include <compiler/SymbolsManager.hpp>
 #include <compiler/ValueFactory.hpp>
 #include <graph/Action.hpp>
@@ -68,29 +66,11 @@ void IteratorData::parse(const Parser& parser, const SymbolsManager& symbolsMana
     }
 }
 
-// TODO: remove unused "contains" methods
-bool IteratorData::contains(const std::shared_ptr<Node>& lhsNode, const std::shared_ptr<Node>& rhsNode) const
+bool IteratorData::isComparisonToOptimize(const std::shared_ptr<Node>& node) const
 {
     for (const auto& nodesAndVariable : nodesAndVariables_)
     {
-        const auto& nodes = nodesAndVariable.nodes;
-        for (auto node = nodes.begin(); node + 1 != nodes.end(); ++node)
-        {
-            if (*node == lhsNode->getName() && *(node + 1) == rhsNode->getName())
-            {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool IteratorData::contains(const std::shared_ptr<Node>& node) const
-{
-    for (const auto& nodesAndVariable : nodesAndVariables_)
-    {
-        const auto& nodes = nodesAndVariable.nodes;
-        if (std::find(nodes.begin(), nodes.end(), node->getName()) != nodes.end())
+        if (nodesAndVariable.nodes[1] == node->getName())
         {
             return true;
         }
@@ -98,14 +78,14 @@ bool IteratorData::contains(const std::shared_ptr<Node>& node) const
     return false;
 }
 
-// TODO: assignmentAnyAction not used
-bool IteratorData::contains(
+bool IteratorData::isIteratorAction(
     const std::shared_ptr<Node>& node, const std::shared_ptr<IAction>& assignmentAnyAction) const
 {
     for (const auto& nodesAndVariable : nodesAndVariables_)
     {
         const auto& nodes = nodesAndVariable.nodes;
-        if (nodes.front() == node->getName())
+        const auto& variable = nodesAndVariable.variable;
+        if (nodes.front() == node->getName() && variable == assignmentAnyAction->getLeftSide())
         {
             return true;
         }

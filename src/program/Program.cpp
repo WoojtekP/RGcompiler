@@ -363,7 +363,7 @@ std::string RangeLoopInstruction::formatRange() const
     }
     if (!range_.empty())
     {
-        std::string result = "";
+        std::string result = "{";
         for (const auto &value : range_)
         {
             result += value + ",";
@@ -372,6 +372,7 @@ std::string RangeLoopInstruction::formatRange() const
         {
             result.pop_back();
         }
+        result += "}";
         return result;
     }
     throw std::runtime_error("[Program] Range loop created without valid range");

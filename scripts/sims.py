@@ -107,6 +107,7 @@ if "all" in games:
   games.append('pretwa.rbg')
   games.append('reversi.rbg')
   # games.append('skirmish.rbg')
+  games.append('surakarta.rbg')
   games.append('theMillGame.rbg')
   games.append('theMillGame_lud.rbg')
   games.append('yavalath.rbg')

@@ -39,8 +39,7 @@ class cfg:
   RG_DIR = '../rg'
 
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
-  #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --calculate-disjoints --calculate-repeats-and-uniques --calculate-tag-indexes' # No simpleApply
-  #DEFAULT_TRANSLATE_OPTIONS += ' --compact-comparisons --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --merge-accesses --propagate-constants --prune-singleton-types --prune-unreachable-nodes --prune-unused-constants --prune-unused-variables --skip-artificial-tags --skip-redundant-tags --skip-self-assignments --skip-self-comparisons --skip-unused-tags'
+  #DEFAULT_TRANSLATE_OPTIONS = ' --compact-comparisons --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --merge-accesses --propagate-constants --prune-singleton-types --prune-unreachable-nodes --prune-unused-constants --prune-unused-variables --skip-artificial-tags --skip-redundant-tags --skip-self-assignments --skip-self-comparisons --skip-unused-tags'
   DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --arithmetic 1 --max-move-len -1 --gccinline 0'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0'
 
@@ -49,11 +48,10 @@ class cfg:
     GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto'
     GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto -DNDEBUG'
   else:
-    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -ftracer -march=native -DNDEBUG -s'
-    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -march=native -ftracer'
+    GCC_BENCHMARK_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto -ftracer --param max-inline-insns-auto=1024 -march=native -DNDEBUG -s'
+    GCC_TEST_FLAGS = '-Wall -Wextra -std=c++23 -Ofast -flto=auto --param max-inline-insns-auto=1024 -march=native -ftracer'
     GCC_DEBUG_FLAGS = '-Wall -Wextra -std=c++23 -g -Og -ggdb3 -march=native -ftracer -fsanitize=address -static-libasan -fno-omit-frame-pointer -fsanitize=undefined'
     GCC_PROFILE_FLAGS = '-Wall -Wextra -std=c++23 -Og -pg -march=native -ftracer'
-    # -finline-limit=100
 
 def createAST(game, translateFlags, silent):
   parsed = parseGameName(game)

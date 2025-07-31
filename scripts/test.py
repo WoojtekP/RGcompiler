@@ -121,7 +121,8 @@ if "all" in games:
   
   games.append('alquerque.py')
   games.append('alquerque.rbg')
-  games.append('alquerque_noCapturingSequences.rbg')
+  games.append('alquerque_lud.py')
+  games.append('alquerque_lud.rbg')
 
   games.append('bombardment.hrg')
 

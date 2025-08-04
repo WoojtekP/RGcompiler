@@ -96,7 +96,6 @@ void SymbolsManager::fillIntegerOperationsData()
                 continue;
             }
             const auto dstTypeId = dstType["identifier"].get<std::string>();
-            // TODO: fix - do not use "Bool" constant
             if (integerTypes_.isWithoutNan(srcTypeId) && integerTypes_.isWithoutNan(srcSndTypeId) &&
                 (integerTypes_.isAnyInt(dstTypeId) || dstTypeId == "Bool"))
             {

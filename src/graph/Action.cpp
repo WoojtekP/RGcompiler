@@ -53,7 +53,6 @@ ActionComparison::ActionComparison(
 : ActionBase(label, expressionFactory)
 , cmp_(getNegated() ? ComparisonType::Neq : ComparisonType::Eq)
 {
-    // TODO: remove comparison with 1/0
     if (label["lhs"]["kind"] != "Access" || !symbolsManager.isNan(right_->toString()))
     {
         return;

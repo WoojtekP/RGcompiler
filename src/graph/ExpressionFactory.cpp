@@ -143,7 +143,6 @@ std::unique_ptr<IExpression> ExpressionFactory::createUnaryArithmeticExpression(
     switch (arithmeticData.system)
     {
         case ArithmeticSystem::Overflow:
-            // TODO: use dedicated type of expression
             return std::make_unique<ExpressionReference>(identifier + operation + "1");
         case ArithmeticSystem::Saturated:
             borderResult = (borderValue == srcMaxSymbol ? dstMaxSymbol : dstMinSymbol);
@@ -204,7 +203,6 @@ std::unique_ptr<IExpression> ExpressionFactory::createBinaryArithmeticExpression
     {
         case ArithmeticSystem::Overflow:
         case ArithmeticSystem::Comparison:
-            // TODO: use dedicated type of expression
             return std::make_unique<ExpressionReference>("(" + expression + ")");
         case ArithmeticSystem::Saturated:
         {

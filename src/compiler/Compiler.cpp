@@ -829,11 +829,6 @@ std::unique_ptr<BlockInstruction> Compiler::makeSwitchForTags(
 
     bool useArray =
         !maxMoveLen_ && graphOperatorManager_->getOperator<GetTagIndexOperator>(graph_)->allTagsInSamePosition();
-    // Temporary removed usage of direct positions in move vector because of problems with simple apply in oware
-    // In order for this to work whole semantic of simple apply would need to be changed to:
-    // @simpleApply [tag1, tag2, /] -- to się aplikuje jak dwa tagi pasują i więcej tagów nie ma.
-    // @simpleApply [tag1, tag2] -- to się aplikuje jak dwa tagi pasują, dalej mogą też być tagi.
-    // @simpleApply [] -- to zawsze pasuje, ale każdy inny simpleApply ma pierwszeństwo bo ma dłuższy ciąg tagów.
     std::string pos = mainCacheName_ + "." + std::string(CURRENT_MR_ID_WORD) + "++";
     // if (useArray)
     // {
@@ -2024,8 +2019,7 @@ std::shared_ptr<IType> Compiler::generateIteratorType(const nlohmann::json& func
     return std::make_shared<FunctionType>(
         std::move(sourceType),
         std::make_shared<ListType>(destinationType, destinationType),
-        symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName)
-    );
+        symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
 }
 
 std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)

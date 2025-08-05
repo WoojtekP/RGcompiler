@@ -52,7 +52,6 @@ if "all" in games:
   games.append('amazons_split2.hrg')
   games.append('ataxx.hrg')
   games.append('backgammon.hrg')
-  #games.append('battleships.hrg')
   games.append('bombardment.hrg')
   games.append('breakthrough.hrg')
   games.append('chess.hrg')
@@ -77,7 +76,6 @@ if "all" in games:
   games.append('pretwa.py')
   games.append('pretwa_lud.py')
   games.append('ticTacDie.hrg')
-  #games.append('twentyOne.hrg')
   games.append('ultimateTicTacToe.hrg')
   
   games.append('alquerque.rbg')
@@ -85,10 +83,6 @@ if "all" in games:
   games.append('amazons.rbg')
   games.append('amazons_split2.rbg')
   games.append('breakthrough.rbg')
-  # games.append('chessGardner5x5_kingCapture.rbg')
-  # games.append('chessLosAlamos6x6_kingCapture.rbg')
-  # games.append('chessQuick5x6_kingCapture.rbg')
-  # games.append('chessSilverman4x5_kingCapture.rbg')
   games.append('chess.rbg')
   games.append('chess_kingCapture.rbg')
   games.append('connect4.rbg')
@@ -104,16 +98,11 @@ if "all" in games:
   games.append('pentago_split.rbg')
   games.append('pretwa.rbg')
   games.append('reversi.rbg')
-  # games.append('skirmish.rbg')
   games.append('surakarta.rbg')
   games.append('theMillGame.rbg')
   games.append('theMillGame_lud.rbg')
   games.append('yavalath.rbg')
   
-  # games.append('breakthrough.kif')
-  # games.append('connect4.kif')
-  # games.append('hex.kif')
-  # games.append('knightthrough.kif')
 
 elif "short" in games:
   games = []

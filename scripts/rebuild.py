@@ -5,7 +5,8 @@ os.chdir(os.path.dirname(sys.argv[0])+"/..") # RGCompiler dir
 
 startTime = time.time()
 run(f'rm -rf {cfg.BUILD_DIR}')
-run(f'mkdir {cfg.BUILD_DIR}')
+run(f'mkdir -p {cfg.BUILD_DIR}')
+run(f'mkdir -p {cfg.BUILD_TEST_DIR}')
 os.chdir(cfg.BUILD_DIR)
 run(f'cmake .. && make')
 elapsedTime = time.time() - startTime

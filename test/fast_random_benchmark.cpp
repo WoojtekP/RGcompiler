@@ -15,7 +15,6 @@ template<class Gen> void doBenchmark() {
   for (uint i = 0; i < 1000*1000*1000; i++) {
     sum += randomGenerator.rand_uint(1 + i%1000);
     double d = randomGenerator.rand_double01();
-    //double d = randomGenerator.rand_double(1.0);
     assert(d >= 0.0 && d < 1.0);
     sumd += d;
   }

@@ -26,8 +26,6 @@ if not os.path.isfile(f'{cfg.RG_DIR}/games/{gameFile}'):
   print(f'There is no file {cfg.RG_DIR}/games/{gameFile}', file=sys.stderr)
   exit(2)
 
-#game_basename = game.replace("/","_").split('.')[0]
-
 run("mkdir -p "+cfg.BUILD_TEST_DIR)
 
 FORMATTER = "{: <15}{:9.3f} s"

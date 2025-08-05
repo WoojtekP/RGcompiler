@@ -10,7 +10,6 @@ parser.add_argument('-q', '--quiet', action='store_true', help='suppress g++ war
 parser.add_argument('--clang', action='store_true', help='use clang++ instead of g++')
 cpp_flags_group = parser.add_mutually_exclusive_group(required=False)
 cpp_flags_group.add_argument('--test', action='store_true', help='optimization and asserts (default)')
-#cpp_flags_group.add_argument('--benchmark', action='store_true', help='maximum speed flags')
 cpp_flags_group.add_argument('--debug', action='store_true', help='gdb symbols and sanitizers')
 cpp_flags_group.add_argument('--profile', action='store_true', help='generate profiler information')
 
@@ -23,9 +22,6 @@ if args.profile:
 elif args.debug:
   cppFlags = cfg.GCC_DEBUG_FLAGS
   infoGccOptions = "debug"
-# elif args.benchmark:
-  # cppFlags = cfg.GCC_BENCHMARK_FLAGS
-  # infoGccOptions = "benchmark"
 else:
   cppFlags = cfg.GCC_TEST_FLAGS
   infoGccOptions = "test"
@@ -199,9 +195,6 @@ if "all" in games:
   games.append('oware.hrg')
 
   games.append('pentago.hrg')
-  # games.append('pentago.rbg')
-  # games.append('pentago_split.hrg')
-  # games.append('pentago_split.rbg')
   
   games.append('surakarta.rbg')
   

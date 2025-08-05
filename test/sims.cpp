@@ -68,7 +68,6 @@ void doSimulation() {
   uint depth = 0;
 
   while (true) {
-    //std::cerr << "depth " << depth << " player " << state.getCurrentPlayer() << std::endl;
     if constexpr(!BENCHMARK) {
       if (state.getCurrentPlayer() == reasoner::keeper) exitWithError(state, "Keeper at the beginning of player loop");
     }

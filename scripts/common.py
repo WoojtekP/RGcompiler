@@ -36,7 +36,7 @@ def parseGameName(game):
 class cfg:
   BUILD_DIR = 'build'
   BUILD_TEST_DIR = 'build-test'
-  RG_DIR = '../rg'
+  RG_DIR = '../tooling'
 
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
   #DEFAULT_TRANSLATE_OPTIONS = ' --compact-comparisons --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --merge-accesses --propagate-constants --prune-singleton-types --prune-unreachable-nodes --prune-unused-constants --prune-unused-variables --skip-artificial-tags --skip-redundant-tags --skip-self-assignments --skip-self-comparisons --skip-unused-tags'

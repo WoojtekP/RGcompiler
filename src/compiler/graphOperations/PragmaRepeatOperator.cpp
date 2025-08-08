@@ -15,7 +15,7 @@ namespace
 {
 bool isTagOrPlayerAssignment(const std::shared_ptr<IAction>& action)
 {
-    return (action->getType() != ActionType::Tag && action->getType() != ActionType::TagVariable) ||
+    return action->getType() == ActionType::Tag || action->getType() == ActionType::TagVariable ||
            common::isActionAssignmentToPlayer(action);
 }
 }  // namespace
@@ -33,7 +33,7 @@ void PragmaRepeatOperator::dfs(std::set<int>& visited, const int node)
 
     for (const auto& [edge, _] : graph_->getOutgoingEdgesFrom(node))
     {
-        if (std::ranges::all_of(edge->getActions(), isTagOrPlayerAssignment))
+        if (std::ranges::none_of(edge->getActions(), isTagOrPlayerAssignment))
         {
             dfs(visited, graph_->getNodeId(edge->toName()));
         }

@@ -205,6 +205,9 @@ Compiler::Compiler(const Parser& parser, const Options& options)
 , allUnique_(options.allUnique_)
 , optGccInline_(static_cast<InlineMode>(options.gccInline_))
 , maxMoveLen_(options.maxMoveLen_ == -1 ? std::nullopt : std::optional(options.maxMoveLen_))
+, removeUnecessaryFuncionArguments_(options.removeUnecessaryFuncionArguments_)
+, removeUnecessaryFuncions_(options.removeUnecessaryFuncions_)
+, supportApplyMoveForKeepr_(options.supportApplyMoveForKeepr_)
 , temporaryVariableNamePrefix_("old")
 , optNoCycleDetection_(options.noCycleDetection_)
 , mainCacheName_("rgCache")
@@ -568,7 +571,7 @@ void Compiler::generateVoidStateFunctions(const std::shared_ptr<Graph>& graph, b
 {
     for (auto& node : graph->getOuterNodes())
     {
-        if (!mainGraph_->getNodeIdOptional(node->getName()))
+        if (removeUnecessaryFuncions_ && !mainGraph_->getNodeIdOptional(node->getName()))
         {
             continue;
         }
@@ -1241,7 +1244,7 @@ std::unique_ptr<BlockInstruction> Compiler::addActionPattern(
 
     bool skipStateCache = areAllNodesInPatternGraphUnique_.count({action->getLeftSide(), action->getRightSide()});
 
-    if (patternsWithCache_.count({action->getLeftSide(), action->getRightSide()}))
+    if (checkIsCacheNeedForPattern(action->getLeftSide(), action->getRightSide()))
     {
         functionArguments += mainCacheName_;
     }
@@ -1838,8 +1841,19 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
     auto sw = std::make_unique<SwitchInstruction>("currentState");
 
-    for (const auto& [edge, iid] :
-         graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayerButNotKeeper())
+    std::set<std::pair<std::shared_ptr<Edge>, int>> vecOfStartEdges;
+
+    if (supportApplyMoveForKeepr_)
+    {
+        vecOfStartEdges =
+            graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayerButNotKeeper();
+    }
+    else
+    {
+        vecOfStartEdges = graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayer();
+    }
+
+    for (const auto& [edge, iid] : vecOfStartEdges)
     {
         const auto stateFunctionName =
             prefix + (preserveOriginalNames_ ? edge->toName() : std::to_string(graph->getNodeId(edge->toName())));
@@ -2195,6 +2209,11 @@ void Compiler::handleBoolDisjoint(
 
 bool Compiler::checkIsCacheNeed(const std::string& functionName, const std::shared_ptr<Graph>& graph)
 {
+    if (!removeUnecessaryFuncionArguments_)
+    {
+        return true;
+    }
+
     bool allUnique = graphOperatorManager_->getOperator<PragmaUniqueOperator>(graph)->areAllNodesWithPragmaUnique();
     if (functionName.starts_with(APPLY_STATE_WORD))
     {
@@ -2212,6 +2231,11 @@ bool Compiler::checkIsCacheNeed(const std::string& functionName, const std::shar
 
 bool Compiler::checkIsCacheNeedForPattern(const std::string& from, const std::string to) const
 {
+    if (!removeUnecessaryFuncionArguments_)
+    {
+        return true;
+    }
+
     return patternsWithCache_.count({from, to});
 }
 

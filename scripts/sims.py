@@ -128,6 +128,15 @@ elif "short" in games:
   games.append('pretwa.rbg')
   games.append('yavalath.rbg')
 
+elif "quick-bench" in games:
+  games = []
+  games.append('alquerque.hrg')
+  games.append('breakthrough.hrg')
+  games.append('chess.hrg')
+  games.append('connect4.hrg')
+  games.append('dotsAndBoxes.hrg')
+  games.append('englishDraughts.hrg')
+  games.append('pentago.hrg')
 
 print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
 if useTime: print(f'{limitS}s')

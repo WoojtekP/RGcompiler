@@ -53,7 +53,16 @@ int main(const int argc, const char **argv)
             "max-move-len",
             po::value<int>(&options.maxMoveLen_)->default_value(-1),
             "Enable setting size of static vector")(
-            "all-unique", po::value<bool>(&options.allUnique_)->default_value(false), "Remove caches");
+            "all-unique", po::value<bool>(&options.allUnique_)->default_value(false), "Remove caches")(
+            "remove-unecessary-funcion-arguments",
+            po::value<bool>(&options.removeUnecessaryFuncionArguments_)->default_value(true),
+            "Remove unecessary function arguments like passing cache if not needed")(
+            "remove-unecessary-funcions",
+            po::value<bool>(&options.removeUnecessaryFuncions_)->default_value(true),
+            "Remove unecessary functions like state functions for pattern nodes")(
+            "support-apply-move-for-keeper",
+            po::value<bool>(&options.supportApplyMoveForKeepr_)->default_value(true),
+            "If false ApplyMove function have extra nodes for keeper");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, mainOptions), vm);

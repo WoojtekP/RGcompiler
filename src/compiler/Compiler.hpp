@@ -1,12 +1,12 @@
 #pragma once
 
+#include <compiler/SymbolsManager.hpp>
 #include <compiler/ValueAssigner.hpp>
 #include <compiler/cacheContainers/ContainerChooser.hpp>
 #include <compiler/graphOperations/GraphOperatorManager.hpp>
 #include <compiler/pragma/Iterator.hpp>
 #include <compiler/pragma/RepeatFlat.hpp>
 #include <compiler/stateCache/IStateCache.hpp>
-#include <compiler/SymbolsManager.hpp>
 #include <graph/ActionFactory.hpp>
 #include <graph/Edge.hpp>
 #include <graph/Graph.hpp>
@@ -23,6 +23,9 @@ struct Options
     bool pragmaDisjointEnabled_;
     bool allUnique_;
     bool arithmeticOpt_;
+    bool removeUnecessaryFuncionArguments_;
+    bool removeUnecessaryFuncions_;
+    bool supportApplyMoveForKeepr_;
     int gccInline_;
     int maxMoveLen_;
 };
@@ -210,6 +213,9 @@ private:
     const bool optConditionsSimplePathCompression_;
     const bool optNoCycleDetection_;
     const bool allUnique_;
+    const bool removeUnecessaryFuncionArguments_;
+    const bool removeUnecessaryFuncions_;
+    const bool supportApplyMoveForKeepr_;
     const InlineMode optGccInline_;
     const std::optional<int> maxMoveLen_;
     const std::map<BoolFunctionType, std::string_view> patternIdToPrefixName = {

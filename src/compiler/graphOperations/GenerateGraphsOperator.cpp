@@ -66,6 +66,10 @@ std::vector<std::tuple<std::string, std::set<int>, std::shared_ptr<Graph>>> Gene
 
     for (const auto &fromName : getNodesBeforeWhichPlayerChangeToKeeper())
     {
+        if (common::END_WORD == fromName)
+        {
+            continue;
+        }
         std::set<int> bannedEdges;
         std::set<int> toNames;
         for (const auto &toName : nodesToPlayerChangeOrEnd(fromName))
@@ -101,33 +105,40 @@ std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChange
 }
 
 void GenerateGraphsOperator::prepareOrderForSCC(
-    int nodeId, std::stack<int> &orderOfNodes, std::shared_ptr<Graph> revGraph, std::set<int> &visited) const
+    int nodeId,
+    std::vector<int> &orderOfNodes,
+    const std::shared_ptr<Graph> &revGraph,
+    const std::shared_ptr<Graph> &orderGraph,
+    std::set<int> &visited) const
 {
     visited.insert(nodeId);
-
-    for (const auto &[edge, iid] : revGraph->getOutgoingEdgesFrom(nodeId))
+    for (const auto &[edge, iid] : orderGraph->getOutgoingEdgesFrom(nodeId))
     {
-        int newNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        int newNodeId = orderGraph->getNodeId(edge->getRightNode()->getName());
         if (visited.insert(newNodeId).second)
         {
-            prepareOrderForSCC(newNodeId, orderOfNodes, revGraph, visited);
+            prepareOrderForSCC(newNodeId, orderOfNodes, revGraph, orderGraph, visited);
         }
     }
 
-    orderOfNodes.push(nodeId);
+    orderOfNodes.push_back(nodeId);
 }
 
 void GenerateGraphsOperator::assignToSCC(
-    int nodeId, int sccId, std::shared_ptr<Graph> revGraph, std::map<int, int> &nodeIdToSccId) const
+    int nodeId,
+    int sccId,
+    const std::shared_ptr<Graph> &revGraph,
+    const std::shared_ptr<Graph> &orderGraph,
+    std::map<int, int> &nodeIdToSccId) const
 {
     nodeIdToSccId[nodeId] = sccId;
-
-    for (const auto &[edge, iid] : revGraph->getOutgoingEdgesFrom(nodeId))
+    int revGraphId = revGraph->getNodeId(orderGraph->getNode(nodeId)->getName());
+    for (const auto &[edge, iid] : revGraph->getOutgoingEdgesFrom(revGraphId))
     {
-        int newNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        int newNodeId = orderGraph->getNodeId(edge->getRightNode()->getName());
         if (!nodeIdToSccId.count(newNodeId))
         {
-            assignToSCC(newNodeId, sccId, revGraph, nodeIdToSccId);
+            assignToSCC(newNodeId, sccId, revGraph, orderGraph, nodeIdToSccId);
         }
     }
 }
@@ -137,11 +148,13 @@ bool GenerateGraphsOperator::getSccIdsOnPathToFinalNodes(
     const std::set<int> &finalNodeSccIds,
     const std::map<int, std::set<int>> &connectionsInSCCGraph,
     std::set<int> &visited,
+    std::map<int, bool> &idToHavePathToFinalNode,
     std::set<int> &sccIdsOnPathToFinalNodes) const
 {
     visited.insert(nodeId);
     if (finalNodeSccIds.count(nodeId))
     {
+        idToHavePathToFinalNode[nodeId] = true;
         sccIdsOnPathToFinalNodes.insert(nodeId);
         return true;
     }
@@ -153,9 +166,24 @@ bool GenerateGraphsOperator::getSccIdsOnPathToFinalNodes(
     for (int newNodeId : connectionsInSCCGraph.at(nodeId))
     {
         // it should be DAG
-        assert(!visited.count(newNodeId));
-        if (getSccIdsOnPathToFinalNodes(
-                newNodeId, finalNodeSccIds, connectionsInSCCGraph, visited, sccIdsOnPathToFinalNodes))
+        if (visited.count(newNodeId))
+        {
+            assert(idToHavePathToFinalNode.count(newNodeId));
+        }
+        if (idToHavePathToFinalNode.count(newNodeId))
+        {
+            if (idToHavePathToFinalNode[newNodeId])
+            {
+                havePathToFinalNode = true;
+            }
+        }
+        else if (getSccIdsOnPathToFinalNodes(
+                     newNodeId,
+                     finalNodeSccIds,
+                     connectionsInSCCGraph,
+                     visited,
+                     idToHavePathToFinalNode,
+                     sccIdsOnPathToFinalNodes))
         {
             havePathToFinalNode = true;
         }
@@ -164,6 +192,7 @@ bool GenerateGraphsOperator::getSccIdsOnPathToFinalNodes(
     {
         sccIdsOnPathToFinalNodes.insert(nodeId);
     }
+    idToHavePathToFinalNode[nodeId] = havePathToFinalNode;
     return havePathToFinalNode;
 }
 
@@ -174,52 +203,66 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 
     // For SCC
     std::shared_ptr<Graph> revGraph = std::make_shared<Graph>();
-    std::stack<int> orderOfNodes;
+    std::shared_ptr<Graph> orderGraph = std::make_shared<Graph>();
+    std::vector<int> orderOfNodes;
     std::set<int> visited;
-    int sccId = 0;
+    int sccId = 1;
     std::map<int, int> nodeIdToSccId;
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         // We should work on not optimized graph
         assert(edge->getActions().size() == 1);
-        revGraph->addEdge(std::make_shared<Edge>(edge->getRightNode(), edge->getLeftNode(), edge->getActions()));
+        if (!bannedEdges.count(graph_->getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid)))
+        {
+            revGraph->addEdge(std::make_shared<Edge>(edge->getRightNode(), edge->getLeftNode(), edge->getActions()));
+            orderGraph->addEdge(std::make_shared<Edge>(edge->getLeftNode(), edge->getRightNode(), edge->getActions()));
+        }
     }
     revGraph->initialize();
+    orderGraph->initialize();
 
-    for (auto node : revGraph->getAllNodes())
+    for (auto node : orderGraph->getAllNodes())
     {
-        int nodeId = graph_->getNodeId(node->getName());
+        int nodeId = orderGraph->getNodeId(node->getName());
         if (!visited.count(nodeId))
         {
-            prepareOrderForSCC(nodeId, orderOfNodes, revGraph, visited);
+            prepareOrderForSCC(nodeId, orderOfNodes, revGraph, orderGraph, visited);
         }
     }
 
-    while (!orderOfNodes.empty())
+    std::reverse(orderOfNodes.begin(), orderOfNodes.end());
+    for (int nodeId : orderOfNodes)
     {
-        int nodeId = orderOfNodes.top();
         if (!nodeIdToSccId.count(nodeId))
         {
-            assignToSCC(nodeId, sccId, revGraph, nodeIdToSccId);
+            assignToSCC(nodeId, sccId, revGraph, orderGraph, nodeIdToSccId);
             sccId++;
         }
-        orderOfNodes.pop();
     }
 
-    int startNodeSCCId = nodeIdToSccId.at(graph_->getNodeId(from));
+    int startNodeSCCId = nodeIdToSccId.at(orderGraph->getNodeId(from));
     std::set<int> finalNodeSccIds;
     for (int x : to)
     {
-        finalNodeSccIds.insert(nodeIdToSccId.at(x));
+        int orderId = orderGraph->getNodeId(graph_->getNode(x)->getName());
+        finalNodeSccIds.insert(nodeIdToSccId.at(orderId));
     }
 
     std::map<int, std::set<int>> connectionsInSCCGraph;
-    for (const auto &[edge, iid] : revGraph->getAllEdges())
+    for (const auto &[edge, iid] : orderGraph->getAllEdges())
     {
         // We should work on not optimized graph
         assert(edge->getActions().size() == 1);
-        int leftNodeId = graph_->getNodeId(edge->getLeftNode()->getName());
-        int rightNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        // IId may not be the same in graph and orderedGraph, but it doesn't matter because if there is n banned edges between
+        // node A and B in graph then in revGraph there should be n banned edges between B and A.
+        // And it there is more than n edges in total there should be edge between SCC anyway.
+        if (bannedEdges.count(graph_->getEdgeId(edge->getLeftNode()->getName(), edge->getRightNode()->getName(), iid)))
+        {
+            continue;
+        }
+
+        int leftNodeId = orderGraph->getNodeId(edge->getLeftNode()->getName());
+        int rightNodeId = orderGraph->getNodeId(edge->getRightNode()->getName());
         int leftSccId = nodeIdToSccId.at(leftNodeId);
         int rightSccId = nodeIdToSccId.at(rightNodeId);
         if (leftSccId != rightSccId)
@@ -230,17 +273,23 @@ std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
 
     std::set<int> sccIdsOnPathToFinalNodes;
     visited.clear();
+    std::map<int, bool> idToHavePathToFinalNode;
     getSccIdsOnPathToFinalNodes(
-        startNodeSCCId, finalNodeSccIds, connectionsInSCCGraph, visited, sccIdsOnPathToFinalNodes);
+        startNodeSCCId,
+        finalNodeSccIds,
+        connectionsInSCCGraph,
+        visited,
+        idToHavePathToFinalNode,
+        sccIdsOnPathToFinalNodes);
     std::set<int> nodesInPatternGraph;
     for (auto [nodeId, sccId] : nodeIdToSccId)
     {
         if (sccIdsOnPathToFinalNodes.count(sccId))
         {
-            nodesInPatternGraph.insert(nodeId);
+            int orderId = graph_->getNodeId(orderGraph->getNode(nodeId)->getName());
+            nodesInPatternGraph.insert(orderId);
         }
     }
-
     for (const auto &[edge, iid] : graph_->getAllEdges())
     {
         // We should work on not optimized graph

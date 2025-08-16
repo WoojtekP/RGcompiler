@@ -60,7 +60,7 @@ class Graph
 
 public:
     ~Graph();
-    void initialize(const ValueAssigner &valueAssigner);
+    void initialize(const ValueAssigner &valueAssigner = {});
     void addEdge(std::shared_ptr<Edge> &&edge);
     void addEdge(const std::shared_ptr<Edge> &edge);
     bool empty() const;

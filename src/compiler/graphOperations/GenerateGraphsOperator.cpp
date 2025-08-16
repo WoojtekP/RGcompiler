@@ -1,20 +1,8 @@
 #include <queue>
+#include <stack>
 
 #include <common/Common.hpp>
 #include <compiler/graphOperations/GenerateGraphsOperator.hpp>
-
-namespace
-{
-int fixParent(int nodeId, std::map<int, int> &nodeIdToOldestParent)
-{
-    if (nodeIdToOldestParent[nodeId] == nodeId)
-    {
-        return nodeId;
-    }
-    nodeIdToOldestParent[nodeId] = fixParent(nodeIdToOldestParent[nodeId], nodeIdToOldestParent);
-    return nodeIdToOldestParent[nodeId];
-}
-}  // namespace
 
 std::vector<std::tuple<std::string, std::string, std::shared_ptr<Graph>>> GenerateGraphsOperator::forPatterns(
     ActionType actionType) const
@@ -112,28 +100,142 @@ std::vector<std::string> GenerateGraphsOperator::getNodesBeforeWhichPlayerChange
     return std::vector<std::string>(nodes.begin(), nodes.end());
 }
 
+void GenerateGraphsOperator::prepareOrderForSCC(
+    int nodeId, std::stack<int> &orderOfNodes, std::shared_ptr<Graph> revGraph, std::set<int> &visited) const
+{
+    visited.insert(nodeId);
+
+    for (const auto &[edge, iid] : revGraph->getOutgoingEdgesFrom(nodeId))
+    {
+        int newNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        if (visited.insert(newNodeId).second)
+        {
+            prepareOrderForSCC(newNodeId, orderOfNodes, revGraph, visited);
+        }
+    }
+
+    orderOfNodes.push(nodeId);
+}
+
+void GenerateGraphsOperator::assignToSCC(
+    int nodeId, int sccId, std::shared_ptr<Graph> revGraph, std::map<int, int> &nodeIdToSccId) const
+{
+    nodeIdToSccId[nodeId] = sccId;
+
+    for (const auto &[edge, iid] : revGraph->getOutgoingEdgesFrom(nodeId))
+    {
+        int newNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        if (!nodeIdToSccId.count(newNodeId))
+        {
+            assignToSCC(newNodeId, sccId, revGraph, nodeIdToSccId);
+        }
+    }
+}
+
+bool GenerateGraphsOperator::getSccIdsOnPathToFinalNodes(
+    int nodeId,
+    const std::set<int> &finalNodeSccIds,
+    const std::map<int, std::set<int>> &connectionsInSCCGraph,
+    std::set<int> &visited,
+    std::set<int> &sccIdsOnPathToFinalNodes) const
+{
+    visited.insert(nodeId);
+    if (finalNodeSccIds.count(nodeId))
+    {
+        sccIdsOnPathToFinalNodes.insert(nodeId);
+        return true;
+    }
+    bool havePathToFinalNode = false;
+    if (!connectionsInSCCGraph.count(nodeId))
+    {
+        return false;
+    }
+    for (int newNodeId : connectionsInSCCGraph.at(nodeId))
+    {
+        // it should be DAG
+        assert(!visited.count(newNodeId));
+        if (getSccIdsOnPathToFinalNodes(
+                newNodeId, finalNodeSccIds, connectionsInSCCGraph, visited, sccIdsOnPathToFinalNodes))
+        {
+            havePathToFinalNode = true;
+        }
+    }
+    if (havePathToFinalNode)
+    {
+        sccIdsOnPathToFinalNodes.insert(nodeId);
+    }
+    return havePathToFinalNode;
+}
+
 std::shared_ptr<Graph> GenerateGraphsOperator::generateGraphForPattern(
     std::string from, const std::set<int> &to, const std::set<int> &bannedEdges) const
 {
     std::shared_ptr<Graph> graph = std::make_shared<Graph>();
 
-    std::set<int> nodesInPatternGraph;
-    std::map<int, int> nodeIdToOldestParent;
-    std::map<int, int> visitTime;
-    int visitedTimestampId = 0;
-    generatePathFromNodeToNode(
-        graph_->getNodeId(from),
-        to,
-        nodeIdToOldestParent,
-        visitTime,
-        nodesInPatternGraph,
-        bannedEdges,
-        visitedTimestampId);
-
-    for (auto [nodeId, parentNodeId] : nodeIdToOldestParent)
+    // For SCC
+    std::shared_ptr<Graph> revGraph = std::make_shared<Graph>();
+    std::stack<int> orderOfNodes;
+    std::set<int> visited;
+    int sccId = 0;
+    std::map<int, int> nodeIdToSccId;
+    for (const auto &[edge, iid] : graph_->getAllEdges())
     {
-        parentNodeId = fixParent(parentNodeId, nodeIdToOldestParent);
-        if (nodesInPatternGraph.count(parentNodeId))
+        // We should work on not optimized graph
+        assert(edge->getActions().size() == 1);
+        revGraph->addEdge(std::make_shared<Edge>(edge->getRightNode(), edge->getLeftNode(), edge->getActions()));
+    }
+    revGraph->initialize();
+
+    for (auto node : revGraph->getAllNodes())
+    {
+        int nodeId = graph_->getNodeId(node->getName());
+        if (!visited.count(nodeId))
+        {
+            prepareOrderForSCC(nodeId, orderOfNodes, revGraph, visited);
+        }
+    }
+
+    while (!orderOfNodes.empty())
+    {
+        int nodeId = orderOfNodes.top();
+        if (!nodeIdToSccId.count(nodeId))
+        {
+            assignToSCC(nodeId, sccId, revGraph, nodeIdToSccId);
+            sccId++;
+        }
+        orderOfNodes.pop();
+    }
+
+    int startNodeSCCId = nodeIdToSccId.at(graph_->getNodeId(from));
+    std::set<int> finalNodeSccIds;
+    for (int x : to)
+    {
+        finalNodeSccIds.insert(nodeIdToSccId.at(x));
+    }
+
+    std::map<int, std::set<int>> connectionsInSCCGraph;
+    for (const auto &[edge, iid] : revGraph->getAllEdges())
+    {
+        // We should work on not optimized graph
+        assert(edge->getActions().size() == 1);
+        int leftNodeId = graph_->getNodeId(edge->getLeftNode()->getName());
+        int rightNodeId = graph_->getNodeId(edge->getRightNode()->getName());
+        int leftSccId = nodeIdToSccId.at(leftNodeId);
+        int rightSccId = nodeIdToSccId.at(rightNodeId);
+        if (leftSccId != rightSccId)
+        {
+            connectionsInSCCGraph[leftSccId].insert(rightSccId);
+        }
+    }
+
+    std::set<int> sccIdsOnPathToFinalNodes;
+    visited.clear();
+    getSccIdsOnPathToFinalNodes(
+        startNodeSCCId, finalNodeSccIds, connectionsInSCCGraph, visited, sccIdsOnPathToFinalNodes);
+    std::set<int> nodesInPatternGraph;
+    for (auto [nodeId, sccId] : nodeIdToSccId)
+    {
+        if (sccIdsOnPathToFinalNodes.count(sccId))
         {
             nodesInPatternGraph.insert(nodeId);
         }
@@ -182,64 +284,6 @@ std::vector<std::string> GenerateGraphsOperator::nodesToPlayerChangeOrEnd(const 
     }
 
     return nodes;
-}
-
-bool GenerateGraphsOperator::generatePathFromNodeToNode(
-    int node,
-    const std::set<int> &finalNodes,
-    std::map<int, int> &nodeIdToOldestParent,
-    std::map<int, int> &visitTime,
-    std::set<int> &nodesInPatternGraph,
-    const std::set<int> &bannedEdges,
-    int &timestampId) const
-{
-    if (finalNodes.count(node))
-    {
-        if (!visitTime.count(node))
-        {
-            visitTime[node] = timestampId++;
-            nodeIdToOldestParent[node] = node;
-        }
-        nodesInPatternGraph.insert(node);
-        return true;
-    }
-
-    if (visitTime.count(node))
-    {
-        return false;
-    }
-
-    visitTime[node] = timestampId++;
-    nodeIdToOldestParent[node] = node;
-
-    bool havePathToFinalNode = false;
-
-    for (const auto &[edge, iid] : graph_->getOutgoingEdgesFrom(node))
-    {
-        if (bannedEdges.find(graph_->getEdgeId(edge->fromName(), edge->toName(), iid)) != bannedEdges.end())
-        {
-            continue;
-        }
-        int newNodeId = graph_->getNodeId(edge->toName());
-
-        if (generatePathFromNodeToNode(
-                newNodeId, finalNodes, nodeIdToOldestParent, visitTime, nodesInPatternGraph, bannedEdges, timestampId))
-        {
-            havePathToFinalNode = true;
-        }
-
-        if (visitTime[nodeIdToOldestParent[newNodeId]] < visitTime[nodeIdToOldestParent[node]])
-        {
-            nodeIdToOldestParent[node] = nodeIdToOldestParent[newNodeId];
-        }
-    }
-
-    if (havePathToFinalNode)
-    {
-        nodesInPatternGraph.insert(node);
-    }
-
-    return havePathToFinalNode;
 }
 
 GenerateGraphsOperator::GenerateGraphsOperator(const std::shared_ptr<Graph> &graph)

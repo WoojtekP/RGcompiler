@@ -1,6 +1,8 @@
 #pragma once
+#include <stack>
 
 #include <compiler/graphOperations/BaseOperator.hpp>
+
 
 class GenerateGraphsOperator : public BaseOperator
 {
@@ -8,14 +10,15 @@ class GenerateGraphsOperator : public BaseOperator
     std::shared_ptr<Graph> generateGraphForPattern(
         std::string from, const std::set<int> &to, const std::set<int> &bannedEdges = std::set<int>()) const;
     std::vector<std::string> nodesToPlayerChangeOrEnd(const std::string &nodeName) const;
-    bool generatePathFromNodeToNode(
-        int node,
-        const std::set<int> &finalNodes,
-        std::map<int, int> &nodeIdToOldestParent,
-        std::map<int, int> &visitTime,
-        std::set<int> &nodesInPatternGraph,
-        const std::set<int> &bannedEdges,
-        int &timestampId) const;
+    void prepareOrderForSCC(
+        int nodeId, std::stack<int> &orderOfNodes, std::shared_ptr<Graph> revGraph, std::set<int> &visited) const;
+    void assignToSCC(int nodeId, int sccId, std::shared_ptr<Graph> revGraph, std::map<int, int> &nodeIdToSccId) const;
+    bool getSccIdsOnPathToFinalNodes(
+        int nodeId,
+        const std::set<int> &finalNodeSccIds,
+        const std::map<int, std::set<int>> &connectionsInSCCGraph,
+        std::set<int> &visited,
+        std::set<int> &sccIdsOnPathToFinalNodes) const;
 
 public:
     GenerateGraphsOperator(const std::shared_ptr<Graph> &graph);

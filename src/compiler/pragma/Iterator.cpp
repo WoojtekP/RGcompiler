@@ -9,6 +9,19 @@
 namespace
 {
 constexpr std::string_view ITERATOR_SUFFIX = "iter";
+
+std::string getIdentifier(const nlohmann::json& label)
+{
+    if (label["kind"] == "Reference")
+    {
+        return label["identifier"];
+    }
+    if (label["kind"] == "Cast")
+    {
+        return label["rhs"]["identifier"];
+    }
+    throw std::invalid_argument("[Iterator] Unhandled kind of expression: " + label["kind"].get<std::string>());
+}
 }  // namespace
 
 void IteratorData::parse(const Parser& parser, const SymbolsManager& symbolsManager)
@@ -37,7 +50,7 @@ void IteratorData::parse(const Parser& parser, const SymbolsManager& symbolsMana
                     label["lhs"]["lhs"]["lhs"]["kind"] == "Reference")
                 {
                     constantMap = label["lhs"]["lhs"]["lhs"]["identifier"].get<std::string>();
-                    iteratorIndex = label["lhs"]["lhs"]["rhs"]["identifier"].get<std::string>();
+                    iteratorIndex = getIdentifier(label["lhs"]["lhs"]["rhs"]);
                     const auto sourceType = parser.getSourceType(parser.findTypeOfVariable(constantMap));
                     const auto [minValue, _] = symbolsManager.getValueAssigner().getTypeMinMaxValues(sourceType);
                     if (minValue != 0)

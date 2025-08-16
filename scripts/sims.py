@@ -138,6 +138,19 @@ elif "quick-bench" in games:
   games.append('englishDraughts.hrg')
   games.append('pentago.hrg')
 
+elif "reasoners" in games:
+  games = []
+  games.append('amazons_split2.hrg')
+  games.append('gomoku_standard.hrg')
+  games.append('hex.rbg')
+  games.append('ticTacToe.rg')
+  games.append('pentago.hrg')
+  games.append('breakthrough.hrg')
+  games.append('connect4.hrg')
+  games.append('englishDraughts.hrg')
+  games.append('reversi.rbg')
+  games.append('chess.hrg')
+
 print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
 if useTime: print(f'{limitS}s')
 else: print(f'{limit} sims')

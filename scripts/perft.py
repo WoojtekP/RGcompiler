@@ -39,6 +39,9 @@ else:
 if args.clang: compiler = 'clang++'
 else: compiler = 'g++'
 
+buildInterpreter()
+print()
+
 print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
 print(f'Depth {depth}')
 print(f'Game: {game}')

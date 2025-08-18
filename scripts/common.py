@@ -8,8 +8,10 @@ def run(cmd):
     exit(2)
 
 def buildInterpreter():
-  #run(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml --help >/dev/null 2>/dev/null')
-  run(f'cargo run --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml --help')
+  print('Building interpreter...')
+  startTime = time.time()
+  run(f'cargo build --release --manifest-path {cfg.RG_DIR}/interpreter_rust/Cargo.toml')
+  print(f'Interpreter built in {"{:6.3f}".format(time.time()-startTime)}s')
 
 def runCap(cmd):
   return subprocess.run(cmd, shell=True, capture_output=True)

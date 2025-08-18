@@ -94,6 +94,7 @@ tests['ticTacToe'] = (100000,7.63,[64.84,35.16], [1,9,72,504,3024,15120,54720])#
 tests['theMillGame'] = (100000,62.58,[52.25,47.75], [1,24,552,12144,255024,5140800,99274176])#,1873562112
 tests['twentyOne'] = (1000000,1.88,[0.37], [1,2,52,104,2464,5304,114128,141848,2309136])#,2622336,22543488
 tests['ultimateTicTacToe'] = (100000,58.92,[52.42,47.58], [1,81,720,6336,55080,473256,4020960,33782544])
+tests['yavalath'] = (100000,19.62,[47.12, 52.88], [1,61,3660,215940,12524520,713897640])#,39834972576
 
 if "all" in games:
   games = []
@@ -235,11 +236,14 @@ elif "short" in games:
 
   games.append('pretwa.rbg')
 
+buildInterpreter()
+print()
 
 print(f'Testing #{len(games)}: {" ".join(games)}')
 print(f'Translate options: {translateOptions}')
 print(f'rg2cpp options: {cfg.DEFAULT_RG2CPP_OPTIONS}')
 print(f'g++ {infoGccOptions} options: {cppFlags}')
+print()
 
 #######################################################################################################################
 

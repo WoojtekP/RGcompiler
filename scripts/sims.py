@@ -126,6 +126,7 @@ elif "short" in games:
   games.append('englishDraughts.hrg')
   games.append('pentago.hrg')
   games.append('pretwa.rbg')
+  games.append('reversi.hrg')
   games.append('yavalath.rbg')
 
 elif "quick-bench" in games:
@@ -150,6 +151,9 @@ elif "reasoners" in games:
   games.append('pentago.hrg')
   games.append('reversi.hrg')
 
+buildInterpreter()
+print()
+
 print(f'Mode {util.GREEN}{mode}{util.RESET}, limit: ',end='')
 if useTime: print(f'{limitS}s')
 else: print(f'{limit} sims')
@@ -158,6 +162,8 @@ print(f'Translate flags: {translateFlags}')
 print(f'rg2cpp flags: {cfg.DEFAULT_RG2CPP_OPTIONS}')
 print(f'{compiler} flags: {cppFlags}')
 print()
+
+#######################################################################################################################
 
 HEAD_FORMATTER = '{: <50} '
 TIME_FORMATTER = '{:6.3f}s'
@@ -176,7 +182,6 @@ sumSimsCount = 0
 if args.perf: sumInstr = 0
 gamesOK = []
 
-#######################################################################################################################
 for game in games:
   print(HEAD_FORMATTER.format(f'{game}:'),end='',flush=True)
   

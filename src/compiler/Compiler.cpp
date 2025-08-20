@@ -1843,7 +1843,7 @@ void Compiler::generateRunStateFunction(const std::shared_ptr<Graph>& graph, boo
 
     std::set<std::pair<std::shared_ptr<Edge>, int>> vecOfStartEdges;
 
-    if (supportApplyMoveForKeepr_)
+    if (!supportApplyMoveForKeepr_)
     {
         vecOfStartEdges =
             graphOperatorManager_->getOperator<GetEdgeOperator>(graph)->getEdgesWithActionChangePlayerButNotKeeper();

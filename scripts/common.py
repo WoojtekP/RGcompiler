@@ -43,7 +43,7 @@ class cfg:
   DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --enable-all-pragmas'
   #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-optimizations --calculate-disjoints --calculate-iterators --calculate-repeats-and-uniques --calculate-simple-apply --calculate-tag-indexes'
   #DEFAULT_TRANSLATE_OPTIONS = '--enable-all-pragmas --compact-comparisons --compact-reachability --compact-skip-edges --inline-assignment --inline-reachability --join-exclusive-edges --join-fork-prefixes --join-fork-suffixes --merge-accesses --propagate-constants --prune-self-loops --prune-singleton-types --prune-unreachable-nodes --prune-unused-constants --prune-unused-variables --reorder-conditions --skip-artificial-tags --skip-redundant-tags --skip-self-assignments --skip-self-comparisons --skip-unused-tags'
-  DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --arithmetic 1 --max-move-len -1 --gccinline 0  --support-apply-move-for-keeper 1 --remove-unecessary-funcion-arguments 1 --remove-unecessary-funcions 1'
+  DEFAULT_RG2CPP_OPTIONS = '--simple-path 0 --disjoint 1 --all-unique 0 --arithmetic 1 --max-move-len -1 --gccinline 0  --support-apply-move-for-keeper 0 --remove-unecessary-funcion-arguments 1'
   DEBUG_RG2CPP_OPTIONS = '--no-cycle-detection 0 --print-function-names 0 --preserve-original-node-names 1 --verification 0'
 
   result = runCap('g++ --version')

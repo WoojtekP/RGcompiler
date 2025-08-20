@@ -61,8 +61,8 @@ int main(const int argc, const char **argv)
             po::value<bool>(&options.removeUnecessaryFuncions_)->default_value(true),
             "Remove unecessary functions like state functions for pattern nodes")(
             "support-apply-move-for-keeper",
-            po::value<bool>(&options.supportApplyMoveForKeepr_)->default_value(true),
-            "If false ApplyMove function have extra nodes for keeper");
+            po::value<bool>(&options.supportApplyMoveForKeepr_)->default_value(false),
+            "If true ApplyMove function have extra nodes for keeper");
 
         po::variables_map vm;
         po::store(po::parse_command_line(argc, argv, mainOptions), vm);

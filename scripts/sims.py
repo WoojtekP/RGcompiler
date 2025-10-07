@@ -230,7 +230,9 @@ for game in games:
     print(f'{util.CYAN}{decodeOutput(result.stderr).strip()}{util.RESET}')
   else:
     stats = decodeOutput(result.stdout).strip().split(' ')
-    elapsedTime = int(stats[0]) * 0.001 # Read time in ms
+    elapsedTime = int(stats[0]) # Read time in ms
+    if elapsedTime == 0: elapsedTime = 1
+    elapsedTime *= 0.001
     resSims = int(stats[1])
     resStates = int(stats[2])
 

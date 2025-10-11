@@ -27,6 +27,10 @@ std::unique_ptr<IValue> ValueFactory::createIteratorValue(
     {
         throw std::runtime_error("[ValueFactory] Cannot create iterator value for value of kind: " + value["kind"].get<std::string>());
     }
+    if (value["entries"][0]["value"]["kind"] == "Element")
+    {
+        return createListValue(value, iteratorDomain);
+    }
     std::map<std::string, std::unique_ptr<IValue>> idToValueMap;
     std::unique_ptr<IValue> defaultValue;
     for (const auto& entry : value["entries"])

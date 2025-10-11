@@ -486,7 +486,7 @@ void Compiler::generateConstants()
         const auto constantName = pragmaIteratorData_.getConstantNameForIterator(iteratorName);
         auto constantType = parser_.findTypeOfVariable(constantName);
         auto iteratorType = generateIteratorType(constantType);
-        const auto iteratorDomain = parser_.getDomain(parser_.getSourceType(parser_.getDestinationType(constantType)));
+        const auto iteratorDomain = (constantType["lhs"]["kind"] == "Arrow") ? parser_.getDomain(parser_.getSourceType(parser_.getDestinationType(constantType))) : parser_.getDomain(parser_.getSourceType(constantType));
         for (const auto& constant : parser_.getConstants())
         {
             if (constant["identifier"] == constantName)
@@ -2027,13 +2027,21 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
 
 std::shared_ptr<IType> Compiler::generateIteratorType(const nlohmann::json& functionType)
 {
-    auto sourceType = generateType(functionType["lhs"]);
-    auto destinationType = generateType(functionType["rhs"]["lhs"]);
-    const std::string sourceTypeName = sourceType->identifier;
-    return std::make_shared<FunctionType>(
-        std::move(sourceType),
-        std::make_shared<ListType>(destinationType, destinationType),
-        symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
+    if (functionType["lhs"]["kind"] == "Arrow")
+    {
+        auto sourceType = generateType(functionType["lhs"]);
+        auto destinationType = generateType(functionType["rhs"]["lhs"]);
+        const std::string sourceTypeName = sourceType->identifier;
+        return std::make_shared<FunctionType>(
+            std::move(sourceType),
+            std::make_shared<ListType>(destinationType, destinationType),
+            symbolsManager_.getValueAssigner().getTypeRange(sourceTypeName));
+    }
+    else
+    {
+        auto sourceType = generateType(functionType["lhs"]);
+        return std::make_shared<ListType>(sourceType, sourceType);
+    }
 }
 
 std::shared_ptr<IType> Compiler::generateFunctionType(const nlohmann::json& functionType)

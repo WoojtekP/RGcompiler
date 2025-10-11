@@ -10,6 +10,18 @@ namespace
 {
 constexpr std::string_view ITERATOR_SUFFIX = "iter";
 
+bool isOneLevelDepthAccess(const nlohmann::json& label)
+{
+    return label["lhs"]["kind"] == "Access" && label["lhs"]["lhs"]["kind"] == "Reference";
+}
+
+bool isTwoLevelsDepthAccess(const nlohmann::json& label)
+{
+    return label["lhs"]["kind"] == "Access" &&
+        label["lhs"]["lhs"]["kind"] == "Access" &&
+        label["lhs"]["lhs"]["lhs"]["kind"] == "Reference";
+}
+
 std::string getIdentifier(const nlohmann::json& label)
 {
     if (label["kind"] == "Reference")
@@ -44,10 +56,11 @@ void IteratorData::parse(const Parser& parser, const SymbolsManager& symbolsMana
             if (edge["lhs"]["identifier"] == midNode && edge["rhs"]["identifier"] == endNode)
             {
                 const auto label = edge["label"];
-                if (label["kind"] == "Comparison" &&
-                    label["lhs"]["kind"] == "Access" &&
-                    label["lhs"]["lhs"]["kind"] == "Access" &&
-                    label["lhs"]["lhs"]["lhs"]["kind"] == "Reference")
+                if (label["kind"] == "Comparison" && isOneLevelDepthAccess(label))
+                {
+                    constantMap = label["lhs"]["lhs"]["identifier"].get<std::string>();
+                }
+                else if (label["kind"] == "Comparison" && isTwoLevelsDepthAccess(label))
                 {
                     constantMap = label["lhs"]["lhs"]["lhs"]["identifier"].get<std::string>();
                     iteratorIndex = getIdentifier(label["lhs"]["lhs"]["rhs"]);
@@ -113,7 +126,7 @@ std::string IteratorData::getRangeName(
     {
         if (std::find(nodes.begin(), nodes.end(), node->getName()) != nodes.end())
         {
-            return iteratorName + "[" + iteratorIndex + "]";
+            return iteratorIndex.empty() ? iteratorName : (iteratorName + "[" + iteratorIndex + "]");
         }
     }
     throw std::runtime_error("[Iterator] Cannot find pragma iterator for node: " + node->getName());

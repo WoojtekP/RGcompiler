@@ -2027,7 +2027,7 @@ std::shared_ptr<IType> Compiler::generateType(const nlohmann::json& t)
 
 std::shared_ptr<IType> Compiler::generateIteratorType(const nlohmann::json& functionType)
 {
-    if (functionType["lhs"]["kind"] == "Arrow")
+    if (functionType["rhs"]["kind"] == "Arrow")
     {
         auto sourceType = generateType(functionType["lhs"]);
         auto destinationType = generateType(functionType["rhs"]["lhs"]);

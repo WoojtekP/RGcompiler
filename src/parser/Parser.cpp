@@ -236,7 +236,7 @@ std::optional<std::reference_wrapper<const nlohmann::json>> Parser::getPartFromP
     {
         if (entry["kind"] == entryKind)
         {
-            return entry;
+            return std::reference_wrapper(entry);
         }
     }
 

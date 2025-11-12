@@ -486,7 +486,9 @@ void Compiler::generateConstants()
         const auto constantName = pragmaIteratorData_.getConstantNameForIterator(iteratorName);
         auto constantType = parser_.findTypeOfVariable(constantName);
         auto iteratorType = generateIteratorType(constantType);
-        const auto iteratorDomain = (constantType["lhs"]["kind"] == "Arrow") ? parser_.getDomain(parser_.getSourceType(parser_.getDestinationType(constantType))) : parser_.getDomain(parser_.getSourceType(constantType));
+        const auto iteratorDomain = (constantType["rhs"]["kind"] == "Arrow")
+            ? parser_.getDomain(parser_.getSourceType(parser_.getDestinationType(constantType)))
+            : parser_.getDomain(parser_.getSourceType(constantType));
         for (const auto& constant : parser_.getConstants())
         {
             if (constant["identifier"] == constantName)

@@ -19,10 +19,6 @@ Regular Games to C++ compiler
 
 ### Usage
 
-* Translate game description to C++
-```
-./scripts/compile.py game
-```
 * Random simulations
 ```
 ./scripts/sims.py game limit

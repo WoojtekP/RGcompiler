@@ -169,7 +169,7 @@ nlohmann::json Parser::findTypeOfExpression(const nlohmann::json& expression) co
     {
         return findTypeOfExpression(expression["rhs"]);
     }
-    if (expressionKind == "EdgeName")
+    if (expressionKind == "Node")
     {
         throw std::runtime_error("[Parser] Illegal operation: cannot extract type from edge.");
     }

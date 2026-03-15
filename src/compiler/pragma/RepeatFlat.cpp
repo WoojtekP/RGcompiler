@@ -19,7 +19,7 @@ void RepeatFlatData::parse(const Parser& parser)
         {
             continue;
         }
-        for (const auto& edge : pragma["edgeNames"])
+        for (const auto& edge : pragma["nodes"])
         {
             const auto& nodeName = edge["identifier"].get<std::string>();
             repeatNodes_.insert(nodeName);

@@ -242,7 +242,7 @@ void Compiler::initializePragmaVerticesSet(const std::string& pragmaName, std::s
 {
     for (const auto& pragma : parser_.getPragmas(pragmaName))
     {
-        for (const auto& edge : pragma["edgeNames"])
+        for (const auto& edge : pragma["nodes"])
         {
             data.insert(edge["identifier"].get<std::string>());
         }

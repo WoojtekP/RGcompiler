@@ -12,7 +12,7 @@ nlohmann::json make_pragma(const std::vector<std::string>& symbols, int offset) 
     nlohmann::json j;
     j["offset"] = offset;
     for (const auto& s : symbols) {
-        j["edgeNames"].push_back({{"identifier", s}});
+        j["nodes"].push_back({{"identifier", s}});
     }
     return j;
 }

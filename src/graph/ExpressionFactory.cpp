@@ -53,7 +53,7 @@ std::unique_ptr<IExpression> ExpressionFactory::createExpression(const nlohmann:
     {
         return createCastExpression(expression);
     }
-    if (expressionKind == "EdgeName")
+    if (expressionKind == "Node")
     {
         return createEdgeNameExpression(expression);
     }

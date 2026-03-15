@@ -171,7 +171,7 @@ void IntegerOperationsDeducer::fillIntegerValuesInfo(const std::vector<nlohmann:
     for (const auto& integerPragma : integerPragmas)
     {
         auto value = integerPragma["offset"].get<int>();
-        for (const auto& item : integerPragma["edgeNames"])
+        for (const auto& item : integerPragma["nodes"])
         {
             const auto symbol = item["identifier"].get<std::string>();
             symbolToValue_.emplace(symbol, value++);

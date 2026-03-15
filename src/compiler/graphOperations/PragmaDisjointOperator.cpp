@@ -7,8 +7,8 @@ void PragmaDisjointOperator::init(const Parser& parser)
 {
     for (const auto& pragma : parser.getPragmas("Disjoint"))
     {
-        std::string mainNodeName = pragma["edgeName"]["identifier"];
-        for (const auto& nodeStruct : pragma["edgeNames"])
+        std::string mainNodeName = pragma["node"]["identifier"];
+        for (const auto& nodeStruct : pragma["nodes"])
         {
             std::string nodeName = nodeStruct["identifier"];
             nodeNameToOrderOfDisjointNodes_[mainNodeName].push_back(nodeName);
@@ -17,10 +17,10 @@ void PragmaDisjointOperator::init(const Parser& parser)
 
     for (const auto& pragma : parser.getPragmas("DisjointExhaustive"))
     {
-        std::string mainNodeName = pragma["edgeName"]["identifier"];
+        std::string mainNodeName = pragma["node"]["identifier"];
         exhaustive_.insert(mainNodeName);
 
-        for (const auto& nodeStruct : pragma["edgeNames"])
+        for (const auto& nodeStruct : pragma["nodes"])
         {
             std::string nodeName = nodeStruct["identifier"];
             nodeNameToOrderOfDisjointNodes_[mainNodeName].push_back(nodeName);

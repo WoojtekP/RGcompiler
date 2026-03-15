@@ -51,8 +51,8 @@ std::shared_ptr<IAction> createReachabilityAction(const std::string& leftSide, c
     ExpressionFactory expressionFactory(parser, symbolsManager);
     nlohmann::json label = {
         {"kind", "Reachability"},
-        {"lhs", {{"kind", "EdgeName"}, {"identifier", leftSide}}},
-        {"rhs", {{"kind", "EdgeName"}, {"identifier", rightSide}}},
+        {"lhs", {{"kind", "Node"}, {"identifier", leftSide}}},
+        {"rhs", {{"kind", "Node"}, {"identifier", rightSide}}},
         {"negated", false}};
 
     return std::make_shared<ActionReachability>(label, expressionFactory);

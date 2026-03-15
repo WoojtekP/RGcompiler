@@ -81,8 +81,8 @@ void addSimpleApplyDataToParsedJson(
     }
 
     SimpleApply["kind"] = isExhaustive ? "SimpleApplyExhaustive" : "SimpleApply";
-    SimpleApply["lhs"] = {{"identifier", data.startNodeName_}, {"kind", "EdgeName"}};
-    SimpleApply["rhs"] = {{"identifier", data.endNode_->getName()}, {"kind", "EdgeName"}};
+    SimpleApply["lhs"] = {{"identifier", data.startNodeName_}, {"kind", "Node"}};
+    SimpleApply["rhs"] = {{"identifier", data.endNode_->getName()}, {"kind", "Node"}};
     json["pragmas"] += SimpleApply;
 }
 

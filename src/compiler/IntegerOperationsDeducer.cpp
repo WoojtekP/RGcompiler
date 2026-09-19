@@ -171,15 +171,19 @@ void IntegerOperationsDeducer::fillIntegerValuesInfo(const std::vector<nlohmann:
     for (const auto& integerPragma : integerPragmas)
     {
         auto value = integerPragma["offset"].get<int>();
-        for (const auto& item : integerPragma["nodes"])
+        if (integerPragma.contains("identifiers"))
         {
-            const auto symbol = item["identifier"].get<std::string>();
-            symbolToValue_.emplace(symbol, value++);
+            for (const auto& item : integerPragma["identifiers"])
+            {
+                const auto symbol = item.get<std::string>();
+                symbolToValue_.emplace(symbol, value++);
+            }
         }
     }
 }
 
-std::pair<std::string, int> IntegerOperationsDeducer::getNanAndNumberOfIntegerSymbols(const SymbolToValueMap& symbolToValue) const
+std::pair<std::string, int> IntegerOperationsDeducer::getNanAndNumberOfIntegerSymbols(
+    const SymbolToValueMap& symbolToValue) const
 {
     int integerSymbolsCounter = 0;
     std::string nanSymbol;
@@ -223,29 +227,29 @@ std::optional<ArithmeticData> IntegerOperationsDeducer::getBinaryOperationForMap
 {
     if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::less<int>()))
     {
-        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Less};
+        return ArithmeticData {.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Less};
     }
     if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::greater<int>()))
     {
-        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Gr};
+        return ArithmeticData {.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Gr};
     }
     if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::less_equal<int>()))
     {
-        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Leq};
+        return ArithmeticData {.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Leq};
     }
     if (matchesComparison(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::greater_equal<int>()))
     {
-        return ArithmeticData{.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Ge};
+        return ArithmeticData {.system = ArithmeticSystem::Comparison, .operation = ArithmeticOperation::Ge};
     }
     for (auto system : {ArithmeticSystem::Overflow, ArithmeticSystem::Modular, ArithmeticSystem::Saturated})
     {
         if (matchesBinaryOp(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::plus<int>(), system))
         {
-            return ArithmeticData{.system = system, .operation = ArithmeticOperation::Add};
+            return ArithmeticData {.system = system, .operation = ArithmeticOperation::Add};
         }
         if (matchesBinaryOp(lhsDomain, rhsDomain, resultDomain, constantMap, symbolToValue_, std::minus<int>(), system))
         {
-            return ArithmeticData{.system = system, .operation = ArithmeticOperation::Sub};
+            return ArithmeticData {.system = system, .operation = ArithmeticOperation::Sub};
         }
     }
     return std::nullopt;
@@ -284,13 +288,13 @@ std::optional<ArithmeticData> IntegerOperationsDeducer::getIncOrDecWithOverflow(
             differences.insert(dstValue - srcValue);
         }
     }
-    if (differences == std::set{-1})
+    if (differences == std::set {-1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Overflow, .operation = ArithmeticOperation::Dec};
+        return ArithmeticData {.system = ArithmeticSystem::Overflow, .operation = ArithmeticOperation::Dec};
     }
-    if (differences == std::set{1})
+    if (differences == std::set {1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Overflow, .operation = ArithmeticOperation::Inc};
+        return ArithmeticData {.system = ArithmeticSystem::Overflow, .operation = ArithmeticOperation::Inc};
     }
     return std::nullopt;
 }
@@ -324,21 +328,21 @@ std::optional<ArithmeticData> IntegerOperationsDeducer::getIncOrDecWithSaturatio
             differences.insert(dstValue - srcValue);
         }
     }
-    if (differences == std::set{0, 1})
+    if (differences == std::set {0, 1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Saturated, .operation = ArithmeticOperation::Inc};
+        return ArithmeticData {.system = ArithmeticSystem::Saturated, .operation = ArithmeticOperation::Inc};
     }
-    if (differences == std::set{0, -1})
+    if (differences == std::set {0, -1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Saturated, .operation = ArithmeticOperation::Dec};
+        return ArithmeticData {.system = ArithmeticSystem::Saturated, .operation = ArithmeticOperation::Dec};
     }
-    if (differences == std::set{-1})
+    if (differences == std::set {-1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Modular, .operation = ArithmeticOperation::Dec};
+        return ArithmeticData {.system = ArithmeticSystem::Modular, .operation = ArithmeticOperation::Dec};
     }
-    if (differences == std::set{1})
+    if (differences == std::set {1})
     {
-        return ArithmeticData{.system = ArithmeticSystem::Modular, .operation = ArithmeticOperation::Inc};
+        return ArithmeticData {.system = ArithmeticSystem::Modular, .operation = ArithmeticOperation::Inc};
     }
     return std::nullopt;
 }

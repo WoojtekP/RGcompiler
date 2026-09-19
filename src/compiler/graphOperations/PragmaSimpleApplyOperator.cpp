@@ -76,9 +76,9 @@ void PragmaSimpleApplyOperator::parseItem(
         {
             const auto& tagVar = tag["Variable"];
             std::string tagVarName = tagVar["identifier"].get<std::string>();
-            if (tagVar["type_"] != nullptr)
+            if (tagVar.contains("type"))
             {
-                std::string tagType = tagVar["type_"]["identifier"];
+                std::string tagType = tagVar["type"]["identifier"];
                 mapOrgNameToNewName[tagVarName] =
                     std::string(prefixVariableName) + std::to_string(mapOrgNameToNewName.size());
                 data.tagNames_.push_back("(" + mapOrgNameToNewName[tagVarName] + " : " + tagType + ")");

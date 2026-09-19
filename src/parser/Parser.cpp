@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <fstream>
+#include <iostream>
 
 #include <nlohmann/json.hpp>
 
@@ -32,8 +33,19 @@ Parser::Parser(const nlohmann::json& parsedJson)
 }
 
 Parser::Parser(std::ifstream& jsonGameFile)
-: Parser(nlohmann::json::parse(jsonGameFile))
-{}
+{
+    try
+    {
+        nlohmann::json json_data = nlohmann::json::parse(jsonGameFile);
+        *this = Parser(json_data);
+    }
+    catch (const nlohmann::json::parse_error& e)
+    {
+        std::cerr << "[Parser Error] Failed to parse AST JSON: " << e.what() << std::endl;
+        std::cerr << "[Parser Error] Error byte offset: " << e.byte << std::endl;
+        std::exit(1);
+    }
+}
 
 bool Parser::isSymbol(const std::string& identifier) const
 {
